@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python错题管理器</title>
+    <link rel="stylesheet" href="mistake_manager.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🐍 Python错题管理器</h1>
+            <div class="header-actions">
+                <button id="importFromExtension" class="btn-primary">从插件导入</button>
+                <button id="exportData" class="btn-secondary">导出数据</button>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            <!-- 左侧边栏 -->
+            <aside class="sidebar">
+                <!-- 搜索和筛选 -->
+                <div class="search-section">
+                    <h3>🔍 搜索筛选</h3>
+                    <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
+                    <div class="filter-tags">
+                        <h4>标签筛选</h4>
+                        <div id="tagFilter" class="tag-list">
+                            <!-- 标签筛选按钮 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="stats-section">
+                    <h3>📊 统计信息</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalMistakes">0</span>
+                            <span class="stat-label">总错题数</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="taggedMistakes">0</span>
+                            <span class="stat-label">已标签</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="aiSummarized">0</span>
+                            <span class="stat-label">AI总结</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI功能 -->
+                <div class="ai-section">
+                    <h3>🤖 AI功能</h3>
+                    <button id="generateSummary" class="btn-primary">生成总结</button>
+                    <button id="suggestTags" class="btn-secondary">建议标签</button>
+                    <button id="analyzePatterns" class="btn-secondary">分析模式</button>
+                </div>
+            </aside>
+
+            <!-- 主要内容 -->
+            <section class="content">
+                <!-- 工具栏 -->
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button id="selectAll" class="btn-secondary">全选</button>
+                        <button id="deselectAll" class="btn-secondary">取消全选</button>
+                        <button id="batchDelete" class="btn-danger" disabled>批量删除</button>
+                    </div>
+                    <div class="toolbar-right">
+                        <select id="sortBy" class="sort-select">
+                            <option value="date">按日期排序</option>
+                            <option value="category">按分类排序</option>
+                            <option value="difficulty">按难度排序</option>
+                        </select>
+                        <button id="addTag" class="btn-primary">添加标签</button>
+                    </div>
+                </div>
+
+                <!-- 错题列表 -->
+                <div class="mistake-list" id="mistakeList">
+                    <!-- 错题项目将在这里动态生成 -->
+                </div>
+
+                <!-- 分页 -->
+                <div class="pagination">
+                    <button id="prevPage" class="btn-secondary">上一页</button>
+                    <span id="pageInfo">第 1 页，共 1 页</span>
+                    <button id="nextPage" class="btn-secondary">下一页</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 模态框 -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">编辑错题</h2>
+                    <button id="closeModal" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editTitle">标题</label>
+                        <input type="text" id="editTitle" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="editContent">题目内容</label>
+                        <textarea id="editContent" class="form-textarea"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAnswer">答案</label>
+                        <textarea id="editAnswer" class="form-textarea"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTags">标签</label>
+                        <input type="text" id="editTags" placeholder="用逗号分隔多个标签" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory">分类</label>
+                        <select id="editCategory" class="form-select">
+                            <option value="基础语法">基础语法</option>
+                            <option value="数据结构">数据结构</option>
+                            <option value="算法">算法</option>
+                            <option value="面向对象">面向对象</option>
+                            <option value="文件操作">文件操作</option>
+                            <option value="网络编程">网络编程</option>
+                            <option value="数据库">数据库</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDifficulty">难度</label>
+                        <select id="editDifficulty" class="form-select">
+                            <option value="简单">简单</option>
+                            <option value="中等">中等</option>
+                            <option value="困难">困难</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveMistake" class="btn-primary">保存</button>
+                    <button id="cancelEdit" class="btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI总结模态框 -->
+        <div id="aiModal" class="modal">
+            <div class="modal-content ai-modal">
+                <div class="modal-header">
+                    <h2>🤖 AI总结</h2>
+                    <button id="closeAiModal" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="ai-summary-content">
+                        <div id="aiSummaryText">
+                            <p>正在生成AI总结...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveSummary" class="btn-primary">保存总结</button>
+                    <button id="regenerateSummary" class="btn-secondary">重新生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="mistake_manager.js"></script>
+    <script>
+        // 创建错题管理器实例
+        let mistakeManager;
+        document.addEventListener('DOMContentLoaded', function() {
+            mistakeManager = new MistakeManager();
+        });
+    </script>
+</body>
+</html> 

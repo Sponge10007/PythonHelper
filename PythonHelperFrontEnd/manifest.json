@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Python教学助手",
+  "version": "1.0.0",
+  "description": "一个帮助学习Python的Chrome插件，支持题目检索和大模型解析",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "sidePanel",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "http://localhost:5000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"]
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Python教学助手"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["data/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+} 

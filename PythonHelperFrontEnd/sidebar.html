@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python教学助手</title>
+    <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+    <div class="sidebar-container">
+        <!-- 标题栏 -->
+        <div class="header">
+            <h1>🐍 Python教学助手</h1>
+            <button id="toggleMistakeCollection" class="btn-secondary">错题集</button>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <!-- 选中文本显示区域 -->
+            <div class="section">
+                <h3>📝 选中的文本</h3>
+                <div id="selectedText" class="selected-text-display">
+                    请选中网页上的文本...
+                </div>
+                <div class="selected-text-actions">
+                    <button id="askQuestion" class="btn-primary" disabled>询问</button>
+                </div>
+            </div>
+
+            <!-- 当前题目和答案显示 -->
+            <div id="currentQuestion" class="current-question" style="display: none;">
+                <h4>📝 当前题目</h4>
+                <div class="question-text"></div>
+                <div class="answer-text"></div>
+                <div class="current-question-actions">
+                    <button id="undoAnswer" class="btn-secondary" disabled>撤销答案</button>
+                    <button id="addToMistakes" class="btn-primary" disabled>加入错题</button>
+                </div>
+            </div>
+
+            <!-- 大模型对话界面 - 扩大版 -->
+            <div class="section ai-section">
+                <h3>🤖 AI助手</h3>
+                <div class="chat-container">
+                    <div id="chatMessages" class="chat-messages">
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                你好！我是Python教学助手，可以帮你解答Python相关问题。请选中文本或直接输入问题。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <textarea id="chatInput" placeholder="输入你的问题..." class="chat-input"></textarea>
+                        <button id="sendMessage" class="btn-primary">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 错题集界面 -->
+        <div id="mistakeCollection" class="mistake-collection hidden">
+            <div class="collection-header">
+                <h2>📚 错题集</h2>
+                <button id="backToMain" class="btn-secondary">返回</button>
+            </div>
+            <div class="collection-content">
+                <div id="mistakeList" class="mistake-list">
+                    <div class="no-mistakes">暂无错题记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidebar.js"></script>
+</body>
+</html> 

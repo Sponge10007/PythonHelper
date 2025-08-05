@@ -1,0 +1,94 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "title": "Python变量和数据类型",
+      "content": "在Python中，如何定义一个字符串变量？",
+      "answer": "使用引号（单引号或双引号）来定义字符串变量，例如：name = 'Python' 或 name = \"Python\"",
+      "category": "基础语法",
+      "difficulty": "简单",
+      "keywords": ["变量", "字符串", "定义", "引号"]
+    },
+    {
+      "id": 2,
+      "title": "Python列表操作",
+      "content": "如何向Python列表中添加元素？",
+      "answer": "可以使用append()方法添加单个元素，使用extend()方法添加多个元素，或使用+运算符连接列表",
+      "category": "数据结构",
+      "difficulty": "简单",
+      "keywords": ["列表", "添加", "append", "extend", "元素"]
+    },
+    {
+      "id": 3,
+      "title": "Python函数定义",
+      "content": "如何定义一个带参数的Python函数？",
+      "answer": "使用def关键字定义函数，参数写在括号内，例如：def greet(name): return f'Hello {name}'",
+      "category": "函数",
+      "difficulty": "中等",
+      "keywords": ["函数", "定义", "参数", "def", "return"]
+    },
+    {
+      "id": 4,
+      "title": "Python异常处理",
+      "content": "如何使用try-except语句处理异常？",
+      "answer": "将可能出错的代码放在try块中，将异常处理代码放在except块中，例如：try: x = 1/0 except ZeroDivisionError: print('除数不能为零')",
+      "category": "异常处理",
+      "difficulty": "中等",
+      "keywords": ["异常", "try", "except", "错误处理", "ZeroDivisionError"]
+    },
+    {
+      "id": 5,
+      "title": "Python类定义",
+      "content": "如何定义一个Python类？",
+      "answer": "使用class关键字定义类，类名通常使用驼峰命名法，例如：class MyClass: def __init__(self): pass",
+      "category": "面向对象",
+      "difficulty": "中等",
+      "keywords": ["类", "class", "面向对象", "__init__", "构造函数"]
+    },
+    {
+      "id": 6,
+      "title": "Python文件操作",
+      "content": "如何读取文本文件？",
+      "answer": "使用open()函数打开文件，使用read()方法读取内容，记得使用with语句或手动关闭文件",
+      "category": "文件操作",
+      "difficulty": "简单",
+      "keywords": ["文件", "读取", "open", "read", "with"]
+    },
+    {
+      "id": 7,
+      "title": "Python字典操作",
+      "content": "如何获取字典中所有的键？",
+      "answer": "使用keys()方法获取所有键，使用values()方法获取所有值，使用items()方法获取所有键值对",
+      "category": "数据结构",
+      "difficulty": "简单",
+      "keywords": ["字典", "键", "值", "keys", "values", "items"]
+    },
+    {
+      "id": 8,
+      "title": "Python列表推导式",
+      "content": "什么是列表推导式？如何使用？",
+      "answer": "列表推导式是一种简洁的创建列表的方法，语法为：[表达式 for 变量 in 可迭代对象 if 条件]",
+      "category": "高级语法",
+      "difficulty": "困难",
+      "keywords": ["列表推导式", "推导式", "简洁", "表达式", "可迭代"]
+    },
+    {
+      "id": 9,
+      "title": "Python装饰器",
+      "content": "什么是装饰器？如何定义？",
+      "answer": "装饰器是一个函数，它接受一个函数作为参数并返回一个新函数，使用@符号应用装饰器",
+      "category": "高级特性",
+      "difficulty": "困难",
+      "keywords": ["装饰器", "decorator", "@", "函数", "高阶函数"]
+    },
+    {
+      "id": 10,
+      "title": "Python生成器",
+      "content": "什么是生成器？如何创建？",
+      "answer": "生成器是一种特殊的迭代器，使用yield关键字创建，可以节省内存空间",
+      "category": "高级特性",
+      "difficulty": "困难",
+      "keywords": ["生成器", "generator", "yield", "迭代器", "内存"]
+    }
+  ]
+} 

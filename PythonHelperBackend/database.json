@@ -1,0 +1,460 @@
+[
+    {
+      "question_type": "单选题",
+      "question_number": "1",
+      "question": "以下代码段的输出是什么？\nx = 10\ny = 5\nif x > y:\n    if x < 20:\n        print(\"A\")\n    elif x == 10:\n        print(\"B\")\n    else:\n        print(\"C\")\nelse:\n    print(\"D\")",
+      "options": ["A. \"A\"", "B. \"B\"", "C. \"C\"", "D. \"D\""],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "2",
+      "question": "以下哪个选项正确地表示了if-else语句的语法？",
+      "options": [
+        "A. if condition:\\nstatement\\nelse:\\nstatement",
+        "B. if condition:\\nstatement;\\nelse:\\nstatement",
+        "C. if condition\\n{ statement }\\nelse\\n{ statement }",
+        "D. if (condition)\\n{ statement; }\\nelse\\n{ statement; }"
+      ],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "3",
+      "question": "如果要检查变量 x 是否等于 10 或者 y 是否等于 20，应该使用哪个语法？",
+      "options": [
+        "A. if x = 10 or y = 20:",
+        "B. if x == 10 or y == 20:",
+        "C. if x == 10 || y == 20:",
+        "D. if x = 10 || y = 20:"
+      ],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "4",
+      "question": "为什么在编写条件语句时，应尽量避免过度嵌套？",
+      "options": [
+        "A. 因为会降低代码的运行速度",
+        "B. 因为会增加内存消耗",
+        "C. 因为会使代码难以理解和维护",
+        "D. 因为Python不支持超过两层的嵌套"
+      ],
+      "answer": "C"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "5",
+      "question": "如果 x = 3 和 y = 4，下面代码的输出是什么？\nif x * y > 10:\n    print(\"A\")\nelif x + y < 10:\n    print(\"B\")\nelse:\n    print(\"C\")",
+      "options": ["A. A", "B. B", "C. C", "D. 无"],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "6",
+      "question": "在以下代码中，最终 y 的值是多少？\nx = 7\ny = 10\nif x > 5:\n    y += 5\nif x < 10:\n    y += 10",
+      "options": ["A. 15", "B. 20", "C. 25", "D. 30"],
+      "answer": "C"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "7",
+      "question": "若检查一个变量 x 是否在1 到 10 之间，不能选哪个选项？",
+      "options": [
+        "A. if x >=1 and <= 10:",
+        "B. if x >= 1 and x <= 10:",
+        "C. if 1<= x <= 10:",
+        "D. if 10 >= x >= 1:"
+      ],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "8",
+      "question": "if-elif-else 语句中，哪种情况下会执行 else 语句？",
+      "options": [
+        "A. 当 if 条件为 True",
+        "B. 当所有 if 和 elif 条件均为 False",
+        "C. 当第一个 if 条件为 False 时",
+        "D. 当 elif 条件为 True 时"
+      ],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "9",
+      "question": "在使用 if-elif-else 语句时，如何确保某个特定条件优先被评估？",
+      "options": [
+        "A. 将该条件放在 if 语句中",
+        "B. 将该条件放在 elif 语句的最前面",
+        "C. 在 if 和 elif 语句中同时使用该条件",
+        "D. 使用嵌套的 if 语句来优先评估该条件"
+      ],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "10",
+      "question": "下列选项中，能求出x和y中最小值，并赋值给min的是_____。",
+      "options": [
+        "A. min = x if x < y else y",
+        "B. min = x < y ? x : y",
+        "C. if x < y: min=x",
+        "D. if (x<y): x, y = y, x"
+      ],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "11",
+      "question": "对于两个集合s1和s2，s1 < s2的意思是？",
+      "options": [
+        "A. s1的大小小于s2的大小",
+        "B. s1的元素比s2的小",
+        "C. s1是s2的真子集",
+        "D. s2是s1的真子集"
+      ],
+      "answer": "C"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "12",
+      "question": "对于集合s，以下哪个操作是不存在的？",
+      "options": ["A. len(s)", "B. s.append(1)", "C. max(s)", "D. s - {1}"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "13",
+      "question": "对于正确的表达式a[2]，a不可能是以下哪个类型？",
+      "options": ["A. 集合", "B. 列表", "C. 元组", "D. 字典"],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "14",
+      "question": "可以使用____运算符来确定一个键是否在字典中。",
+      "options": ["A. &", "B. in", "C. ^", "D. ?"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "15",
+      "question": "你可以使用____从字典中删除元素。",
+      "options": ["A. remove", "B. rease", "C. delete", "D. del"],
+      "answer": "D"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "16",
+      "question": "返回集合中元素个数的函数是______。",
+      "options": ["A. size()", "B. len()", "C. elements()", "D. count()"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "17",
+      "question": "以下哪个语句得到的 C 不是集合 A 和集合 B 的并集？",
+      "options": [
+        "A. C = A | B",
+        "B. C = A.update(B)",
+        "C. C = set(list(A) + list(B))",
+        "D. C = A.union(B)"
+      ],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "18",
+      "question": "下面那个不是Python可以接受的变量名？",
+      "options": ["A. abc", "B. _23ac", "C. i", "D. good-name"],
+      "answer": "D"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "19",
+      "question": "输入10，下面程序行号为2的语句输出是多少？\nfor number in range(1,10):\n if number%2 and not number%3:\n the_sum += number",
+      "options": ["A. 12", "B. 7", "C. 13", "D. 8"],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "20",
+      "question": "下面定义字典的语句那个是正确的？",
+      "options": [
+        "A. momthdays=dict(Jan=31,Feb=28,Mar=31,Apr=30)",
+        "B. momthdays=dict(\"Jan\"=31,\"Feb\"=28,\"Mar\"=31,“Apr\"=30)",
+        "C. momthdays={Jan:31,Feb:28,Mar:31,Apr:30}",
+        "D. momthdays={Jan=31,Feb=28,Mar=31,Apr=30}"
+      ],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "21",
+      "question": "下列程序运行输出结果为_______。\n递归因式分解 18 -> 3 6 -> 2 3，输出：3 2 3",
+      "options": ["A. 3 2 3", "B. 2 9 3", "C. 3 6 3", "D. 2 3 6"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "22",
+      "question": "选择下面程序的运行结果\nnumber = 25，25%5==0，i=5，isPrime=False",
+      "options": [
+        "A. i is 5 isPrime is True",
+        "B. i is 5 isPrime is False",
+        "C. i is 6 isPrime is True",
+        "D. i is 6 isPrime is False"
+      ],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "23",
+      "question": "下列程序运行输出结果为_______。\nday=4，x=(x+1)*2 → 4 次，最终 x=46",
+      "options": ["A. 22", "B. 46", "C. 47", "D. 45"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "24",
+      "question": "下列程序运行输出结果为_______。\n函数内 b=1 局部，乘全局 c=4 得 b=4，函数外打印全局 b=2，c=4",
+      "options": ["A. 4 4 2 4", "B. 4 4 4 4", "C. 4 2 4 4", "D. 2 4 2 4"],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "25",
+      "question": "对于两个集合s1和s2，s1 < s2的意思是？",
+      "options": [
+        "A. s1的大小小于s2的大小",
+        "B. s1的元素比s2的小",
+        "C. s1是s2的真子集",
+        "D. s2是s1的真子集"
+      ],
+      "answer": "C"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "26",
+      "question": "对于集合s，以下哪个操作是不存在的？",
+      "options": ["A. len(s)", "B. s.append(1)", "C. max(s)", "D. s - {1}"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "27",
+      "question": "对于正确的表达式a[2]，a不可能是以下哪个类型？",
+      "options": ["A. 集合", "B. 列表", "C. 元组", "D. 字典"],
+      "answer": "A"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "28",
+      "question": "可以使用____运算符来确定一个键是否在字典中。",
+      "options": ["A. &", "B. in", "C. ^", "D. ?"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "29",
+      "question": "你可以使用____从字典中删除元素。",
+      "options": ["A. remove", "B. rease", "C. delete", "D. del"],
+      "answer": "D"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "30",
+      "question": "返回集合中元素个数的函数是______。",
+      "options": ["A. size()", "B. len()", "C. elements()", "D. count()"],
+      "answer": "B"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "31",
+      "question": "下列程序运行输出结果为_______。\n键 '2' 为字符串，2 是整数，不存在，返回 -1",
+      "options": ["A. 'B'", "B. 'A'", "C. None", "D. -1"],
+      "answer": "D"
+    },
+    {
+      "question_type": "单选题",
+      "question_number": "32",
+      "question": "以下程序执行的结果是()\n遍历字典默认是遍历键：'a', 'c'",
+      "options": ["A. a:b c:d", "B. a c", "C. b d", "D. 以上都不对"],
+      "answer": "B"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "1",
+      "question": "第三方模块要先安装才能使用。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "2",
+      "question": "len(set([0,4,5,6,0,7,8]))的结果是7。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "3",
+      "question": "字符串可以使用 max() 和 min() 函数进行比较大小。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "4",
+      "question": "对于元组 t = (1, 2, {3: 4})，执行 t[2][0] = 5 会报错。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "5",
+      "question": "列表的 sort() 方法返回一个新的已排序列表。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "6",
+      "question": "执行python语句 a=int(\"9\") 后，此刻变量 a代表的是整数类型的数据。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "7",
+      "question": "该语句可以正确创立一个字典：monthdays=dict(Jan=31,Feb=28,Mar=31,Apr=30)。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "8",
+      "question": "在 Python 中，实例方法必须包含 self 参数。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "9",
+      "question": "{(1,2,[1]),10,'abc'}是一个合法的python集合。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "10",
+      "question": "执行以下代码， numbers 的内容将变成[1, 3, 2, 4]。\nnumbers = [1, 2, 3, 2, 4]\nnumbers.pop(1)",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "11",
+      "question": "集合的元素可以是任意数据类型。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "12",
+      "question": "a={},type(a)结果是<class 'set'>。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "13",
+      "question": "下面程序的运行结果一定是：1 2 3 4\nset1={1,2,3,4}\nfor i in set1:\nprint(i,end=\" \")",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "14",
+      "question": "列表可以作为字典的键。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "15",
+      "question": "下面程序的输出是张秀华。\ndic={\"赵洁\" : 15264771766,\"张秀华\" : 13063767486,\"胡桂珍\" : 15146046882,\"龚丽丽\" : 13606379542,\"岳瑜\" : 13611987725}\nreversedic={v:k for k,v in dic.items()}\nprint(reversedic[13063767486])",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "16",
+      "question": "下面程序输出的是True。\ndic1={\"赵洁\" : 15264771766,\"张秀华\" : 13063767486,\"胡桂珍\" : 15146046882,\"龚丽丽\" : 13606379542,\"岳瑜\" : 13611987725}\ndic2={\"王玉兰\" : 15619397270,\"王强\" : 15929494512,\"王桂荣\" : 13794876998,\"邓玉英\" : 18890393268,\"何小红\" : 13292597821}\ndic3={**dic1,**dic2}\ndic1.update(dic2)\nprint(dic1==dic3)",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "17",
+      "question": "下面程序输出的是15146046882。\ndic1={\"赵洁\" : 15264771766,\"张秀华\" : 13063767486,\"胡桂珍\" : 15146046882,\"龚丽丽\" : 13606379542,\"岳瑜\" : 13611987725}\ndic2={\"王玉兰\" : 15619397270,\"王强\" : 15929494512,\"王桂荣\" : 13794876998,\"邓玉英\" : 18890393268,\"胡桂珍\" : 13292597821}\ndic3={**dic1,**dic2}\nprint(dic3[\"胡桂珍\"])",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "18",
+      "question": "下面程序的输出是3。\ns={1,2,3}\ns1=s\ns1.remove(2)\nprint(len(s))",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "19",
+      "question": "下面程序输出是circle。\nd={\"color\":\"red\",\"shape\":\"circle\"}\nd1=d\nd1[\"shape\"]=\"triangle\"\nprint(\"shape\")",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "20",
+      "question": "嵌套if语句中的else分支总是与最近的未闭合的if语句匹配。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "21",
+      "question": "在Python中，if语句的条件表达式可以是一个复杂的表达式，包括函数调用。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "22",
+      "question": "在Python中，如果if语句的条件为一个空字符串，条件会被解释为True。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "23",
+      "question": "在嵌套if语句中，内层的if条件表达式无法访问外层的变量。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "24",
+      "question": "在if语句中，and运算符的优先级低于or运算符。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "25",
+      "question": "Python的if-elif-else语句中，elif分支的数量是可以任意多个的。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "26",
+      "question": "在Python中，if语句的条件表达式必须是一个布尔值。",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "27",
+      "question": "Python中的if-else语句可以嵌套在单行代码中，使用三元运算符实现。",
+      "answer": "True"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "28",
+      "question": "如下两段代码功能一样，程序结构也一样\nif a < 0:\nprint(\"<0\")\nelif a == 0:\nprint(\"=0\")\nelif a > 0:\nprint(\"a>0\")\nif a < 0:\nprint(\"<0\")\nif a == 0:\nprint(\"=0\")\nif a > 0:\nprint(\"a>0\")",
+      "answer": "False"
+    },
+    {
+      "question_type": "判断题",
+      "question_number": "29",
+      "question": "在if-elif-else结构中，else子句是可选的。",
+      "answer": "True"
+    }
+  ]
