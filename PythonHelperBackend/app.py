@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import json
 import os
@@ -7,6 +7,9 @@ import sqlite3
 from datetime import datetime
 from typing import Dict, List, Optional
 import logging
+import uuid
+import mimetypes
+from werkzeug.utils import secure_filename
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -18,11 +21,29 @@ CORS(app)  # 允许跨域请求
 # 错题数据库文件
 MISTAKES_DB_FILE = 'mistakes.db'
 
+# PPT文件存储目录
+PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')
+if not os.path.exists(PPT_UPLOAD_FOLDER):
+    os.makedirs(PPT_UPLOAD_FOLDER)
+    logger.info(f"创建PPT上传目录: {PPT_UPLOAD_FOLDER}")
+else:
+    logger.info(f"PPT上传目录已存在: {PPT_UPLOAD_FOLDER}")
+
+# 允许的文件类型
+ALLOWED_EXTENSIONS = {'ppt', 'pptx', 'doc', 'docx', 'pdf'}
+
+def allowed_file(filename):
+    """检查文件类型是否允许"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def init_mistakes_db():
     """初始化错题数据库"""
     try:
         conn = sqlite3.connect(MISTAKES_DB_FILE)
         cursor = conn.cursor()
+        
+        # 错题表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS mistakes (
                 id INTEGER PRIMARY KEY,
@@ -36,11 +57,55 @@ def init_mistakes_db():
                 ai_summary TEXT
             )
         ''')
+        
+        # PPT文件表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ppt_files (
+                id INTEGER PRIMARY KEY,
+                filename TEXT NOT NULL,
+                original_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                file_type TEXT NOT NULL,
+                upload_date TEXT NOT NULL,
+                slides_count INTEGER DEFAULT 0,
+                description TEXT,
+                tags TEXT
+            )
+        ''')
+        
         conn.commit()
         conn.close()
-        logger.info("错题数据库初始化完成")
+        logger.info("数据库初始化完成")
     except Exception as e:
-        logger.error(f"错题数据库初始化失败: {e}")
+        logger.error(f"数据库初始化失败: {e}")
+
+def get_file_info(file_path):
+    """获取文件信息"""
+    try:
+        stat = os.stat(file_path)
+        return {
+            'size': stat.st_size,
+            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"获取文件信息失败: {e}")
+        return {'size': 0, 'modified': datetime.now().isoformat()}
+
+def estimate_slides_count(file_path, file_type):
+    """估算PPT页数"""
+    try:
+        if file_type == 'pdf':
+            # 简单估算PDF页数
+            file_size = os.path.getsize(file_path)
+            return max(1, file_size // 50000)  # 每50KB约1页
+        else:
+            # PPT文件页数估算
+            file_size = os.path.getsize(file_path)
+            return max(1, file_size // 100000)  # 每100KB约1页
+    except Exception as e:
+        logger.error(f"估算页数失败: {e}")
+        return 1
 
 class PythonHelperBackend:
     def __init__(self):
@@ -60,7 +125,7 @@ class PythonHelperBackend:
                 # 回退到前端目录的旧题库数据
                 questions_path = os.path.join('..', 'PythonHelperFrontEnd', 'data', 'questions.json')
                 if os.path.exists(questions_path):
-                    with open(questions_path, 'r', encoding='utf-8') as f:
+                    with open(questions_path, 'r', encoding='utf-8'):
                         data = json.load(f)
                         self.questions_db = data.get('questions', [])
                         logger.info(f"已从questions.json加载 {len(self.questions_db)} 道题目")
@@ -241,7 +306,7 @@ class PythonHelperBackend:
         elif "for" in content_lower or "while" in content_lower:
             category = "循环语句"
         elif "def" in content_lower or "class" in content_lower:
-            category = "函数和类"
+            category = "循环语句"
         elif "list" in content_lower or "dict" in content_lower or "set" in content_lower or "tuple" in content_lower:
             category = "数据结构"
         elif "try" in content_lower or "except" in content_lower:
@@ -339,23 +404,27 @@ def health_check():
     
     # 统计错题数量
     mistakes_count = 0
+    ppt_files_count = 0
     try:
         conn = sqlite3.connect(MISTAKES_DB_FILE)
         cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM mistakes')
         mistakes_count = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM ppt_files')
+        ppt_files_count = cursor.fetchone()[0]
         conn.close()
     except Exception as e:
-        logger.error(f"获取错题统计失败: {e}")
+        logger.error(f"获取统计信息失败: {e}")
     
     return jsonify({
         'status': 'healthy',
         'message': 'Python教学助手后端服务运行正常',
         'questions_count': len(backend.questions_db),
         'mistakes_count': mistakes_count,
+        'ppt_files_count': ppt_files_count,
         'question_types': question_types,
         'database_source': 'database.json' if os.path.exists('database.json') else 'questions.json',
-        'features': ['题库搜索', 'AI聊天', '错题管理']
+        'features': ['题库搜索', 'AI聊天', '错题管理', 'PPT文件管理']
     })
 
 @app.route('/ai/chat', methods=['POST'])
@@ -616,10 +685,405 @@ def delete_mistake(mistake_id):
         logger.error(f"删除错题失败: {e}")
         return jsonify({'error': str(e)}), 500
 
+# PPT文件管理API端点
+@app.route('/ppt/upload', methods=['POST'])
+def upload_ppt():
+    """上传PPT文件"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': '没有文件'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': '没有选择文件'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': '不支持的文件类型'}), 400
+        
+        # 生成唯一文件名
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        file_path = os.path.join(PPT_UPLOAD_FOLDER, unique_filename)
+        
+        logger.info(f"准备保存文件 - 原始名: {file.filename}, 唯一名: {unique_filename}, 路径: {file_path}")
+        
+        # 保存文件
+        file.save(file_path)
+        
+        # 验证文件是否成功保存
+        if not os.path.exists(file_path):
+            raise Exception(f"文件保存失败: {file_path}")
+        
+        logger.info(f"文件保存成功: {file_path}")
+        
+        # 获取文件信息
+        file_info = get_file_info(file_path)
+        slides_count = estimate_slides_count(file_path, file_extension)
+        
+        # 保存到数据库
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO ppt_files (filename, original_name, file_path, file_size, file_type, upload_date, slides_count, description, tags)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            unique_filename,
+            file.filename,  # 直接使用原始文件名，保留中文字符
+            file_path,
+            file_info['size'],
+            file_extension,
+            datetime.now().isoformat(),
+            slides_count,
+            request.form.get('description', ''),
+            json.dumps(request.form.get('tags', []), ensure_ascii=False)
+        ))
+        
+        ppt_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"成功上传PPT文件: {file.filename}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': '文件上传成功',
+            'ppt_id': ppt_id,
+            'filename': unique_filename,
+            'original_name': file.filename,  # 直接使用原始文件名，保留中文字符
+            'file_size': file_info['size'],
+            'slides_count': slides_count
+        })
+        
+    except Exception as e:
+        logger.error(f"上传PPT文件失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/files', methods=['GET'])
+def get_ppt_files():
+    """获取所有PPT文件"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ppt_files ORDER BY upload_date DESC')
+        rows = cursor.fetchall()
+        print(rows)
+        ppt_files = []
+        for row in rows:
+            ppt_file = {
+                'id': row[0],
+                'filename': row[1],
+                'original_name': row[2],
+                'file_path': row[3],
+                'file_size': row[4],
+                'file_type': row[5],
+                'upload_date': row[6],
+                'slides_count': row[7],
+                'description': row[8] or '',
+                'tags': json.loads(row[9]) if row[9] else []
+            }
+            ppt_files.append(ppt_file)
+        
+        conn.close()
+        return jsonify({'ppt_files': ppt_files})
+    except Exception as e:
+        logger.error(f"获取PPT文件失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/files/<int:ppt_id>', methods=['GET'])
+def get_ppt_file(ppt_id):
+    """获取单个PPT文件信息"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'PPT文件不存在'}), 404
+        
+        ppt_file = {
+            'id': row[0],
+            'filename': row[1],
+            'original_name': row[2],
+            'file_path': row[3],
+            'file_size': row[4],
+            'file_type': row[5],
+            'upload_date': row[6],
+            'slides_count': row[7],
+            'description': row[8] or '',
+            'tags': json.loads(row[9]) if row[9] else []
+        }
+        
+        return jsonify({'ppt_file': ppt_file})
+    except Exception as e:
+        logger.error(f"获取PPT文件信息失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/files/<int:ppt_id>/download', methods=['GET'])
+def download_ppt(ppt_id):
+    """下载PPT文件"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            logger.warning(f"尝试下载不存在的PPT文件 ID: {ppt_id}")
+            return jsonify({'error': 'PPT文件不存在'}), 404
+        
+        file_path = row[3]
+        original_name = row[2]
+        filename = row[1]
+        
+        logger.info(f"下载请求 - ID: {ppt_id}, 文件名: {filename}, 原始名: {original_name}, 路径: {file_path}")
+        
+        # 验证文件路径
+        if not file_path:
+            logger.error(f"文件路径为空 - ID: {ppt_id}")
+            return jsonify({'error': '文件路径无效'}), 500
+        
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            logger.error(f"文件不存在 - 路径: {file_path}")
+            # 尝试使用相对路径
+            relative_path = os.path.join(PPT_UPLOAD_FOLDER, filename)
+            if os.path.exists(relative_path):
+                logger.info(f"使用相对路径找到文件: {relative_path}")
+                file_path = relative_path
+            else:
+                logger.error(f"相对路径也不存在: {relative_path}")
+                return jsonify({'error': f'文件不存在: {filename}'}), 404
+        
+        # 验证文件可读性
+        if not os.access(file_path, os.R_OK):
+            logger.error(f"文件不可读: {file_path}")
+            return jsonify({'error': '文件不可读'}), 500
+        
+        logger.info(f"开始下载文件: {file_path}")
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=original_name,
+            mimetype=mimetypes.guess_type(file_path)[0]
+        )
+        
+    except Exception as e:
+        logger.error(f"下载PPT文件失败 - ID: {ppt_id}, 错误: {e}")
+        return jsonify({'error': f'下载失败: {str(e)}'}), 500
+
+@app.route('/ppt/files/<int:ppt_id>/preview', methods=['GET'])
+def preview_document(ppt_id):
+    """预览文档文件"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': '文档文件不存在'}), 404
+        
+        file_path = row[3]
+        file_type = row[5]
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': '文件不存在'}), 404
+        
+        # 对于PDF文件，直接返回文件
+        if file_type == 'pdf':
+            return send_file(file_path, mimetype='application/pdf')
+        
+        # 对于Word文档，返回文件信息
+        elif file_type in ['doc', 'docx']:
+            return jsonify({
+                'status': 'success',
+                'message': 'Word文档预览功能开发中，请下载后查看',
+                'file_type': file_type,
+                'file_size': row[4],
+                'slides_count': row[7],
+                'suggestion': '建议使用Microsoft Word或WPS等软件打开查看'
+            })
+        
+        # 对于PPT文件，返回文件信息
+        elif file_type in ['ppt', 'pptx']:
+            return jsonify({
+                'status': 'success',
+                'message': 'PPT文件预览功能开发中，请下载后查看',
+                'file_type': file_type,
+                'file_size': row[4],
+                'slides_count': row[7],
+                'suggestion': '建议使用Microsoft PowerPoint或WPS等软件打开查看'
+            })
+        
+        # 其他类型文件
+        else:
+            return jsonify({
+                'status': 'success',
+                'message': f'{file_type.upper()}文件预览功能开发中，请下载后查看',
+                'file_type': file_type,
+                'file_size': row[4],
+                'slides_count': row[7]
+            })
+        
+    except Exception as e:
+        logger.error(f"预览文档文件失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/files/<int:ppt_id>', methods=['DELETE'])
+def delete_ppt(ppt_id):
+    """删除PPT文件"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'PPT文件不存在'}), 404
+        
+        file_path = row[3]
+        
+        # 删除数据库记录
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM ppt_files WHERE id = ?', (ppt_id,))
+        conn.commit()
+        conn.close()
+        
+        # 删除物理文件
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info(f"已删除物理文件: {file_path}")
+        
+        logger.info(f"成功删除PPT文件 ID: {ppt_id}")
+        return jsonify({'status': 'success', 'message': '文件删除成功'})
+        
+    except Exception as e:
+        logger.error(f"删除PPT文件失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/files/batch-delete', methods=['POST'])
+def batch_delete_ppts():
+    """批量删除PPT文件"""
+    try:
+        data = request.get_json()
+        ppt_ids = data.get('ppt_ids', [])
+        
+        if not ppt_ids:
+            return jsonify({'error': '没有提供要删除的PPT文件ID'}), 400
+        
+        logger.info(f"开始批量删除PPT文件，数量: {len(ppt_ids)}")
+        
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        
+        success_count = 0
+        fail_count = 0
+        failed_ids = []
+        
+        for ppt_id in ppt_ids:
+            try:
+                # 检查文件是否存在
+                cursor.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,))
+                row = cursor.fetchone()
+                
+                if row:
+                    file_path = row[3]
+                    
+                    # 删除数据库记录
+                    cursor.execute('DELETE FROM ppt_files WHERE id = ?', (ppt_id,))
+                    
+                    # 删除物理文件
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        logger.info(f"已删除物理文件: {file_path}")
+                    
+                    success_count += 1
+                    logger.info(f"成功删除PPT文件 ID: {ppt_id}")
+                else:
+                    fail_count += 1
+                    failed_ids.append(ppt_id)
+                    logger.warning(f"PPT文件不存在 ID: {ppt_id}")
+                    
+            except Exception as e:
+                fail_count += 1
+                failed_ids.append(ppt_id)
+                logger.error(f"删除PPT文件失败 ID: {ppt_id}, 错误: {e}")
+        
+        conn.commit()
+        conn.close()
+        
+        result = {
+            'status': 'success',
+            'message': f'批量删除完成',
+            'total_requested': len(ppt_ids),
+            'success_count': success_count,
+            'fail_count': fail_count
+        }
+        
+        if failed_ids:
+            result['failed_ids'] = failed_ids
+        
+        logger.info(f"批量删除完成 - 成功: {success_count}, 失败: {fail_count}")
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"批量删除PPT文件失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/ppt/stats', methods=['GET'])
+def get_ppt_stats():
+    """获取PPT文件统计信息"""
+    try:
+        conn = sqlite3.connect(MISTAKES_DB_FILE)
+        cursor = conn.cursor()
+        
+        # 总文件数
+        cursor.execute('SELECT COUNT(*) FROM ppt_files')
+        total_files = cursor.fetchone()[0]
+        
+        # 总页数
+        cursor.execute('SELECT SUM(slides_count) FROM ppt_files')
+        total_slides = cursor.fetchone()[0] or 0
+        
+        # 按文件类型统计
+        cursor.execute('SELECT file_type, COUNT(*) FROM ppt_files GROUP BY file_type')
+        type_stats = dict(cursor.fetchall())
+        
+        # 按上传日期统计（最近7天）
+        cursor.execute('''
+            SELECT DATE(upload_date) as date, COUNT(*) 
+            FROM ppt_files 
+            WHERE upload_date >= date('now', '-7 days')
+            GROUP BY DATE(upload_date)
+        ''')
+        recent_uploads = dict(cursor.fetchall())
+        
+        conn.close()
+        
+        return jsonify({
+            'total_files': total_files,
+            'total_slides': total_slides,
+            'type_stats': type_stats,
+            'recent_uploads': recent_uploads,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        logger.error(f"获取PPT统计信息失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    # 初始化错题数据库
+    # 初始化数据库
     init_mistakes_db()
     
     logger.info("启动Python教学助手后端服务...")
-    logger.info("服务包含：题库搜索、AI聊天、错题管理功能")
+    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能")
     app.run(host='0.0.0.0', port=5000, debug=True) 

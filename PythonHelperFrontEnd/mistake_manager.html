@@ -23,9 +23,9 @@
                 <button id="mistakeModeBtn" class="nav-btn active" data-mode="mistake">
                     📚 错题管理
                 </button>
-                <button id="pptModeBtn" class="nav-btn" data-mode="ppt">
-                    📊 PPT管理
-                </button>
+                                                      <button id="pptModeBtn" class="nav-btn" data-mode="ppt">
+                     📊 课堂PPT管理
+                 </button>
             </div>
         </nav>
 
@@ -40,10 +40,10 @@
                         <h3>🔍 搜索筛选</h3>
                         <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
                         <div class="filter-tags">
-                            <h4>课程标签筛选</h4>
-                            <div id="tagFilter" class="tag-list">
-                                <!-- 课程标签筛选按钮 -->
-                            </div>
+                            <h4>标签筛选</h4>
+                                                         <div id="tagFilter" class="tag-list">
+                                 <!-- 标签筛选按钮 -->
+                             </div>
                         </div>
                     </div>
 
@@ -88,12 +88,37 @@
                     <!-- 课堂PPT -->
                     <div class="ppt-section">
                         <h3>📊 课堂PPT</h3>
-                        <div class="upload-area">
-                            <input type="file" id="pptFileInput" accept=".ppt,.pptx,.pdf" class="file-input" multiple>
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" id="pptFileInput" accept=".ppt,.pptx,.doc,.docx,.pdf" class="file-input" multiple>
                             <label for="pptFileInput" class="upload-label">
                                 <span class="upload-icon">📁</span>
-                                <span>上传PPT文件</span>
+                                <span>点击上传或拖拽文件到此处</span>
+                                <span class="upload-hint">支持 PPT、PPTX、DOC、DOCX、PDF 格式</span>
+                                <span class="upload-hint">单个文件最大 100MB，支持批量上传</span>
                             </label>
+                        </div>
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">上传中... 0%</div>
+                        </div>
+                        <div class="upload-stats" id="uploadStats" style="display: none;">
+                            <div class="upload-stats-item">
+                                <span class="stats-label">总文件数:</span>
+                                <span class="stats-value" id="totalFiles">0</span>
+                            </div>
+                            <div class="upload-stats-item">
+                                <span class="stats-label">成功上传:</span>
+                                <span class="stats-value" id="successFiles">0</span>
+                            </div>
+                            <div class="upload-stats-item">
+                                <span class="stats-label">失败文件:</span>
+                                <span class="stats-value" id="failedFiles">0</span>
+                            </div>
+                        </div>
+                        <div class="ppt-search">
+                            <input type="text" id="pptSearchInput" placeholder="搜索文档文件..." class="search-input">
                         </div>
                         <div class="ppt-list" id="pptList">
                             <!-- PPT文件列表 -->
@@ -114,6 +139,12 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- PPT管理操作 -->
+                    <div class="ppt-management-section">
+                        <h3>管理操作</h3>
+                        <button id="clearAllPPTs" class="btn-secondary">清空所有</button>
+                    </div>
                 </div>
             </aside>
 
@@ -133,9 +164,9 @@
                                 <option value="date">按日期排序</option>
                                 <option value="category">按分类排序</option>
                                 <option value="difficulty">按难度排序</option>
-                                <option value="lesson">按课程排序</option>
+                                                                 <option value="lesson">按标签排序</option>
                             </select>
-                            <button id="addTag" class="btn-primary">添加课程标签</button>
+                                                         <button id="addTag" class="btn-primary">添加标签</button>
                         </div>
                     </div>
 
@@ -155,10 +186,28 @@
                 <!-- PPT管理内容 -->
                 <div id="pptModeContent" class="content-area">
                     <div class="ppt-content">
-                        <h2>📊 PPT文件管理</h2>
-                        <p>在这里管理你的Python课程PPT文件，支持上传、预览和管理。</p>
+                                                 <h2>📊 课堂PPT管理</h2>
+                         <p>在这里管理你的Python课程PPT文件，支持上传、预览和管理。</p>
                         
-                        <!-- PPT文件展示区域 -->
+                                                 <!-- PPT工具栏 -->
+                        <div class="ppt-toolbar">
+                            <div class="ppt-toolbar-left">
+                                <button id="selectAllPPTs" class="btn-secondary">全选</button>
+                                <button id="deselectAllPPTs" class="btn-secondary">取消全选</button>
+                                <button id="batchDeletePPTs" class="btn-danger" disabled>批量删除</button>
+                                <button id="debugInfo" class="btn-secondary">调试信息</button>
+                            </div>
+                            <div class="ppt-toolbar-right">
+                                <select id="pptSortBy" class="sort-select">
+                                    <option value="date">按日期排序</option>
+                                    <option value="name">按名称排序</option>
+                                    <option value="size">按大小排序</option>
+                                    <option value="type">按类型排序</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                                                 <!-- PPT文件展示区域 -->
                         <div class="ppt-grid" id="pptGrid">
                             <!-- PPT文件卡片将在这里显示 -->
                         </div>
@@ -190,17 +239,14 @@
                     <div class="form-group">
                         <label for="editLesson">课程标签</label>
                         <select id="editLesson" class="form-select">
-                            <option value="">选择课程...</option>
-                            <option value="第一课：Python基础入门">第一课：Python基础入门</option>
-                            <option value="第二课：变量和数据类型">第二课：变量和数据类型</option>
-                            <option value="第三课：控制流程">第三课：控制流程</option>
-                            <option value="第四课：函数定义">第四课：函数定义</option>
-                            <option value="第五课：数据结构">第五课：数据结构</option>
-                            <option value="第六课：面向对象编程">第六课：面向对象编程</option>
-                            <option value="第七课：文件操作">第七课：文件操作</option>
-                            <option value="第八课：异常处理">第八课：异常处理</option>
-                            <option value="第九课：模块和包">第九课：模块和包</option>
-                            <option value="第十课：项目实战">第十课：项目实战</option>
+                            <option value="">选择标签...</option>
+                            <option value="数据类型及表达式">数据类型及表达式</option>
+                            <option value="复合数据类型">复合数据类型</option>
+                            <option value="面向对象">面向对象</option>
+                            <option value="函数">函数</option>
+                            <option value="流程控制">流程控制</option>
+                            <option value="文件概述">文件概述</option>
+                            <option value="异常处理">异常处理</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -236,16 +282,16 @@
         <div id="tagModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>管理课程标签</h2>
+                    <h2>管理标签</h2>
                     <button id="closeTagModal" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="newTagName">新课程标签名称</label>
-                        <input type="text" id="newTagName" placeholder="例如：第一课：Python基础入门" class="form-input">
+                        <label for="newTagName">新标签名称</label>
+                        <input type="text" id="newTagName" placeholder="例如：数据类型及表达式" class="form-input">
                     </div>
                     <div class="existing-tags">
-                        <h4>现有课程标签</h4>
+                        <h4>现有标签</h4>
                         <div id="existingTagsList" class="tag-list">
                             <!-- 现有标签列表 -->
                         </div>
@@ -281,13 +327,6 @@
         </div>
     </div>
 
-    <script src="mistake_manager.js"></script>
-    <script>
-        // 创建错题管理器实例
-        let mistakeManager;
-        document.addEventListener('DOMContentLoaded', function() {
-            mistakeManager = new MistakeManager();
-        });
-    </script>
-</body>
+        <script src="mistake_manager.js"></script>
+    </body>
 </html> 

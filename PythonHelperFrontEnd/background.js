@@ -61,7 +61,11 @@ class BackgroundManager {
     }
 
     setupMessageListeners() {
+        console.log('设置消息监听器...');
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            console.log('收到消息:', message, '来自:', sender);
+            console.log('消息类型:', message.type);
+            
             switch (message.type) {
                 case 'TEXT_SELECTED':
                     this.handleTextSelected(message, sender);
@@ -81,6 +85,9 @@ class BackgroundManager {
                 case 'CONTENT_SCRIPT_LOADED':
                     this.handleContentScriptLoaded(sender);
                     break;
+                case 'DOWNLOAD_PPT':
+                    this.handleDownloadPPT(message, sender, sendResponse);
+                    return true; // 保持消息通道开放，用于异步响应
                 default:
                     console.log('未知消息类型:', message.type);
             }
@@ -158,6 +165,42 @@ class BackgroundManager {
 
     handleContentScriptLoaded(sender) {
         console.log('内容脚本已加载:', sender.tab?.url);
+    }
+
+    // 处理PPT下载请求
+    async handleDownloadPPT(message, sender, sendResponse) {
+        try {
+            const { pptId, filename } = message;
+            console.log('收到PPT下载请求:', { pptId, filename });
+            
+            // 构建下载URL
+            const downloadUrl = `${this.backendUrl}/ppt/files/${pptId}/download`;
+            
+            // 使用Chrome下载API
+            const downloadId = await chrome.downloads.download({
+                url: downloadUrl,
+                filename: filename || 'document',
+                saveAs: false // 直接下载到默认文件夹
+            });
+            
+            console.log('下载已开始，下载ID:', downloadId);
+            
+            // 发送成功响应
+            sendResponse({
+                status: 'success',
+                downloadId: downloadId,
+                message: '下载已开始'
+            });
+            
+        } catch (error) {
+            console.error('PPT下载失败:', error);
+            
+            // 发送错误响应
+            sendResponse({
+                status: 'error',
+                error: error.message || '下载失败'
+            });
+        }
     }
 
     searchQuestions(query) {
