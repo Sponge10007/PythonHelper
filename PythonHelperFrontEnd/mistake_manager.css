@@ -25,7 +25,7 @@ body {
     color: white;
     padding: 20px;
     display: flex;
-    justify-content: space-between;
+    /* justify-content: space-between; */
     align-items: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -1144,3 +1144,17 @@ body {
     font-size: 14px;
     margin-bottom: 20px;
 } 
+
+.logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+    /* 确保logo保持原始宽高比 */
+    object-position: center;
+    /* 添加一些内边距让logo看起来更协调 */
+    padding: 1px;
+    margin-right: 10px;
+    /* 确保logo在工具栏中垂直居中 */
+    align-self: center;
+}

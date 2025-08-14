@@ -698,7 +698,7 @@ body {
 
 .logo {
     width: 36px;
-    height: 20px;
+    height: 36px;
     object-fit: contain;
     flex-shrink: 0;
     /* 确保logo保持原始宽高比 */
