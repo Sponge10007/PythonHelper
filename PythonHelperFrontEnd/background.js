@@ -99,6 +99,17 @@ class BackgroundManager {
                 this.currentTabId = tabId;
             }
         });
+
+        // 监听插件图标点击事件，打开侧边栏
+        chrome.action.onClicked.addListener(async (tab) => {
+            try {
+                // 打开侧边栏
+                await chrome.sidePanel.open({ tabId: tab.id });
+                console.log('侧边栏已打开');
+            } catch (error) {
+                console.error('打开侧边栏失败:', error);
+            }
+        });
     }
 
     handleTextSelected(message, sender) {

@@ -3,69 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python教学助手</title>
     <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
     <div class="sidebar-container">
-        <!-- 标题栏 -->
-        <div class="header">
-            <h1>🐍 Python教学助手</h1>
-            <button id="toggleMistakeCollection" class="btn-secondary">错题集</button>
+        <!-- 顶部工具栏 -->
+        <div class="top-toolbar">
+            <!-- <div class="toolbar-left">
+                <img src="logo.png" alt="Python课程AI教学助手" class="logo">
+                <h1> Python课程AI教学助手</h1>
+            </div> -->
+            <div class="toolbar-right">
+                <button id="newChatBtn" class="toolbar-btn" title="新增对话">
+                    <span>+</span>
+                </button>
+            </div>
         </div>
 
         <!-- 主要内容区域 -->
-        <div class="main-content">
-            <!-- 选中文本显示区域 -->
-            <div class="section">
-                <h3>📝 选中的文本</h3>
-                <div id="selectedText" class="selected-text-display">
-                    请选中网页上的文本...
+        <div class="main-content-wrapper">
+            <!-- 左侧边栏 - 对话列表和功能按钮 -->
+            <div class="left-sidebar">
+                <!-- 对话列表 -->
+                <div class="chat-list-section">
+                    <h3 class="section-title">对话</h3>
+                    <div class="chat-list" id="chatList">
+                        <!-- 对话项会动态生成 -->
+                    </div>
                 </div>
-                <div class="selected-text-actions">
-                    <button id="askQuestion" class="btn-primary" disabled>询问</button>
+
+                <!-- 功能按钮区域 -->
+                <div class="function-buttons">
+                    <button id="mistakesBtn" class="function-btn" title="错题集">
+                        <span class="btn-icon">📚</span>
+                        <span class="btn-text">错题集</span>
+                    </button>
+                    <button id="settingsBtn" class="function-btn" title="设置">
+                        <span class="btn-icon">⚙️</span>
+                        <span class="btn-text">设置</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- 当前题目和答案显示 -->
-            <div id="currentQuestion" class="current-question" style="display: none;">
-                <h4>📝 当前题目</h4>
-                <div class="question-text"></div>
-                <div class="answer-text"></div>
-                <div class="current-question-actions">
-                    <button id="undoAnswer" class="btn-secondary" disabled>撤销答案</button>
-                    <button id="addToMistakes" class="btn-primary" disabled>加入错题</button>
-                </div>
-            </div>
-
-            <!-- 大模型对话界面 - 扩大版 -->
-            <div class="section ai-section">
-                <h3>🤖 AI助手</h3>
-                <div class="chat-container">
-                    <div id="chatMessages" class="chat-messages">
-                        <div class="message ai-message">
-                            <div class="message-content">
-                                你好！我是Python教学助手，可以帮你解答Python相关问题。请选中文本或直接输入问题。
-                            </div>
+            <!-- 右侧主要内容区域 -->
+            <div class="right-content" id="mainContent">
+                <!-- 欢迎界面 -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <h2>欢迎使用Python教学助手</h2>
+                        <p>我可以帮你：</p>
+                        <ul>
+                            <li>解答Python相关问题</li>
+                            <li>搜索题库内容</li>
+                            <li>分析代码逻辑</li>
+                            <li>管理错题集</li>
+                            <li>选中网页文字自动粘贴到输入框</li>
+                        </ul>
+                        <div class="welcome-actions">
+                            <button id="startFirstChat" class="btn-primary">开始对话</button>
                         </div>
                     </div>
+                </div>
+
+                <!-- 对话界面 -->
+                <div class="chat-interface hidden" id="chatInterface">
+                    <div class="chat-header">
+                        <h3 id="currentChatTitle">新对话</h3>
+                        <div class="header-actions">
+                            <button id="clearChat" class="btn-secondary">清空</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 消息会动态生成 -->
+                    </div>
+                    
                     <div class="chat-input-container">
-                        <textarea id="chatInput" placeholder="输入你的问题..." class="chat-input"></textarea>
-                        <button id="sendMessage" class="btn-primary">发送</button>
+                        <div class="input-wrapper">
+                            <textarea id="chatInput" placeholder="输入你的问题...（选中网页文字会自动粘贴到这里）" class="chat-input"></textarea>
+                            <button id="sendMessage" class="send-btn">发送</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 错题集界面 -->
-        <div id="mistakeCollection" class="mistake-collection hidden">
-            <div class="collection-header">
-                <h2>📚 错题集</h2>
-                <button id="backToMain" class="btn-secondary">返回</button>
-            </div>
-            <div class="collection-content">
-                <div id="mistakeList" class="mistake-list">
-                    <div class="no-mistakes">暂无错题记录</div>
+                <!-- 错题集界面 -->
+                <div class="mistake-collection hidden" id="mistakeCollection">
+                    <div class="collection-header">
+                        <h2>📚 错题集</h2>
+                        <div class="header-actions">
+                            <button id="openMistakeManager" class="btn-primary" title="打开错题集管理网站">
+                                🌐 错题集管理
+                            </button>
+                            <button id="backToMain" class="btn-secondary">返回</button>
+                        </div>
+                    </div>
+                    <div class="collection-content">
+                        <div id="mistakeList" class="mistake-list">
+                            <div class="no-mistakes">暂无错题记录</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 设置界面 -->
+                <div class="settings-interface hidden" id="settingsInterface">
+                    <div class="settings-header">
+                        <h2>⚙️ 设置</h2>
+                        <div class="header-actions">
+                            <button id="backToMainFromSettings" class="btn-secondary">返回</button>
+                        </div>
+                    </div>
+                    <div class="settings-content">
+                        <div class="setting-group">
+                            <label for="aiApiKey">AI API密钥:</label>
+                            <input type="password" id="aiApiKey" placeholder="请输入您的API密钥">
+                        </div>
+                        <div class="setting-group">
+                            <label for="aiApiEndpoint">API端点:</label>
+                            <input type="text" id="aiApiEndpoint" value="https://api.deepseek.com/v1/chat/completions">
+                        </div>
+                        <div class="setting-group">
+                            <label for="questionMode">题目模式:</label>
+                            <select id="questionMode">
+                                <option value="objective">客观题</option>
+                                <option value="function">函数题</option>
+                                <option value="programming">编程题</option>
+                            </select>
+                        </div>
+                        <div class="setting-actions">
+                            <button id="saveSettings" class="btn-primary">保存设置</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
