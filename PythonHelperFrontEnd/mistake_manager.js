@@ -377,8 +377,10 @@ class MistakeManager {
                 {
                     id: 1,
                     title: 'Python变量定义',
-                    content: '在Python中，如何定义一个字符串变量？',
-                    answer: '使用引号定义，如：name = "Python"',
+                    messages: [
+                        { role: 'user', content: '在Python中，如何定义一个字符串变量？' },
+                        { role: 'assistant', content: '使用引号定义，如：name = "Python"' }
+                    ],
                     tags: ['基础语法'],
                     category: '变量',
                     difficulty: '简单',
@@ -387,8 +389,10 @@ class MistakeManager {
                 {
                     id: 2,
                     title: '列表操作',
-                    content: '如何向Python列表添加元素？',
-                    answer: '使用append()方法，如：list.append(item)',
+                    messages: [
+                        { role: 'user', content: '如何向Python列表添加元素？' },
+                        { role: 'assistant', content: '使用append()方法，如：list.append(item)' }
+                    ],
                     tags: ['复合数据类型'],
                     category: '数据结构',
                     difficulty: '简单',
@@ -546,14 +550,14 @@ class MistakeManager {
     // 筛选错题
     filterMistakes() {
         this.filteredMistakes = this.mistakes.filter(mistake => {
-            // 搜索筛选
-            if (this.currentFilters.search) {
-                const searchLower = this.currentFilters.search.toLowerCase();
-                const contentMatch = mistake.content.toLowerCase().includes(searchLower);
+            const searchLower = this.currentFilters.search.toLowerCase();
+            
+            // 搜索筛选 - MODIFIED: Search in messages
+            if (searchLower) {
                 const titleMatch = mistake.title.toLowerCase().includes(searchLower);
-                const answerMatch = mistake.answer.toLowerCase().includes(searchLower);
+                const messageMatch = mistake.messages.some(msg => msg.content.toLowerCase().includes(searchLower));
                 
-                if (!contentMatch && !titleMatch && !answerMatch) {
+                if (!titleMatch && !messageMatch) {
                     return false;
                 }
             }
@@ -644,17 +648,25 @@ class MistakeManager {
         });
     }
 
-    // 创建错题元素
+    // 创建错题元素 - MODIFIED
     createMistakeElement(mistake) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
         
         const lessonTag = mistake.tags ? mistake.tags.find(tag => this.lessonTags.includes(tag)) : '';
         
+        // Render messages
+        const messagesHtml = (mistake.messages || []).map(msg => `
+            <div class="mistake-message message-${msg.role}">
+                <span class="message-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
+                <div class="message-content">${this.escapeHtml(msg.content)}</div>
+            </div>
+        `).join('');
+
         div.innerHTML = `
             <div class="mistake-header">
                 <div>
-                    <div class="mistake-title">${mistake.title}</div>
+                    <div class="mistake-title">${this.escapeHtml(mistake.title)}</div>
                     <div class="mistake-meta">
                         <span>分类: ${mistake.category || '未分类'}</span>
                         <span>难度: ${mistake.difficulty || '未设置'}</span>
@@ -664,8 +676,7 @@ class MistakeManager {
                 </div>
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
-            <div class="mistake-content">${mistake.content}</div>
-            <div class="mistake-answer">${mistake.answer}</div>
+            <div class="mistake-conversation">${messagesHtml}</div>
             ${mistake.tags && mistake.tags.length > 0 ? `
                 <div class="mistake-tags">
                     ${mistake.tags.map(tag => `<span class="mistake-tag">${tag}</span>`).join('')}
@@ -804,7 +815,7 @@ class MistakeManager {
         }
     }
 
-    // 编辑错题
+    // 编辑错题 - MODIFIED
     editMistake(mistakeId) {
         const mistake = this.mistakes.find(m => m.id === mistakeId);
         if (!mistake) {
@@ -815,8 +826,7 @@ class MistakeManager {
         console.log('编辑错题数据:', mistake);
 
         document.getElementById('editTitle').value = mistake.title || '';
-        document.getElementById('editContent').value = mistake.content || '';
-        document.getElementById('editAnswer').value = mistake.answer || '';
+        document.getElementById('editMessages').value = JSON.stringify(mistake.messages || [], null, 2);
         document.getElementById('editCategory').value = mistake.category || '';
         document.getElementById('editDifficulty').value = mistake.difficulty || '';
         
@@ -830,67 +840,52 @@ class MistakeManager {
         console.log('设置编辑表单完成，editingMistakeId:', this.editingMistakeId);
     }
 
-    // 保存错题
+    // 保存错题 - MODIFIED
     async saveMistake() {
         const title = document.getElementById('editTitle').value.trim();
-        const content = document.getElementById('editContent').value.trim();
-        const answer = document.getElementById('editAnswer').value.trim();
         const category = document.getElementById('editCategory').value;
         const difficulty = document.getElementById('editDifficulty').value;
         const lesson = document.getElementById('editLesson').value;
 
-        if (!title || !content || !answer) {
-            alert('请填写完整的错题信息');
+        if (!title) {
+            alert('请填写标题');
             return;
         }
 
-        const mistakeData = {
-            title,
-            content,
-            answer,
-            category,
-            difficulty,
-            tags: lesson ? [lesson] : [], // 标签字段
-            date: new Date().toISOString()
-        };
-
-        console.log('准备保存的错题数据:', mistakeData);
-
         if (this.editingMistakeId) {
-            // 编辑现有错题
             const index = this.mistakes.findIndex(m => m.id === this.editingMistakeId);
             if (index !== -1) {
-                // 保留原有的id和aiSummary
-                const originalMistake = this.mistakes[index];
-                this.mistakes[index] = { 
-                    ...originalMistake,
-                    ...mistakeData,
-                    id: originalMistake.id, // 保持原有ID
-                    aiSummary: originalMistake.aiSummary || '' // 保持原有AI总结
+                const updatedMistake = {
+                    ...this.mistakes[index],
+                    title,
+                    category,
+                    difficulty,
+                    tags: lesson ? [lesson] : [],
                 };
                 
-                console.log('编辑错题:', this.mistakes[index]);
-            }
-        } else {
-            // 添加新错题
-            const newMistake = {
-                id: Date.now(),
-                ...mistakeData
-            };
-            this.mistakes.push(newMistake);
-            console.log('添加新错题:', newMistake);
-        }
+                try {
+                    const response = await fetch(`http://localhost:5000/mistakes/${this.editingMistakeId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatedMistake)
+                    });
 
-        // 保存到后端
-        await this.saveMistakes();
-        
-        // 更新UI
-        this.filterMistakes();
-        this.updateStats();
-        this.closeModal();
-        
-        console.log('错题保存完成，当前错题数量:', this.mistakes.length);
+                    if (response.ok) {
+                        this.mistakes[index] = updatedMistake;
+                        this.filterMistakes();
+                        this.updateStats();
+                        this.closeModal();
+                        this.showNotification('保存成功', 'success');
+                    } else {
+                        throw new Error('保存失败');
+                    }
+                } catch (error) {
+                    this.showNotification(`保存失败: ${error.message}`, 'error');
+                }
+            }
+        }
     }
+
 
     // 保存错题到后端
     async saveMistakes() {
@@ -943,8 +938,7 @@ class MistakeManager {
         
         // 清空表单
         document.getElementById('editTitle').value = '';
-        document.getElementById('editContent').value = '';
-        document.getElementById('editAnswer').value = '';
+        document.getElementById('editMessages').value = '';
         document.getElementById('editCategory').value = '';
         document.getElementById('editDifficulty').value = '';
         document.getElementById('editLesson').value = '';

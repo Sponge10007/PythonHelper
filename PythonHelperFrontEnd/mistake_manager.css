@@ -777,6 +777,48 @@ body {
     margin-right: 8px;
 }
 
+/* NEW: Styles for message history in mistake item */
+.mistake-conversation {
+    background: #f8f9fa;
+    border: 1px solid #eef;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.mistake-message {
+    margin-bottom: 8px;
+}
+
+.mistake-message:last-child {
+    margin-bottom: 0;
+}
+
+.message-role {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.message-user .message-role {
+    color: #007bff;
+}
+
+.message-assistant .message-role {
+    color: #28a745;
+}
+
+.message-content {
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
 /* 分页样式 */
 .pagination {
     padding: 20px;

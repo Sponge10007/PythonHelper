@@ -43,13 +43,12 @@ def init_mistakes_db():
         conn = sqlite3.connect(MISTAKES_DB_FILE)
         cursor = conn.cursor()
         
-        # 错题表
+        # 错题表 - MODIFIED: Changed content/answer to messages
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS mistakes (
                 id INTEGER PRIMARY KEY,
                 title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                answer TEXT NOT NULL,
+                messages TEXT NOT NULL,
                 tags TEXT,
                 category TEXT,
                 difficulty TEXT,
@@ -337,7 +336,32 @@ class PythonHelperBackend:
             }
         }
     
-    def call_ai_api(self, message: str, api_key: str, api_endpoint: str, system: str = '你是一个专业的Python教学助手，请用简洁明了的中文回答用户的问题。') -> str:
+    def call_ai_api(self, message: str, api_key: str, api_endpoint: str, system: str = 
+        """
+        浙大python助手
+        你是一个教导学生们学习Python的人工智能
+        目标 
+        你的目标并非直接给出学生答案，而是帮助学生们梳理思路，掌握知识，来引导他们更好地学习python
+        技能和流程说明
+        你需要有python相关的语法、特色知识，对python无比熟悉
+        你需要能够用精简、巧妙的方式完成代码撰写
+        第一步，你需要分析用户发来的信息是题目还是询问。
+        如果是题目，请你分析其中包含的知识点、难点。然后你需要识别用户发出的是编程题、函数题还是客观题，如果是编程题，需要给出思维导图和整体架构；如果是函数题，需要给出几个样例输入输出，实现函数变量可视化；如果是客观题，请你详细地讲一下考察知识。
+        如果是询问，请你正常的与用户进行谈话。
+        输出格式 
+        如果对角色的输出格式有特定要求，可以在这里强调并举例说明想要的输出格式
+        请你按照以下格式输出：
+        知识点：，
+        难点：，
+        整体架构：，
+        伪代码：，
+        样例输入输出：，
+        考察知识解释：
+        限制 
+        在与用户交互的过程中涉及代码的时候，你不要轻易地给出代码，而是先给出伪代码，然后询问用户是否需要给出完整代码
+        当用户确定需要完整代码时你再给出'
+        """
+        ) -> str:
         """调用AI API"""
         try:
             headers = {
@@ -553,6 +577,17 @@ def get_questions_stats():
             'status': 'error'
         }), 500
 
+# --- MODIFIED: Robust JSON parsing for mistakes ---
+def parse_json_field(data, default_value):
+    """Safely parse a JSON string."""
+    if not data:
+        return default_value
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        logger.warning(f"JSON解析失败，返回默认值。数据: '{data}'")
+        return default_value
+
 # 错题管理API端点
 @app.route('/mistakes', methods=['GET'])
 def get_mistakes():
@@ -560,7 +595,8 @@ def get_mistakes():
     try:
         conn = sqlite3.connect(MISTAKES_DB_FILE)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM mistakes ORDER BY date DESC')
+        # MODIFIED: Use explicit column names
+        cursor.execute('SELECT id, title, messages, tags, category, difficulty, date, ai_summary FROM mistakes ORDER BY date DESC')
         rows = cursor.fetchall()
         
         mistakes = []
@@ -568,21 +604,22 @@ def get_mistakes():
             mistake = {
                 'id': row[0],
                 'title': row[1],
-                'content': row[2],
-                'answer': row[3],
-                'tags': json.loads(row[4]) if row[4] else [],
-                'category': row[5],
-                'difficulty': row[6],
-                'date': row[7],
-                'aiSummary': row[8] or ''
+                'messages': parse_json_field(row[2], []), # MODIFIED
+                'tags': parse_json_field(row[3], []),     # MODIFIED
+                'category': row[4],
+                'difficulty': row[5],
+                'date': row[6],
+                'aiSummary': row[7] or ''
             }
             mistakes.append(mistake)
         
         conn.close()
         return jsonify({'mistakes': mistakes})
     except Exception as e:
+        logger.error(f"接收信息为:{request.get_json()}")
         logger.error(f"获取错题失败: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/mistakes', methods=['POST'])
 def save_mistakes():
@@ -600,13 +637,12 @@ def save_mistakes():
         # 插入新数据
         for mistake in mistakes:
             cursor.execute('''
-                INSERT INTO mistakes (id, title, content, answer, tags, category, difficulty, date, ai_summary)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO mistakes (id, title, messages, tags, category, difficulty, date, ai_summary)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 mistake.get('id'),
                 mistake.get('title', ''),
-                mistake.get('content', ''),
-                mistake.get('answer', ''),
+                json.dumps(mistake.get('messages', []), ensure_ascii=False),
                 json.dumps(mistake.get('tags', []), ensure_ascii=False),
                 mistake.get('category', ''),
                 mistake.get('difficulty', ''),
@@ -640,12 +676,11 @@ def update_mistake(mistake_id):
         # 更新错题
         cursor.execute('''
             UPDATE mistakes 
-            SET title = ?, content = ?, answer = ?, tags = ?, category = ?, difficulty = ?, ai_summary = ?
+            SET title = ?, messages = ?, tags = ?, category = ?, difficulty = ?, ai_summary = ?
             WHERE id = ?
         ''', (
             data.get('title', ''),
-            data.get('content', ''),
-            data.get('answer', ''),
+            json.dumps(data.get('messages', []), ensure_ascii=False),
             json.dumps(data.get('tags', []), ensure_ascii=False),
             data.get('category', ''),
             data.get('difficulty', ''),
@@ -1086,4 +1121,4 @@ if __name__ == '__main__':
     
     logger.info("启动Python教学助手后端服务...")
     logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能")
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    app.run(host='0.0.0.0', port=5000, debug=True)

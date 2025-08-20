@@ -417,6 +417,7 @@ class SidebarManager {
         const chat = this.chats.find(c => c.id === this.currentChatId);
         if (!chat) return;
 
+        // MODIFIED: Directly use the selected messages
         const selectedMessagesData = chat.messages.filter(msg => this.selectedMessages.has(msg.id));
 
         if (selectedMessagesData.length === 0) {
@@ -425,14 +426,12 @@ class SidebarManager {
         }
 
         const firstUserMessage = selectedMessagesData.find(m => m.role === 'user');
-        const questionContent = firstUserMessage ? firstUserMessage.content : '对话记录';
-        const conversationAnswer = selectedMessagesData.map(m => `${m.role === 'user' ? '用户' : 'AI'}：\n${m.content}`).join('\n\n');
+        const title = firstUserMessage ? firstUserMessage.content : '对话记录';
 
         const newMistake = {
             id: Date.now(),
-            title: questionContent.substring(0, 30) + (questionContent.length > 30 ? '...' : ''),
-            content: questionContent,
-            answer: conversationAnswer,
+            title: title.substring(0, 30) + (title.length > 30 ? '...' : ''),
+            messages: selectedMessagesData, // MODIFIED: Save the array of messages
             tags: ['AI对话'],
             category: '对话记录',
             difficulty: '中等',
@@ -489,7 +488,7 @@ class SidebarManager {
             item.className = 'mistake-item-display';
             item.innerHTML = `
                 <strong class="mistake-title-display">${mistake.title}</strong>
-                <p class="mistake-content-display">${mistake.content}</p>
+                <p class="mistake-content-display">${mistake.messages[0]?.content || '...'}</p>
             `;
             this.mistakeListContainer.appendChild(item);
         });
