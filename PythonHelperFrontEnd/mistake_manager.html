@@ -8,17 +8,11 @@
 </head>
 <body>
     <div class="container">
-        <!-- 头部 -->
         <header class="header">
             <img src="logo.png" class="logo">
             <h1>Python课程AI教学助手</h1>
-            <!-- <div class="header-actions">
-                <button id="importFromExtension" class="btn-primary-">从插件导入</button>
-                <button id="exportData" class="btn-secondary">导出数据</button>
-            </div> -->
-        </header>
+            </header>
 
-        <!-- 顶部导航栏 -->
         <nav class="top-nav">
             <div class="nav-container">
                 <button id="mistakeModeBtn" class="nav-btn active" data-mode="mistake">
@@ -30,25 +24,19 @@
             </div>
         </nav>
 
-        <!-- 主要内容区域 -->
         <main class="main-content">
-            <!-- 左侧边栏 -->
             <aside class="sidebar">
-                <!-- 错题管理模式 -->
                 <div id="mistakeModeSidebar" class="sidebar-content active">
-                    <!-- 搜索和筛选 -->
                     <div class="search-section">
                         <h3>🔍 搜索筛选</h3>
                         <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
                         <div class="filter-tags">
                             <h4>标签筛选</h4>
                                                          <div id="tagFilter" class="tag-list">
-                                 <!-- 标签筛选按钮 -->
-                             </div>
+                                 </div>
                         </div>
                     </div>
 
-                    <!-- 统计信息 -->
                     <div class="stats-section">
                         <h3>📊 统计信息</h3>
                         <div class="stats-grid">
@@ -67,7 +55,6 @@
                         </div>
                     </div>
 
-                    <!-- 针对训练 -->
                     <div class="training-section">
                         <h3>🎯 针对训练</h3>
                         <button id="startTraining" class="btn-primary">开始训练</button>
@@ -75,7 +62,6 @@
                         <button id="weaknessAnalysis" class="btn-secondary">薄弱点分析</button>
                     </div>
 
-                    <!-- 模拟考 -->
                     <div class="exam-section">
                         <h3>📝 模拟考</h3>
                         <button id="startExam" class="btn-primary">开始考试</button>
@@ -84,9 +70,7 @@
                     </div>
                 </div>
 
-                <!-- PPT管理模式 -->
                 <div id="pptModeSidebar" class="sidebar-content">
-                    <!-- 课堂PPT -->
                     <div class="ppt-section">
                         <h3>📊 课堂PPT</h3>
                         <div class="upload-area" id="uploadArea">
@@ -122,11 +106,9 @@
                             <input type="text" id="pptSearchInput" placeholder="搜索文档文件..." class="search-input">
                         </div>
                         <div class="ppt-list" id="pptList">
-                            <!-- PPT文件列表 -->
-                        </div>
+                            </div>
                     </div>
 
-                    <!-- PPT统计 -->
                     <div class="ppt-stats-section">
                         <h3>📈 PPT统计</h3>
                         <div class="stats-grid">
@@ -141,7 +123,6 @@
                         </div>
                     </div>
                     
-                    <!-- PPT管理操作 -->
                     <div class="ppt-management-section">
                         <h3>管理操作</h3>
                         <button id="clearAllPPTs" class="btn-secondary">清空所有</button>
@@ -149,11 +130,8 @@
                 </div>
             </aside>
 
-            <!-- 主要内容 -->
             <section class="content">
-                <!-- 错题管理内容 -->
                 <div id="mistakeModeContent" class="content-area active">
-                    <!-- 工具栏 -->
                     <div class="toolbar">
                         <div class="toolbar-left">
                             <button id="selectAll" class="btn-secondary">全选</button>
@@ -171,12 +149,9 @@
                         </div>
                     </div>
 
-                    <!-- 错题列表 -->
                     <div class="mistake-list" id="mistakeList">
-                        <!-- 错题项目将在这里动态生成 -->
-                    </div>
+                        </div>
 
-                    <!-- 分页 -->
                     <div class="pagination">
                         <button id="prevPage" class="btn-secondary">上一页</button>
                         <span id="pageInfo">第 1 页，共 1 页</span>
@@ -184,14 +159,12 @@
                     </div>
                 </div>
 
-                <!-- PPT管理内容 -->
                 <div id="pptModeContent" class="content-area">
                     <div class="ppt-content">
                                                  <h2>📊 课堂PPT管理</h2>
                          <p>在这里管理你的Python课程PPT文件，支持上传、预览和管理。</p>
                         
-                                                 <!-- PPT工具栏 -->
-                        <div class="ppt-toolbar">
+                                                 <div class="ppt-toolbar">
                             <div class="ppt-toolbar-left">
                                 <button id="selectAllPPTs" class="btn-secondary">全选</button>
                                 <button id="deselectAllPPTs" class="btn-secondary">取消全选</button>
@@ -208,16 +181,13 @@
                             </div>
                         </div>
                         
-                                                 <!-- PPT文件展示区域 -->
-                        <div class="ppt-grid" id="pptGrid">
-                            <!-- PPT文件卡片将在这里显示 -->
-                        </div>
+                                                 <div class="ppt-grid" id="pptGrid">
+                            </div>
                     </div>
                 </div>
             </section>
         </main>
 
-        <!-- 错题编辑模态框 -->
         <div id="modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -279,7 +249,6 @@
             </div>
         </div>
 
-        <!-- 课程标签管理模态框 -->
         <div id="tagModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -294,8 +263,7 @@
                     <div class="existing-tags">
                         <h4>现有标签</h4>
                         <div id="existingTagsList" class="tag-list">
-                            <!-- 现有标签列表 -->
-                        </div>
+                            </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -306,7 +274,6 @@
             </div>
         </div>
 
-        <!-- AI总结模态框 -->
         <div id="aiModal" class="modal">
             <div class="modal-content ai-modal">
                 <div class="modal-header">
@@ -330,4 +297,4 @@
 
         <script src="mistake_manager.js"></script>
     </body>
-</html> 
+</html>

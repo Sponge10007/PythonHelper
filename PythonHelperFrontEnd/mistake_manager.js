@@ -273,14 +273,15 @@ class MistakeManager {
             }
         });
 
-        // 事件委托处理PPT操作按钮点击
+        // MODIFIED: Improved event delegation for PPT action buttons
+        // This now handles clicks inside the button (on the icon or text)
         document.addEventListener('click', (e) => {
-            const target = e.target;
-            if (target.classList.contains('ppt-action-btn')) {
-                const pptId = parseInt(target.dataset.pptId);
-                if (target.title === '预览') {
+            const button = e.target.closest('.ppt-action-btn, .ppt-card-btn');
+            if (button) {
+                const pptId = parseInt(button.dataset.pptId);
+                if (button.title === '预览') {
                     this.previewDocument(pptId);
-                } else if (target.title === '下载') {
+                } else if (button.title === '下载') {
                     this.downloadDocument(pptId);
                 }
             }
@@ -1588,6 +1589,7 @@ class MistakeManager {
                 }
             };
             
+            // MODIFIED: Added specific classes for button coloring
             pptCard.innerHTML = `
                 <input type="checkbox" class="ppt-card-checkbox" data-ppt-id="${ppt.id}">
                 <div class="ppt-card-header">
@@ -1604,8 +1606,8 @@ class MistakeManager {
                     </div>
                 </div>
                 <div class="ppt-card-actions">
-                    <button class="ppt-action-btn" title="预览" data-ppt-id="${ppt.id}">👁️</button>
-                    <button class="ppt-action-btn" title="下载" data-ppt-id="${ppt.id}">⬇️</button>
+                    <button class="ppt-card-btn btn-preview" title="预览" data-ppt-id="${ppt.id}">👁️ 预览</button>
+                    <button class="ppt-card-btn btn-download" title="下载" data-ppt-id="${ppt.id}">⬇️ 下载</button>
                 </div>
             `;
             
@@ -2270,4 +2272,4 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM加载完成，开始初始化错题管理器...');
     const mistakeManager = new MistakeManager();
     console.log('错题管理器初始化完成');
-}); 
+});

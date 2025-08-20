@@ -1,50 +1,69 @@
-// 侧边栏主要逻辑
+/**
+ * SidebarManager Class
+ * Manages all UI interactions and state for the AI Assistant Sidebar.
+ * This script is rewritten to match the final dual-column, overlay-style layout.
+ */
 class SidebarManager {
     constructor() {
-        this.chats = []; // 对话列表
-        this.currentChatId = null; // 当前对话ID
-        this.mistakes = []; // 错题列表
-        this.isLoading = false;
-        this.backendUrl = 'http://localhost:5000'; // 后端服务地址
-        this.settings = {
+        // --- State Management ---
+        this.chats = []; // List of all conversations
+        this.mistakes = []; // List of saved mistakes
+        this.currentChatId = null; // ID of the currently active chat
+        this.isLoading = false; // Flag to prevent multiple AI requests
+        this.backendUrl = 'http://localhost:5000'; // Backend service URL
+        this.selectedMessages = new Set(); // To track selected message IDs for saving
+        this.isSelectionModeActive = false; // New state for selection mode
+        this.settings = { // User settings
             aiApiKey: '',
             aiApiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
             questionMode: 'objective'
         };
-        
-        this.initElements();
-        this.bindEvents();
-        this.init();
-        this.setupMessageListener();
+
+        // --- Initialization ---
+        this.initElements(); // Cache all necessary DOM elements
+        this.bindEvents();   // Set up all event listeners
+        this.init();         // Load initial data and set up the initial view
     }
 
+    /**
+     * Caches all required DOM elements for quick access.
+     */
     initElements() {
-        // 获取DOM元素
+        // Main layout elements
+        this.sidebarNav = document.getElementById('sidebarNav');
+        this.mainContent = document.getElementById('mainContent');
+        this.chatList = document.getElementById('chatList');
+
+        // Icon bar buttons
+        this.toggleChatListBtn = document.getElementById('toggleChatListBtn');
         this.newChatBtn = document.getElementById('newChatBtn');
         this.mistakesBtn = document.getElementById('mistakesBtn');
         this.settingsBtn = document.getElementById('settingsBtn');
-        this.chatList = document.getElementById('chatList');
-        this.mainContent = document.getElementById('mainContent');
+
+        // Views
         this.welcomeScreen = document.getElementById('welcomeScreen');
         this.chatInterface = document.getElementById('chatInterface');
         this.mistakeCollection = document.getElementById('mistakeCollection');
         this.settingsInterface = document.getElementById('settingsInterface');
-        
-        // 欢迎界面元素
+
+        // Welcome screen elements
         this.startFirstChatBtn = document.getElementById('startFirstChat');
-        
-        // 对话界面元素
+
+        // Chat interface elements
         this.currentChatTitle = document.getElementById('currentChatTitle');
         this.chatMessages = document.getElementById('chatMessages');
         this.chatInput = document.getElementById('chatInput');
         this.sendMessageBtn = document.getElementById('sendMessage');
-        this.clearChatBtn = document.getElementById('clearChat');
+        this.clearChatBtn = document.getElementById('clearChatBtn');
+        this.enterMistakeModeBtn = document.getElementById('enterMistakeModeBtn'); // New button to enter mode
+        this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
         
-        // 错题集元素
-        this.backToMainBtn = document.getElementById('backToMain');
-        this.mistakeList = document.getElementById('mistakeList');
+        // Mistake collection elements
+        this.backToMain = document.getElementById('backToMain');
+        this.mistakeListContainer = document.getElementById('mistakeListContainer');
+        this.openMistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
         
-        // 设置界面元素
+        // Settings interface elements
         this.backToMainFromSettingsBtn = document.getElementById('backToMainFromSettings');
         this.aiApiKeyInput = document.getElementById('aiApiKey');
         this.aiApiEndpointInput = document.getElementById('aiApiEndpoint');
@@ -52,17 +71,21 @@ class SidebarManager {
         this.saveSettingsBtn = document.getElementById('saveSettings');
     }
 
+    /**
+     * Binds all event listeners to the DOM elements.
+     */
     bindEvents() {
-        // 工具栏按钮事件
+        // Icon bar events
+        this.toggleChatListBtn.addEventListener('click', () => this.toggleChatList());
         this.newChatBtn.addEventListener('click', () => this.createNewChat());
         this.mistakesBtn.addEventListener('click', () => this.showMistakeCollection());
         this.settingsBtn.addEventListener('click', () => this.showSettings());
-        
-        // 欢迎界面事件
+
+        // Welcome screen events
         this.startFirstChatBtn.addEventListener('click', () => this.createNewChat());
-        
-        // 对话界面事件
-        this.sendMessageBtn.addEventListener('click', () => this.sendMessage());
+
+        // Chat interface events
+        this.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.sendMessage(); });
         this.chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -71,27 +94,37 @@ class SidebarManager {
         });
         this.chatInput.addEventListener('input', () => this.adjustTextareaHeight());
         this.clearChatBtn.addEventListener('click', () => this.clearCurrentChat());
-        
-        // 错题集事件
-        this.backToMainBtn.addEventListener('click', () => this.showMainContent());
-        
-        // 错题集管理按钮事件
-        this.openMistakeManagerBtn = document.getElementById('openMistakeManager');
-        if (this.openMistakeManagerBtn) {
-            this.openMistakeManagerBtn.addEventListener('click', () => this.openMistakeManager());
-        }
-        
-        // 设置界面事件
+        this.enterMistakeModeBtn.addEventListener('click', () => this.toggleMistakeSelectionMode());
+        this.saveSelectionBtn.addEventListener('click', () => this.saveSelectionToMistakes());
+
+        // Mistake & Settings events
+        this.backToMain.addEventListener('click', () => this.showMainContent());
+        this.openMistakeManagerBtn.addEventListener('click', () => this.openMistakeManager());
         this.backToMainFromSettingsBtn.addEventListener('click', () => this.showMainContent());
         this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
+
+        // Event delegation for message selection
+        this.chatMessages.addEventListener('change', (e) => {
+            if (e.target.classList.contains('message-selector')) {
+                const messageElement = e.target.closest('.message');
+                const messageId = messageElement.dataset.messageId;
+                if (e.target.checked) {
+                    this.selectedMessages.add(messageId);
+                } else {
+                    this.selectedMessages.delete(messageId);
+                }
+                this.updateSaveSelectionButtonVisibility();
+            }
+        });
     }
 
+    /**
+     * Initializes the application by loading data and setting the initial UI state.
+     */
     async init() {
         await this.loadSettings();
-        await this.loadMistakes();
-        this.loadChats();
-        
-        // 如果没有对话，显示欢迎界面
+        await this.loadChats();
+
         if (this.chats.length === 0) {
             this.showWelcomeScreen();
         } else {
@@ -99,97 +132,28 @@ class SidebarManager {
         }
     }
 
-    setupMessageListener() {
-        // 监听来自background script的消息
-        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            if (message.type === 'TEXT_SELECTED') {
-                this.handleTextSelected(message.text);
-            } else if (message.type === 'AI_RESPONSE') {
-                this.displayAIResponse(message.response);
-            }
+    // --- View Management ---
+
+    toggleChatList() {
+        this.sidebarNav.classList.toggle('expanded');
+    }
+    
+    _showView(viewToShow) {
+        [this.welcomeScreen, this.chatInterface, this.mistakeCollection, this.settingsInterface].forEach(view => {
+            view.classList.add('hidden');
         });
-        
-        // 监听storage变化作为备选方案
-        chrome.storage.onChanged.addListener((changes, namespace) => {
-            if (namespace === 'local' && changes.lastMessage) {
-                const message = changes.lastMessage.newValue;
-                if (message && message.type === 'TEXT_SELECTED') {
-                    this.handleTextSelected(message.text);
-                } else if (message && message.type === 'AI_RESPONSE') {
-                    this.displayAIResponse(message.response);
-                }
-            }
-        });
+        viewToShow.classList.remove('hidden');
     }
 
-    // 对话管理
-    createNewChat() {
-        const chatId = Date.now().toString();
-        const newChat = {
-            id: chatId,
-            title: '新对话',
-            messages: [],
-            createdAt: new Date().toISOString()
-        };
-        
-        this.chats.unshift(newChat);
-        this.saveChats();
-        this.updateChatList();
-        this.showChat(chatId);
+    showChatInterface() { this._showView(this.chatInterface); }
+    showWelcomeScreen() { this._showView(this.welcomeScreen); }
+    showSettings() { this._showView(this.settingsInterface); this.loadSettingsToUI(); }
+    
+    async showMistakeCollection() { 
+        this._showView(this.mistakeCollection); 
+        await this.loadMistakes(); 
     }
-
-    showChat(chatId) {
-        this.currentChatId = chatId;
-        const chat = this.chats.find(c => c.id === chatId);
-        
-        if (!chat) return;
-        
-        // 更新对话列表选中状态
-        this.updateChatListSelection(chatId);
-        
-        // 显示对话界面
-        this.showChatInterface();
-        
-        // 更新对话标题
-        this.currentChatTitle.textContent = chat.title;
-        
-        // 显示消息
-        this.displayChatMessages(chat.messages);
-        
-        // 清空输入框
-        this.chatInput.value = '';
-    }
-
-    showChatInterface() {
-        this.welcomeScreen.classList.add('hidden');
-        this.chatInterface.classList.remove('hidden');
-        this.mistakeCollection.classList.add('hidden');
-        this.settingsInterface.classList.add('hidden');
-    }
-
-    showWelcomeScreen() {
-        this.welcomeScreen.classList.remove('hidden');
-        this.chatInterface.classList.add('hidden');
-        this.mistakeCollection.classList.add('hidden');
-        this.settingsInterface.classList.add('hidden');
-    }
-
-    showMistakeCollection() {
-        this.welcomeScreen.classList.add('hidden');
-        this.chatInterface.classList.add('hidden');
-        this.mistakeCollection.classList.remove('hidden');
-        this.settingsInterface.classList.add('hidden');
-        this.loadMistakes();
-    }
-
-    showSettings() {
-        this.welcomeScreen.classList.add('hidden');
-        this.chatInterface.classList.add('hidden');
-        this.mistakeCollection.classList.add('hidden');
-        this.settingsInterface.classList.remove('hidden');
-        this.loadSettingsToUI();
-    }
-
+    
     showMainContent() {
         if (this.chats.length === 0) {
             this.showWelcomeScreen();
@@ -198,139 +162,179 @@ class SidebarManager {
         }
     }
 
-    // 消息管理
-    async sendMessage() {
-        const message = this.chatInput.value.trim();
-        if (!message || !this.currentChatId) return;
-        
-        const chat = this.chats.find(c => c.id === this.currentChatId);
-        if (!chat) return;
-        
-        // 添加用户消息
-        const userMessage = {
+    openMistakeManager() {
+        const url = chrome.runtime.getURL('mistake_manager.html');
+        chrome.tabs.create({ url });
+    }
+
+    // --- Chat Management ---
+
+    createNewChat() {
+        const newChat = {
             id: Date.now().toString(),
-            type: 'user',
-            content: message,
-            timestamp: new Date().toISOString()
+            title: '新对话',
+            messages: [],
+            createdAt: new Date().toISOString()
         };
+        this.chats.unshift(newChat);
+        this.saveChats();
+        this.updateChatList();
+        this.showChat(newChat.id);
+        if (!this.sidebarNav.classList.contains('expanded')) {
+             this.toggleChatList();
+        }
+    }
+
+    showChat(chatId) {
+        this.currentChatId = chatId;
+        const chat = this.chats.find(c => c.id === chatId);
+        if (!chat) return;
+
+        // Exit selection mode when switching chats
+        if (this.isSelectionModeActive) {
+            this.toggleMistakeSelectionMode();
+        }
+
+        this.updateChatListSelection(chatId);
+        this.showChatInterface();
         
-        chat.messages.push(userMessage);
+        this.currentChatTitle.textContent = chat.title;
         this.displayChatMessages(chat.messages);
         this.chatInput.value = '';
+        this.adjustTextareaHeight();
+    }
+
+    async sendMessage() {
+        const messageText = this.chatInput.value.trim();
+        if (!messageText || this.isLoading || !this.currentChatId) return;
+
+        const chat = this.chats.find(c => c.id === this.currentChatId);
+        if (!chat) return;
+
+        const userMessage = { id: `msg-${Date.now()}`, role: 'user', content: messageText };
+        chat.messages.push(userMessage);
+        this.displayMessage(userMessage);
+        this.chatInput.value = '';
+        this.adjustTextareaHeight();
         
-        // 更新对话标题（使用第一条消息的前20个字符）
         if (chat.messages.length === 1) {
-            chat.title = message.substring(0, 20) + (message.length > 20 ? '...' : '');
+            chat.title = messageText.substring(0, 25) + (messageText.length > 25 ? '...' : '');
             this.currentChatTitle.textContent = chat.title;
             this.updateChatList();
         }
         
-        // 发送到AI
-        await this.sendToAI(message, chat);
-        
         this.saveChats();
+        await this.sendToAI(chat);
     }
+    
+    async sendToAI(chat) {
+        this.isLoading = true;
+        this.sendMessageBtn.disabled = true;
+        this.sendMessageBtn.innerHTML = `<div class="loader"></div>`;
 
-    async sendToAI(message, chat) {
+        const placeholderId = `msg-placeholder-${Date.now()}`;
+        const aiResponsePlaceholder = this.displayMessage({ id: placeholderId, role: 'assistant', content: '思考中...' });
+
         try {
-            this.isLoading = true;
-            this.sendMessageBtn.disabled = true;
-            this.sendMessageBtn.textContent = '发送中...';
-            
-            // 调用后端AI服务
             const response = await fetch(`${this.backendUrl}/ai/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message: message,
-                    system: this.getSystemPrompt(),
+                    message: chat.messages[chat.messages.length - 1].content,
                     apiKey: this.settings.aiApiKey,
                     apiEndpoint: this.settings.aiApiEndpoint
                 })
             });
-            
+
             if (!response.ok) {
-                throw new Error(`AI服务调用失败: ${response.status}`);
+                const errData = await response.json();
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            const aiMessage = {
-                id: (Date.now() + 1).toString(),
-                type: 'ai',
-                content: data.response,
-                timestamp: new Date().toISOString()
-            };
+            const aiText = data.response;
             
+            const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: aiText };
             chat.messages.push(aiMessage);
-            this.displayChatMessages(chat.messages);
             
+            const finalElement = this.createMessageElement(aiMessage);
+            aiResponsePlaceholder.replaceWith(finalElement);
+            this.saveChats();
+
         } catch (error) {
-            console.error('AI请求失败:', error);
-            const errorMessage = {
-                id: (Date.now() + 1).toString(),
-                type: 'ai',
-                content: `抱歉，AI服务暂时不可用。错误信息：${error.message}`,
-                timestamp: new Date().toISOString()
-            };
-            
-            chat.messages.push(errorMessage);
-            this.displayChatMessages(chat.messages);
+            console.error('AI request failed:', error);
+            const errorElement = this.createMessageElement({ id: placeholderId, role: 'assistant', content: `抱歉，请求失败。错误: ${error.message}` });
+            aiResponsePlaceholder.replaceWith(errorElement);
         } finally {
             this.isLoading = false;
             this.sendMessageBtn.disabled = false;
-            this.sendMessageBtn.textContent = '发送';
+            this.sendMessageBtn.innerHTML = `<span class="material-symbols-outlined">arrow_upward</span>`;
         }
     }
 
-    getSystemPrompt() {
-        const modePrompts = {
-            'function': '你是一个专业的Python函数编程助手。请帮助用户编写符合要求的函数。',
-            'programming': '你是一个专业的Python编程助手。请帮助用户编写完整的程序来解决特定问题。',
-            'objective': '你是一个专业的Python教学助手。请帮助用户理解和解答Python相关的选择题和判断题。'
-        };
-        
-        return modePrompts[this.settings.questionMode] || modePrompts['objective'];
+    displayMessage(message) {
+        const messageElement = this.createMessageElement(message);
+        this.chatMessages.appendChild(messageElement);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        return messageElement;
     }
 
     displayChatMessages(messages) {
         this.chatMessages.innerHTML = '';
-        
         messages.forEach(msg => {
-            const messageElement = this.createMessageElement(msg);
-            this.chatMessages.appendChild(messageElement);
+            if (!msg.id) {
+                msg.id = `msg-${Date.now()}-${Math.random()}`;
+            }
+            this.displayMessage(msg);
         });
-        
-        // 滚动到底部
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 
     createMessageElement(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.type}-message`;
+        const element = document.createElement('div');
+        element.className = `message ${message.role}-message`;
+        element.dataset.messageId = message.id;
+
+        const avatarContent = message.role === 'user' ? 'U' : '';
+    
+        let actionsHtml = '';
+        if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
+            actionsHtml = `
+                <div class="message-actions">
+                    <button class="action-btn retry-btn" title="重试">
+                        <span class="material-symbols-outlined">refresh</span>
+                    </button>
+                    <button class="action-btn like-btn" title="点赞">
+                        <img src="good.png" alt="like icon" class="action-icon">
+                    </button>
+                    <button class="action-btn dislike-btn" title="点踩">
+                        <img src="bad.png" alt="dislike icon" class="action-icon">
+                    </button>
+                </div>
+            `;
+        }
+    
+        element.innerHTML = `
+            <input type="checkbox" class="message-selector" title="选择此消息">
+            <div class="message-avatar">${avatarContent}</div>
+            <div class="message-bubble-container">
+                <div class="message-content">
+                     <div>${message.content || ''}</div>
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+    
+        if (message.role === 'assistant' && actionsHtml) {
+            element.querySelector('.like-btn')?.addEventListener('click', e => { e.stopPropagation(); alert('感谢您的点赞！'); });
+            element.querySelector('.dislike-btn')?.addEventListener('click', e => { e.stopPropagation(); alert('感谢您的反馈！'); });
+            element.querySelector('.retry-btn')?.addEventListener('click', e => { e.stopPropagation(); alert('“重试”功能待实现'); });
+        }
         
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.textContent = message.type === 'user' ? 'U' : 'AI';
-        
-        const content = document.createElement('div');
-        content.className = 'message-content';
-        
-        const text = document.createElement('div');
-        text.className = 'message-text';
-        text.textContent = message.content;
-        
-        content.appendChild(text);
-        messageDiv.appendChild(avatar);
-        messageDiv.appendChild(content);
-        
-        return messageDiv;
+        return element;
     }
 
     clearCurrentChat() {
         if (!this.currentChatId) return;
-        
         const chat = this.chats.find(c => c.id === this.currentChatId);
         if (chat) {
             chat.messages = [];
@@ -339,10 +343,10 @@ class SidebarManager {
         }
     }
 
-    // 对话列表管理
+    // --- Chat List Management ---
+
     updateChatList() {
         this.chatList.innerHTML = '';
-        
         this.chats.forEach(chat => {
             const chatItem = this.createChatItem(chat);
             this.chatList.appendChild(chatItem);
@@ -350,68 +354,36 @@ class SidebarManager {
     }
 
     createChatItem(chat) {
-        const chatDiv = document.createElement('div');
-        chatDiv.className = 'chat-item';
-        chatDiv.dataset.chatId = chat.id;
-        
-        if (chat.id === this.currentChatId) {
-            chatDiv.classList.add('active');
-        }
-        
-        const icon = document.createElement('div');
-        icon.className = 'chat-item-icon';
-        icon.textContent = '💬';
-        
-        const title = document.createElement('div');
-        title.className = 'chat-item-title';
-        title.textContent = chat.title;
-        
-        const actions = document.createElement('div');
-        actions.className = 'chat-item-actions';
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'chat-item-action';
-        deleteBtn.textContent = '🗑️';
-        deleteBtn.title = '删除对话';
-        deleteBtn.addEventListener('click', (e) => {
+        const element = document.createElement('div');
+        element.className = 'chat-item';
+        element.dataset.chatId = chat.id;
+        element.innerHTML = `
+            <div class="chat-item-title">${chat.title}</div>
+            <div class="chat-item-actions">
+                <button class="delete-chat-btn" title="删除对话">🗑️</button>
+            </div>
+        `;
+        element.addEventListener('click', () => this.showChat(chat.id));
+        element.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.deleteChat(chat.id);
         });
-        
-        actions.appendChild(deleteBtn);
-        
-        chatDiv.appendChild(icon);
-        chatDiv.appendChild(title);
-        chatDiv.appendChild(actions);
-        
-        chatDiv.addEventListener('click', () => this.showChat(chat.id));
-        
-        return chatDiv;
+        return element;
     }
 
     updateChatListSelection(chatId) {
-        // 移除所有选中状态
         this.chatList.querySelectorAll('.chat-item').forEach(item => {
-            item.classList.remove('active');
+            item.classList.toggle('active', item.dataset.chatId === chatId);
         });
-        
-        // 添加当前选中状态
-        const currentItem = this.chatList.querySelector(`[data-chat-id="${chatId}"]`);
-        if (currentItem) {
-            currentItem.classList.add('active');
-        }
     }
-
+    
     deleteChat(chatId) {
-        const index = this.chats.findIndex(c => c.id === chatId);
-        if (index === -1) return;
-        
-        this.chats.splice(index, 1);
+        this.chats = this.chats.filter(c => c.id !== chatId);
         this.saveChats();
         this.updateChatList();
         
-        // 如果删除的是当前对话，切换到其他对话或显示欢迎界面
-        if (chatId === this.currentChatId) {
+        if (this.currentChatId === chatId) {
+            this.currentChatId = null;
             if (this.chats.length > 0) {
                 this.showChat(this.chats[0].id);
             } else {
@@ -419,174 +391,163 @@ class SidebarManager {
             }
         }
     }
+    
+    // --- Mistake Management ---
 
-    // 错题管理
-    async loadMistakes() {
+    toggleMistakeSelectionMode() {
+        this.isSelectionModeActive = !this.isSelectionModeActive;
+        this.chatMessages.classList.toggle('selection-mode', this.isSelectionModeActive);
+
+        if (!this.isSelectionModeActive) {
+            // Exiting mode: clear selections and hide button
+            this.selectedMessages.clear();
+            this.chatMessages.querySelectorAll('.message-selector:checked').forEach(cb => cb.checked = false);
+            this.updateSaveSelectionButtonVisibility();
+        }
+    }
+
+    updateSaveSelectionButtonVisibility() {
+        const hasSelection = this.selectedMessages.size > 0;
+        this.saveSelectionBtn.classList.toggle('hidden', !hasSelection);
+    }
+    
+    async saveSelectionToMistakes() {
+        if (this.selectedMessages.size === 0) return;
+
+        const chat = this.chats.find(c => c.id === this.currentChatId);
+        if (!chat) return;
+
+        const selectedMessagesData = chat.messages.filter(msg => this.selectedMessages.has(msg.id));
+
+        if (selectedMessagesData.length === 0) {
+            alert('未能找到选中的消息。');
+            return;
+        }
+
+        const firstUserMessage = selectedMessagesData.find(m => m.role === 'user');
+        const questionContent = firstUserMessage ? firstUserMessage.content : '对话记录';
+        const conversationAnswer = selectedMessagesData.map(m => `${m.role === 'user' ? '用户' : 'AI'}：\n${m.content}`).join('\n\n');
+
+        const newMistake = {
+            id: Date.now(),
+            title: questionContent.substring(0, 30) + (questionContent.length > 30 ? '...' : ''),
+            content: questionContent,
+            answer: conversationAnswer,
+            tags: ['AI对话'],
+            category: '对话记录',
+            difficulty: '中等',
+            date: new Date().toISOString()
+        };
+        
         try {
             const response = await fetch(`${this.backendUrl}/mistakes`);
-            if (response.ok) {
-                const data = await response.json();
-                this.mistakes = data.mistakes || [];
-                this.displayMistakes();
-            }
+            if (!response.ok) throw new Error('获取现有错题失败');
+            const data = await response.json();
+            const currentMistakes = data.mistakes || [];
+
+            currentMistakes.unshift(newMistake);
+
+            const saveResponse = await fetch(`${this.backendUrl}/mistakes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mistakes: currentMistakes })
+            });
+
+            if (!saveResponse.ok) throw new Error('保存错题失败');
+
+            alert('已成功加入错题集！');
+            // Exit selection mode after saving
+            this.toggleMistakeSelectionMode();
+
         } catch (error) {
-            console.error('加载错题失败:', error);
-            this.mistakes = [];
+            console.error('加入错题集失败:', error);
+            alert(`加入错题集失败: ${error.message}`);
+        }
+    }
+
+    async loadMistakes() { 
+        try {
+            const response = await fetch(`${this.backendUrl}/mistakes`);
+            if (!response.ok) throw new Error('Failed to fetch mistakes');
+            const data = await response.json();
+            this.mistakes = data.mistakes || [];
+            this.displayMistakes();
+        } catch (error) {
+            console.error("Failed to load mistakes:", error);
+            this.mistakeListContainer.innerHTML = '<div>加载错题失败，请检查后端服务是否运行。</div>';
         }
     }
 
     displayMistakes() {
+        this.mistakeListContainer.innerHTML = '';
         if (this.mistakes.length === 0) {
-            this.mistakeList.innerHTML = '<div class="no-mistakes">暂无错题记录</div>';
+            this.mistakeListContainer.innerHTML = '<div>暂无错题记录</div>';
             return;
         }
-        
-        this.mistakeList.innerHTML = '';
         this.mistakes.forEach(mistake => {
-            const mistakeElement = this.createMistakeElement(mistake);
-            this.mistakeList.appendChild(mistakeElement);
+            const item = document.createElement('div');
+            item.className = 'mistake-item-display';
+            item.innerHTML = `
+                <strong class="mistake-title-display">${mistake.title}</strong>
+                <p class="mistake-content-display">${mistake.content}</p>
+            `;
+            this.mistakeListContainer.appendChild(item);
         });
     }
 
-    createMistakeElement(mistake) {
-        const mistakeDiv = document.createElement('div');
-        mistakeDiv.className = 'mistake-item';
-        mistakeDiv.style.cssText = `
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 12px;
-        `;
-        
-        const title = document.createElement('div');
-        title.style.cssText = 'font-weight: 600; color: #856404; margin-bottom: 8px;';
-        title.textContent = mistake.title;
-        
-        const content = document.createElement('div');
-        content.style.cssText = 'font-size: 12px; color: #856404; margin-bottom: 8px;';
-        content.textContent = mistake.content;
-        
-        const answer = document.createElement('div');
-        answer.style.cssText = 'font-size: 12px; color: #155724; background: #d4edda; padding: 8px; border-radius: 4px;';
-        answer.textContent = mistake.answer;
-        
-        mistakeDiv.appendChild(title);
-        mistakeDiv.appendChild(content);
-        mistakeDiv.appendChild(answer);
-        
-        return mistakeDiv;
-    }
-
-    // 设置管理
+    // --- Settings ---
     async loadSettings() {
         try {
             const result = await chrome.storage.local.get(['aiApiKey', 'aiApiEndpoint', 'questionMode']);
-            this.settings = {
-                aiApiKey: result.aiApiKey || '',
-                aiApiEndpoint: result.aiApiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
-                questionMode: result.questionMode || 'objective'
-            };
-        } catch (error) {
-            console.error('加载设置失败:', error);
-        }
+            this.settings.aiApiKey = result.aiApiKey || '';
+            this.settings.aiApiEndpoint = result.aiApiEndpoint || 'https://api.deepseek.com/v1/chat/completions';
+            this.settings.questionMode = result.questionMode || 'objective';
+        } catch (e) { console.warn("Not in extension context, using default settings."); }
     }
-
     loadSettingsToUI() {
         this.aiApiKeyInput.value = this.settings.aiApiKey;
         this.aiApiEndpointInput.value = this.settings.aiApiEndpoint;
         this.questionModeSelect.value = this.settings.questionMode;
     }
-
     async saveSettings() {
-        this.settings = {
-            aiApiKey: this.aiApiKeyInput.value,
-            aiApiEndpoint: this.aiApiEndpointInput.value,
-            questionMode: this.questionModeSelect.value
-        };
-        
+        this.settings.aiApiKey = this.aiApiKeyInput.value;
+        this.settings.aiApiEndpoint = this.aiApiEndpointInput.value;
+        this.settings.questionMode = this.questionModeSelect.value;
         try {
             await chrome.storage.local.set(this.settings);
-            console.log('设置已保存');
-            
-            // 显示成功提示
-            this.saveSettingsBtn.textContent = '已保存';
-            setTimeout(() => {
-                this.saveSettingsBtn.textContent = '保存设置';
-            }, 2000);
-        } catch (error) {
-            console.error('保存设置失败:', error);
-            this.saveSettingsBtn.textContent = '保存失败';
-            setTimeout(() => {
-                this.saveSettingsBtn.textContent = '保存设置';
-            }, 2000);
+            this.saveSettingsBtn.textContent = '已保存!';
+        } catch(e) {
+            console.warn("Not in extension context, settings not saved.");
+            this.saveSettingsBtn.textContent = '保存 (非扩展环境)';
         }
+        setTimeout(() => { this.saveSettingsBtn.textContent = '保存设置'; }, 2000);
     }
 
-    // 存储管理
-    saveChats() {
-        chrome.storage.local.set({ chats: this.chats }).catch(error => {
-            console.error('保存对话失败:', error);
-        });
+    // --- Storage Management ---
+    async saveChats() {
+        try {
+            await chrome.storage.local.set({ chats: this.chats });
+        } catch (e) { console.warn("Not in extension context, chats not saved."); }
     }
-
-    loadChats() {
-        chrome.storage.local.get(['chats']).then(result => {
+    
+    async loadChats() {
+        try {
+            const result = await chrome.storage.local.get(['chats']);
             this.chats = result.chats || [];
-            this.updateChatList();
-        }).catch(error => {
-            console.error('加载对话失败:', error);
+        } catch (e) { 
+            console.warn("Not in extension context, using empty chat list.");
             this.chats = [];
-        });
-    }
-
-    // 文本选择处理
-    handleTextSelected(text) {
-        // 如果有当前对话，将选中的文本添加到输入框
-        if (this.currentChatId && text.trim()) {
-            // 如果输入框已有内容，在末尾添加换行和选中的文本
-            if (this.chatInput.value.trim()) {
-                this.chatInput.value += '\n\n' + text.trim();
-            } else {
-                this.chatInput.value = text.trim();
-            }
-            this.chatInput.focus();
-            
-            // 自动调整文本框高度
-            this.adjustTextareaHeight();
         }
+        this.updateChatList();
     }
-
-    // 调整文本框高度
+    
+    // --- Utilities ---
     adjustTextareaHeight() {
         this.chatInput.style.height = 'auto';
-        this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
-    }
-
-    displayAIResponse(response) {
-        // 这个方法现在由sendToAI处理
-        console.log('收到AI回复:', response);
-    }
-
-    // 打开错题集管理网站
-    openMistakeManager() {
-        try {
-            // 在新标签页中打开错题集管理网站
-            chrome.tabs.create({
-                url: 'mistake_manager.html'
-            });
-            console.log('已打开错题集管理网站');
-        } catch (error) {
-            console.error('打开错题集管理网站失败:', error);
-            // 如果chrome.tabs不可用，尝试使用window.open
-            try {
-                window.open('mistake_manager.html', '_blank');
-            } catch (fallbackError) {
-                console.error('备用方法也失败:', fallbackError);
-            }
-        }
+        this.chatInput.style.height = `${Math.min(this.chatInput.scrollHeight, 120)}px`;
     }
 }
 
-// 初始化侧边栏管理器
-new SidebarManager(); 
+document.addEventListener('DOMContentLoaded', () => {
+    new SidebarManager();
+});

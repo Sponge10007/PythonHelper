@@ -613,23 +613,53 @@ body {
     color: #333;
 }
 
+/* MODIFIED: Updated button styles */
 .ppt-card-btn {
     flex: 1;
     padding: 6px 12px;
     border: 1px solid #d1d5db;
-    border-radius: 4px;
+    border-radius: 6px; /* Increased roundness */
     background: transparent;
     color: #666;
     font-size: 12px;
+    font-weight: 500; /* Made text bolder */
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex; /* Aligns icon and text */
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* Space between icon and text */
 }
 
 .ppt-card-btn:hover {
-    background: #f8f9fa;
+    background: #f0f8ff; /* Lighter blue on hover */
     border-color: #1976d2;
     color: #1976d2;
 }
+
+/* ADDED: New styles for specific button colors */
+.ppt-card-btn.btn-preview {
+    background-color: #545454;
+    border-color: #545454;
+    color: white;
+}
+
+.ppt-card-btn.btn-download {
+    background-color: #7a3898;
+    border-color: #7a3898;
+    color: white;
+}
+
+.ppt-card-btn.btn-preview:hover {
+    background-color: #6a6a6a;
+    border-color: #6a6a6a;
+}
+
+.ppt-card-btn.btn-download:hover {
+    background-color: #9343b8;
+    border-color: #9343b8;
+}
+
 
 .ppt-card-btn.primary {
     background: #1976d2;
@@ -988,6 +1018,8 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
+    display: flex; /* Added for layout */
+    flex-direction: column; /* Added for layout */
 }
 
 .ppt-card.selected {
@@ -1015,6 +1047,7 @@ body {
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    flex: 1; /* Allow header to grow */
 }
 
 .ppt-card-icon {
@@ -1074,10 +1107,11 @@ body {
     border-radius: 4px;
 }
 
+/* MODIFIED: Updated button container styles */
 .ppt-card-actions {
     display: flex;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 16px; /* Increased top margin */
 }
 
 /* 响应式设计 */
