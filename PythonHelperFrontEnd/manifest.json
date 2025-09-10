@@ -9,34 +9,39 @@
     "scripting",
     "sidePanel",
     "tabs",
-    "downloads"
+    "downloads",
+    "cookies",
+    "debugger"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*",
-    "http://localhost:5000/*"
+    "http://localhost:5000/*",
+    "https://pintia.cn/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "js/background/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["sidebar.css"]
+      "js": ["js/content.js"],
+      "css": ["css/sidebar.css"]
     }
   ],
   "side_panel": {
-    "default_path": "sidebar.html"
+    "default_path": "html/sidebar.html"
   },
   "icons": {
-    "16": "logo.png",
-    "32": "logo.png",
-    "48": "logo.png",
-    "128": "logo.png"
+    "16": "icons/logo.png",
+    "32": "icons/logo.png",
+    "48": "icons/logo.png",
+    "128": "icons/logo.png"
   },
   "action": {
-    "default_title": "Python课程AI教学助手"
+    "default_title": "Python课程AI教学助手",
+    "default_popup": "html/popup.html"
   },
   "web_accessible_resources": [
     {
@@ -44,4 +49,4 @@
       "matches": ["<all_urls>"]
     }
   ]
-} 
+}

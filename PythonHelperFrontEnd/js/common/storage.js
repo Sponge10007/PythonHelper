@@ -1,0 +1,63 @@
+// js/common/storage.js
+
+/**
+ * 从 chrome.storage 加载对话数据
+ * @returns {Promise<Array>} - 对话列表
+ */
+export async function loadChats() {
+    try {
+        const result = await chrome.storage.local.get(['chats']);
+        return result.chats || [];
+    } catch (e) {
+        console.warn("非扩展环境，使用空聊天列表。");
+        return [];
+    }
+}
+
+/**
+ * 将对话数据保存到 chrome.storage
+ * @param {Array} chats - 要保存的对话列表
+ */
+export async function saveChats(chats) {
+    try {
+        await chrome.storage.local.set({ chats: chats });
+    } catch (e) {
+        console.warn("非扩展环境，对话未保存。");
+    }
+}
+
+/**
+ * 从 chrome.storage 加载设置
+ * @returns {Promise<Object>} - 设置对象
+ */
+export async function loadSettings() {
+    try {
+        const result = await chrome.storage.local.get(['aiApiKey', 'aiApiEndpoint', 'questionMode']);
+        return {
+            aiApiKey: result.aiApiKey || '',
+            aiApiEndpoint: result.aiApiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
+            questionMode: result.questionMode || 'objective'
+        };
+    } catch (e) {
+        console.warn("非扩展环境，使用默认设置。");
+        return {
+            aiApiKey: '',
+            aiApiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
+            questionMode: 'objective'
+        };
+    }
+}
+
+/**
+ * 将设置保存到 chrome.storage
+ * @param {Object} settings - 要保存的设置对象
+ */
+export async function saveSettings(settings) {
+    try {
+        await chrome.storage.local.set(settings);
+        return true;
+    } catch (e) {
+        console.warn("非扩展环境，设置未保存。");
+        return false;
+    }
+}

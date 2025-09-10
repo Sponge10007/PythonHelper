@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>错题分析报告</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .question-title {
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        .correct-answer {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .analysis p {
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .conclusion {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border: 1px solid #3498db;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+        .reflection {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>错题分析报告</h1>
+
+<div class="section">
+    <h2 class="question-title">错题 1: 概率与期望</h2>
+    <p><strong>题目：</strong> We have m balls and m boxes. Each ball is assigned to one of the m boxes independently and uniformly at random (i.e., equally likely to each box). Suppose that m is sufficiently large, and e is the natural number, which of the following is FALSE?</p>
+    <p><strong>我的回答：</strong> D</p>
+    <p class="correct-answer"><strong>正确答案：</strong> C</p>
+    
+    <div class="analysis">
+        <h3>分析：</h3>
+        <p>这道题考查的是概率论中的期望值计算，特别是关于“m个球放入m个盒子”模型的经典问题。</p>
+        <ul>
+            <li><strong>选项 A:</strong> **每个盒子里的期望球数是1。** 这是正确的，期望值为 $m \times (1/m) = 1$。</li>
+            <li><strong>选项 B:</strong> **空盒子的期望数是 m/e。** 这是正确的，一个盒子为空的概率约为 $1/e$，所以期望空盒子数为 $m/e$。</li>
+            <li><strong>选项 C:</strong> **假设一个盒子只能容纳一个球，并拒绝其他球，那么被拒绝的球的期望数是 m/e。**
+                <p><strong>正确分析：</strong> 被拒绝的球数 = 总球数 - 被接受的球数。被接受的球数 = 非空盒子数。非空盒子数的期望 = 总盒子数 - 空盒子数的期望 = $m - m/e$。因此，被拒绝的球的期望数 = $m - (m - m/e) = m/e$。此选项陈述正确。</p>
+            </li>
+            <li><strong>选项 D:</strong> **假设一个盒子可以容纳两个球，并拒绝额外的球。那么，包含恰好两个球的盒子的期望数是 m/e。**
+                <p><strong>正确分析：</strong> 一个特定盒子包含两个球的概率约为 $1/(2e)$。因此，包含恰好两个球的盒子的期望数约为 $m \times (1/(2e)) = m/(2e)$。此选项陈述错误，故此选项为假。</p>
+            </li>
+        </ul>
+    </div>
+    <div class="conclusion">
+        <h3>总结：</h3>
+        <p>此题的难点在于选项C的表述容易让人混淆。经过严谨的推导，可以发现选项C的陈述是正确的，而选项D的计算结果与题目给出的不符，因此D是错误的。我最初的判断错误了。</p>
+    </div>
+</div>
+
+<hr>
+
+<div class="section">
+    <h2 class="question-title">错题 2: 二项队列</h2>
+    <p><strong>题目：</strong> In a binomial queue, the total number of the nodes at even depth is always ___ than that of the nodes at odd depth (the root is defined to be at the depth 0).</p>
+    <p><strong>我的回答：</strong> A. not smaller (不小于)</p>
+    <p class="correct-answer"><strong>正确答案：</strong> B. not larger (不大于)</p>
+
+    <div class="analysis">
+        <h3>分析：</h3>
+        <p>这道题考查二项队列的性质，特别是节点在不同深度上的分布。</p>
+        <p>在一个二项树 $B_k$ 中，深度为 $d$ 的节点数为 $\binom{k}{d}$。根据二项式定理，当 $k>0$ 时，偶数深度节点总数等于奇数深度节点总数。当 $k=0$ 时，只有一个根节点，偶数深度节点数为1，奇数深度节点数为0。</p>
+        <p>一个二项队列是多个二项树的集合。只有当队列包含 $B_0$ 树（即总节点数为奇数）时，偶数深度节点总数才会比奇数深度节点总数多1；否则两者相等。因此，总的偶数深度节点数总是<strong>大于或等于</strong>总的奇数深度节点数。</p>
+        <p>所以，“不小于” (not smaller) 是正确的描述。评测结果显示正确答案是“不大于”(not larger)，这与标准定义和我的推导相悖，可能是一个题目错误。</p>
+    </div>
+    <div class="conclusion">
+        <h3>总结：</h3>
+        <p>我的推导结果与题目提供的正确答案相矛盾。基于我对二项队列性质的理解，偶数深度节点总数应始终不小于奇数深度节点总数。这可能是由于题目本身的错误。</p>
+    </div>
+</div>
+
+<hr>
+
+<div class="section">
+    <h2 class="question-title">错题 3: Bin Packing 问题</h2>
+    <p><strong>题目：</strong> Consider the bin packing problem which uses a minimum number of bins to accommodate a given list of items. Recall that Next Fit (NF) and First Fit (FF) are two simple approaches, whose (asymptotic) approximation ratios are 2 and 1.7, respectively. Now we focus on a special class I2 of instances in which only two distinct item sizes appear. Check which of the following statements is true by applying NF and FF on I2. </p>
+    <p><strong>我的回答：</strong> A</p>
+    <p class="correct-answer"><strong>正确答案：</strong> 评测结果显示错误，但未给出正确答案。</p>
+
+    <div class="analysis">
+        <h3>分析：</h3>
+        <p>这道题考查在特定实例下，NF和FF算法的近似比表现。</p>
+        <ul>
+            <li><strong>Next Fit (NF):</strong> NF的近似比为2，这个性质在只有两种物品尺寸的特殊实例下并没有本质改善，仍然存在实例使得其近似比趋近于2。</li>
+            <li><strong>First Fit (FF):</strong> FF的近似比为1.7。然而，对于只有两种物品尺寸的特殊实例，FF的近似比可以被证明有所改善，降至1.5。这是因为FF能够更有效地利用箱子空间。</li>
+        </ul>
+        <p>因此，正确的陈述应该是：NF的近似比没有改善，而FF的近似比有改善。</p>
+    </div>
+    <div class="conclusion">
+        <h3>总结：</h3>
+        <p>我对FF算法在特殊实例上的表现判断有误。FF算法的“寻找第一个能装下”的特性使其在物品种类受限时，能够更有效地进行装箱，从而降低了近似比。我的回答认为两者都有改善，是不正确的。</p>
+    </div>
+</div>
+
+<hr>
+
+<div class="section">
+    <h2 class="question-title">错题 4: 左倾堆（Leftist Heap）</h2>
+    <p><strong>题目：</strong> Merge the two leftist heaps in the following figure. Which one of the following statements is FALSE?</p>
+    <p><strong>我的回答：</strong> B</p>
+    <p class="correct-answer"><strong>正确答案：</strong> A</p>
+
+    <div class="analysis">
+        <h3>分析：</h3>
+        <p>这道题考查左倾堆的合并操作。左倾堆的关键性质是右子节点的NPL（Null Path Length）总是小于或等于左子节点的NPL。</p>
+        <p><strong>合并过程：</strong>
+        1. 合并根节点1和5。1小于5，新根为1。将5和1的右子堆（根4）合并。
+        2. 递归合并根节点4和5。4小于5，新根为4。将5和4的右子堆（空）合并，5成为4的右子。
+        3. 检查4的子堆NPL，左子8的NPL为1，右子5的NPL为1。NPL相等，不交换。
+        4. 回到根1，其左子堆（根2）的NPL为1，右子堆（根4）的NPL为2。
+        5. 由于左子NPL小于右子NPL，因此交换1的左右子堆。最终树的左子为4，右子为2。</p>
+        <p><strong>根据最终树结构检查选项：</strong>
+        <ul>
+            <li><strong>A. 4 and 3 are siblings。</strong>
+                <p>4是1的左子，3是2的左子。它们不是兄弟节点。<strong>此陈述为假。</strong></p>
+            </li>
+            <li><strong>B. along the left path from the root, we have 1, 2, 4, and 8。</strong>
+                <p>左路径为 1 -> 4 -> 8。此陈述为假。</p>
+            </li>
+            <li><strong>C. 6 is the right child of 5。</strong>
+                <p>5的左子是6，右子是空。此陈述为假。</p>
+            </li>
+            <li><strong>D. 2 and 4 have the same NPL。</strong>
+                <p>NPL(2) = 1，NPL(4) = 2。NPL不相同。此陈述为假。</p>
+            </li>
+        </ul>
+        </p>
+    </div>
+    <div class="conclusion">
+        <h3>总结：</h3>
+        <p>我的多次推导都表明所有选项都为假。这可能意味着题目本身或其选项存在错误。然而，如果必须选择一个，A是最符合“假”这一评判的。我的分析虽然找到了所有选项的错误，但在最终选择时未能与题目预期的答案对齐，这表明在解题时需要考虑题目可能存在的缺陷，并选择最“不正确”的那个选项。</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1236 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 头部样式 */
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    /* justify-content: space-between; */
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 顶部导航栏样式 */
+.top-nav {
+    background: white;
+    border-bottom: 1px solid #e1e5e9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 0;
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    position: relative;
+}
+
+.nav-btn:hover {
+    color: #333;
+    background: #f8f9fa;
+}
+
+.nav-btn.active {
+    color: #1976d2;
+    border-bottom-color: #1976d2;
+    background: #f0f8ff;
+}
+
+.nav-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #1976d2;
+}
+
+/* 按钮样式 */
+.btn-primary, .btn-secondary, .btn-danger {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled, .btn-secondary:disabled, .btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 主要内容区域 */
+.main-content {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* 左侧边栏 */
+.sidebar {
+    width: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    flex-shrink: 0;
+    height: fit-content;
+}
+
+/* 侧边栏内容切换 */
+.sidebar-content {
+    display: none;
+}
+
+.sidebar-content.active {
+    display: block;
+}
+
+/* 搜索和筛选区域 */
+.search-section {
+    margin-bottom: 24px;
+}
+
+.search-section h3 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.filter-tags h4 {
+    margin-bottom: 8px;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-item {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tag-item:hover {
+    background: #e9ecef;
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.tag-item.active {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: white;
+}
+
+/* 统计信息区域 */
+.stats-section {
+    margin-bottom: 24px;
+}
+
+.stats-section h3 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-item {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1976d2;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+}
+
+/* 针对训练区域 */
+.training-section {
+    margin-bottom: 24px;
+}
+
+.training-section h3 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.training-section button {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.training-section button:last-child {
+    margin-bottom: 0;
+}
+
+/* 模拟考区域 */
+.exam-section {
+    margin-bottom: 24px;
+}
+
+.exam-section h3 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.exam-section button {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.exam-section button:last-child {
+    margin-bottom: 0;
+}
+
+/* 文档管理区域 */
+.ppt-section {
+    margin-bottom: 24px;
+}
+
+.ppt-section h3 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.upload-area {
+    margin-bottom: 16px;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.upload-label:hover {
+    border-color: #1976d2;
+    background: #f0f8ff;
+}
+
+.upload-label.drag-over {
+    border-color: #1976d2;
+    background: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.upload-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.upload-progress {
+    margin-bottom: 16px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e1e5e9;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+}
+
+/* 上传状态提示 */
+.upload-status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    display: none;
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.upload-status-info {
+    background: #1976d2;
+}
+
+.upload-status-success {
+    background: #2e7d32;
+}
+
+.upload-status-warning {
+    background: #f57c00;
+}
+
+.upload-status-error {
+    background: #d32f2f;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 改进拖拽上传区域样式 */
+.upload-area.drag-over .upload-label {
+    border-color: #1976d2;
+    background: #e3f2fd;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+.upload-area.drag-over .upload-icon {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* 上传统计区域 */
+.upload-stats {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.upload-stats-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stats-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.stats-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+/* 改进上传提示样式 */
+.upload-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* 文件预览样式 */
+.file-preview-header {
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.file-preview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.file-preview-item:last-child {
+    border-bottom: none;
+}
+
+.file-preview-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.file-preview-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+    word-break: break-all;
+}
+
+.file-preview-details {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.file-preview-status {
+    font-size: 14px;
+    margin-left: 8px;
+}
+
+.file-valid {
+    color: #e8f5e8;
+}
+
+.file-invalid {
+    color: #ffebee;
+}
+
+.ppt-search {
+    margin-bottom: 16px;
+}
+
+.ppt-search .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.ppt-search .search-input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.ppt-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.ppt-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: white;
+}
+
+.ppt-item:last-child {
+    margin-bottom: 0;
+}
+
+.ppt-icon {
+    font-size: 16px;
+}
+
+.ppt-name {
+    flex: 1;
+    font-size: 12px;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ppt-item-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.ppt-action-btn {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.ppt-action-btn:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+/* MODIFIED: Updated button styles */
+.ppt-card-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px; /* Increased roundness */
+    background: transparent;
+    color: #666;
+    font-size: 12px;
+    font-weight: 500; /* Made text bolder */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex; /* Aligns icon and text */
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* Space between icon and text */
+}
+
+.ppt-card-btn:hover {
+    background: #f0f8ff; /* Lighter blue on hover */
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+/* ADDED: New styles for specific button colors */
+.ppt-card-btn.btn-preview {
+    background-color: #545454;
+    border-color: #545454;
+    color: white;
+}
+
+.ppt-card-btn.btn-download {
+    background-color: #7a3898;
+    border-color: #7a3898;
+    color: white;
+}
+
+.ppt-card-btn.btn-preview:hover {
+    background-color: #6a6a6a;
+    border-color: #6a6a6a;
+}
+
+.ppt-card-btn.btn-download:hover {
+    background-color: #9343b8;
+    border-color: #9343b8;
+}
+
+
+.ppt-card-btn.primary {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: white;
+}
+
+.ppt-card-btn.primary:hover {
+    background: #1565c0;
+}
+
+/* 工具栏样式 */
+.toolbar {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafafa;
+}
+
+.toolbar-left, .toolbar-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sort-select {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+}
+
+/* 错题列表样式 */
+.mistake-list {
+    padding: 20px;
+}
+
+.mistake-item {
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.mistake-item:hover {
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mistake-item:last-child {
+    margin-bottom: 0;
+}
+
+.mistake-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.mistake-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.mistake-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #666;
+}
+
+.mistake-content {
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.mistake-answer {
+    background: #f8f9fa;
+    border-left: 4px solid #28a745;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 0 4px 4px 0;
+}
+
+.mistake-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.mistake-tag {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.mistake-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.mistake-checkbox {
+    margin-right: 8px;
+}
+
+/* NEW: Styles for message history in mistake item */
+.mistake-conversation {
+    background: #f8f9fa;
+    border: 1px solid #eef;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.mistake-message {
+    margin-bottom: 8px;
+}
+
+.mistake-message:last-child {
+    margin-bottom: 0;
+}
+
+.message-role {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.message-user .message-role {
+    color: #007bff;
+}
+
+.message-assistant .message-role {
+    color: #28a745;
+}
+
+.message-content {
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
+/* 分页样式 */
+.pagination {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    border-top: 1px solid #e1e5e9;
+    background: #fafafa;
+}
+
+#pageInfo {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e1e5e9;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* 现有标签列表 */
+.existing-tags {
+    margin-top: 20px;
+}
+
+.existing-tags h4 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.existing-tags .tag-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 8px;
+    background: #f8f9fa;
+}
+
+.existing-tags .tag-item {
+    background: white;
+    border: 1px solid #d1d5e9;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.existing-tags .tag-item:hover {
+    background: #e3f2fd;
+    border-color: #1976d2;
+}
+
+.existing-tags .tag-item.selected {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: white;
+}
+
+/* AI模态框特殊样式 */
+.ai-modal .modal-content {
+    max-width: 800px;
+}
+
+.ai-summary-content {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 16px;
+    min-height: 200px;
+}
+
+/* 主要内容区域 */
+.content {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* 内容区域切换 */
+.content-area {
+    display: none;
+}
+
+.content-area.active {
+    display: block;
+}
+
+/* 文档内容区域 */
+.ppt-content {
+    padding: 24px;
+}
+
+/* 文档工具栏 */
+.ppt-toolbar {
+    padding: 16px 0;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ppt-toolbar-left, .ppt-toolbar-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ppt-content h2 {
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.ppt-content p {
+    margin-bottom: 24px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.ppt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.ppt-card {
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    display: flex; /* Added for layout */
+    flex-direction: column; /* Added for layout */
+}
+
+.ppt-card.selected {
+    border-color: #1976d2;
+    background: #f0f8ff;
+}
+
+.ppt-card-checkbox {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.ppt-card:hover {
+    border-color: #1976d2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.ppt-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex: 1; /* Allow header to grow */
+}
+
+.ppt-card-icon {
+    font-size: 24px;
+    color: #1976d2;
+}
+
+.ppt-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.ppt-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.ppt-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: #888;
+}
+
+.ppt-card-meta span {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e1e5e9;
+}
+
+.ppt-card-description {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #1976d2;
+}
+
+.ppt-card-slides {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.ppt-card-type {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* MODIFIED: Updated button container styles */
+.ppt-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px; /* Increased top margin */
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .sidebar {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .nav-container {
+        padding: 0 10px;
+    }
+    
+    .nav-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .toolbar-left, .toolbar-right {
+        justify-content: center;
+    }
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 20px;
+} 
+
+.logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+    /* 确保logo保持原始宽高比 */
+    object-position: center;
+    /* 添加一些内边距让logo看起来更协调 */
+    padding: 1px;
+    margin-right: 10px;
+    /* 确保logo在工具栏中垂直居中 */
+    align-self: center;
+}
