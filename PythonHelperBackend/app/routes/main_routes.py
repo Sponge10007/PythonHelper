@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify, request
-from app.services.question_service import question_service
+from flask import Blueprint, jsonify, request, current_app
+# 移除: from app.services.question_service import question_service
 from app.services.ai_service import call_ai_api
 from app.database import get_db
 import logging
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 @main_bp.route('/health', methods=['GET'])
 def health_check():
     # ... (此路由内容与原代码相同)
+    question_service = current_app.question_service
     question_types = {q.get('question_type', '未知'): 0 for q in question_service.questions_db}
     for q in question_service.questions_db:
         question_types[q.get('question_type', '未知')] += 1
@@ -61,6 +62,7 @@ def ai_chat():
 def search_questions_route():
     # ... (此路由内容与原代码相同)
     try:
+        question_service = current_app.question_service
         query = request.get_json().get('query', '')
         if not query: return jsonify({'error': '搜索查询不能为空'}), 400
         results = question_service.search_questions(query)
@@ -74,6 +76,7 @@ def search_questions_route():
 def get_all_questions():
     # ... (此路由内容与原代码相同)
     try:
+        question_service = current_app.question_service
         formatted_questions = [question_service.format_question_for_display(q) for q in question_service.questions_db]
         return jsonify({'questions': formatted_questions, 'count': len(formatted_questions), 'status': 'success'})
     except Exception as e:
@@ -85,6 +88,7 @@ def get_all_questions():
 def get_questions_stats():
     # ... (此路由内容与原代码相同)
     try:
+        question_service = current_app.question_service
         stats = {'question_types': {}, 'categories': {}, 'difficulties': {}}
         for question in question_service.questions_db:
             q_type = question.get('question_type', '未知')

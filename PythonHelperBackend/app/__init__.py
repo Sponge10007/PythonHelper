@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import logging
 from config import Config
-
+from .services.question_service import QuestionService
 
 def create_app(config_class=Config):
     """创建并配置 Flask 应用实例"""
@@ -20,6 +20,10 @@ def create_app(config_class=Config):
         logging.info(f"创建PPT上传目录: {ppt_folder}")
     else:
         logging.info(f"PPT上传目录已存在: {ppt_folder}")
+
+    # 在应用上下文中初始化服务
+    with app.app_context():
+        app.question_service = QuestionService()
 
     # 注册蓝图
     from .routes.main_routes import main_bp

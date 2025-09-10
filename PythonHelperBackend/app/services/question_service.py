@@ -138,6 +138,4 @@ class QuestionService:
             }
         }
 
-
-# 创建一个单例
-question_service = QuestionService()
+# 移除这一行: question_service = QuestionService()
