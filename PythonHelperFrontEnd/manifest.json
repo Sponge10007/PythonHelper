@@ -17,7 +17,8 @@
     "http://*/*",
     "https://*/*",
     "http://localhost:5000/*",
-    "https://pintia.cn/*"
+    "https://pintia.cn/*",
+    "https://*.cloudstudio.club/*"
   ],
   "background": {
     "service_worker": "js/background/background.js",
