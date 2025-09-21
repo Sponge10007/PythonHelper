@@ -23,33 +23,124 @@ export class MistakeHandler {
         }
     }
     
+    isLessonTag(tag) {
+        const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
+        return lessonTags.includes(tag);
+    }
+
+    async saveMistake() {
+        if (!this.editingMistakeId) return;
+
+        const index = this.allMistakes.findIndex(m => m.id === this.editingMistakeId);
+        if (index === -1) {
+            console.error("错误：无法找到要保存的错题。");
+            return;
+        }
+
+        const originalMistake = this.allMistakes[index];
+        // 从UI模态框获取用户输入
+        const formData = this.ui.getEditModalData();
+
+        if (!formData.title) {
+            alert('标题不能为空');
+            return;
+        }
+        
+        // --- 标签管理逻辑 ---
+        // 1. 保留原始错题中所有非课程标签
+        const otherTags = (originalMistake.tags || []).filter(tag => !this.isLessonTag(tag));
+        
+        // 2. 从表单数据中获取新的课程标签 (formData.tags 是一个只包含新课程标签的数组)
+        const newLessonTag = formData.tags[0] || null;
+
+        // 3. 组合成最终的标签数组
+        const finalTags = [...otherTags];
+        if (newLessonTag) {
+            finalTags.push(newLessonTag);
+        }
+        // --- 结束标签管理 ---
+
+        // 组合成最终的、完整的错题对象
+        const updatedMistake = {
+            ...originalMistake,
+            title: formData.title,
+            category: formData.category,
+            difficulty: formData.difficulty,
+            tags: finalTags
+        };
+        
+        try {
+            // **核心修复：执行“乐观更新”**
+            // 1. 立即用我们刚刚构造好的新对象来更新本地的题目列表
+            this.allMistakes[index] = updatedMistake;
+
+            // 2. 立即基于更新后的本地数据重新渲染界面
+            //    这会立刻、正确地显示出修改后的题目，解决了“消失”的问题
+            this.filterAndRender();
+            this.ui.toggleModal('modal', false);
+            
+            // 3. 在后台将更新发送到服务器
+            await api.updateMistake(this.editingMistakeId, updatedMistake);
+            
+            // 4. 清理编辑状态
+            this.editingMistakeId = null;
+
+        } catch (error) {
+            alert(`保存失败: ${error.message}`);
+            // 如果API调用失败，可以考虑回滚UI的改动（可选）
+            // this.allMistakes[index] = originalMistake;
+            // this.filterAndRender();
+        }
+    }
+
     filterAndRender() {
         // 筛选逻辑
         this.filteredMistakes = this.allMistakes.filter(mistake => {
-            // 确保 mistake 对象存在且有 title 属性
+            // 确保 mistake 对象是有效的
             if (!mistake || typeof mistake.title === 'undefined') {
                 return false;
             }
-            const searchLower = this.currentFilters.search.toLowerCase();
-            const titleMatch = mistake.title.toLowerCase().includes(searchLower);
-            const messageMatch = mistake.messages && mistake.messages.some(msg => msg.content.toLowerCase().includes(searchLower));
-            
-            const searchCondition = !searchLower || (titleMatch || messageMatch);
-            if (!searchCondition) return false;
 
-            if (this.currentFilters.tags.size > 0) {
-                return Array.from(this.currentFilters.tags).some(tag => mistake.tags && mistake.tags.includes(tag));
+            // --- 1. 搜索框筛选 ---
+            const searchLower = this.currentFilters.search.toLowerCase();
+            if (searchLower) { // 仅当搜索框有内容时才进行匹配
+                const titleMatch = mistake.title.toLowerCase().includes(searchLower);
+                // 确保 messages 存在且是数组
+                const messageMatch = Array.isArray(mistake.messages) && mistake.messages.some(msg => 
+                    msg.content && msg.content.toLowerCase().includes(searchLower)
+                );
+                // 如果搜索框有内容，但标题和消息都不匹配，则过滤掉该项
+                if (!titleMatch && !messageMatch) {
+                    return false;
+                }
             }
+
+            // --- 2. 标签筛选 ---
+            if (this.currentFilters.tags.size > 0) {
+                // 确保 mistake.tags 存在且是数组
+                if (!Array.isArray(mistake.tags) || mistake.tags.length === 0) {
+                    return false; // 如果要求按标签筛选，但该错题没有任何标签，则过滤掉
+                }
+                
+                // 检查错题的标签是否至少包含一个当前选中的筛选标签
+                const hasMatchingTag = Array.from(this.currentFilters.tags).some(filterTag => mistake.tags.includes(filterTag));
+                if (!hasMatchingTag) {
+                    return false; // 如果该错题的标签与筛选标签无一匹配，则过滤掉
+                }
+            }
+
+            // 如果错题通过了以上所有筛选条件，则保留它
             return true;
         });
 
-        // 渲染逻辑
+        // --- 渲染逻辑 ---
         const totalPages = Math.ceil(this.filteredMistakes.length / this.itemsPerPage);
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const pageMistakes = this.filteredMistakes.slice(startIndex, startIndex + this.itemsPerPage);
 
         this.ui.renderMistakeList(
             pageMistakes,
+            this.isLessonTag.bind(this), // 关键调用
             (id) => this.editMistake(id),
             (id) => this.deleteMistake(id),
             (id, isChecked) => this.toggleSelection(id, isChecked)
@@ -58,13 +149,11 @@ export class MistakeHandler {
         
         const stats = { 
             total: this.allMistakes.length, 
-            tagged: this.allMistakes.filter(m => m && m.tags && m.tags.length > 0).length,
+            tagged: this.allMistakes.filter(m => m && Array.isArray(m.tags) && m.tags.length > 0).length,
             summarized: this.allMistakes.filter(m => m && m.ai_summary).length
         };
-        // 假设pptStats是一个空对象，因为这个模块不处理PPT
         this.ui.updateStats(stats, { total: 0, slides: 0 });
-    }
-    
+    }    
     applyFilters(newFilters) {
         this.currentFilters = { ...this.currentFilters, ...newFilters };
         this.currentPage = 1;
@@ -102,40 +191,8 @@ export class MistakeHandler {
         const mistake = this.allMistakes.find(m => m.id === mistakeId);
         if (!mistake) return;
         this.editingMistakeId = mistakeId;
-        this.ui.fillEditModal(mistake);
+        this.ui.fillEditModal(mistake, this.isLessonTag.bind(this)); // 新增isLessonTag函数调用
         this.ui.toggleModal('modal', true);
-    }
-    
-    async saveMistake() {
-        if (!this.editingMistakeId) return;
-        const originalMistake = this.allMistakes.find(m => m.id === this.editingMistakeId);
-        if (!originalMistake) return;
-
-        const formData = this.ui.getEditModalData();
-        if (!formData.title) {
-            alert('标题不能为空');
-            return;
-        }
-
-        const updatedMistakeData = { ...originalMistake, ...formData };
-        
-        try {
-            const responseData = await api.updateMistake(this.editingMistakeId, updatedMistakeData);
-            
-            const index = this.allMistakes.findIndex(m => m.id === this.editingMistakeId);
-            if (index !== -1) {
-                // *** 这是关键的修复 ***
-                // 将原来的 responseData.mistake 修改为 responseData
-                // 因为后端直接返回了更新后的错题对象
-                this.allMistakes[index] = responseData; 
-            }
-            
-            this.filterAndRender();
-            this.ui.toggleModal('modal', false);
-            this.editingMistakeId = null;
-        } catch (error) {
-            alert(`保存失败: ${error.message}`);
-        }
     }
 
     toggleSelection(mistakeId, isChecked) {

@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, request, current_app
-# 移除: from app.services.question_service import question_service
 from app.services.ai_service import call_ai_api
 from app.database import get_db
 import logging

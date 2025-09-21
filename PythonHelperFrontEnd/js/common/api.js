@@ -1,7 +1,8 @@
 // js/common/api.js
 
-// const BACKEND_URL = 'http://localhost:5000';
-const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--35427.ap-shanghai2.cloudstudio.club";
+const BACKEND_URL = 'http://localhost:5000';
+// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--35427.ap-shanghai2.cloudstudio.club";
+// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--5000.ap-shanghai2.cloudstudio.club";
 
 /**
  * 与AI后端进行对话

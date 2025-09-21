@@ -16,14 +16,14 @@ export class UIManager {
         this.editLesson = document.getElementById('editLesson');
     }
 
-    renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
+    renderMistakeList(mistakes, isLessonTag, onEdit, onDelete, onToggleSelect) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
             this.mistakeList.innerHTML = `<div class="no-mistakes">暂无错题记录</div>`;
             return;
         }
         mistakes.forEach(mistake => {
-            const mistakeElement = this.createMistakeElement(mistake);
+            const mistakeElement = this.createMistakeElement(mistake, isLessonTag);
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
             mistakeElement.querySelector('.mistake-checkbox').addEventListener('change', (e) => onToggleSelect(mistake.id, e.target.checked));
@@ -31,11 +31,23 @@ export class UIManager {
         });
     }
 
-    createMistakeElement(mistake) {
+    createMistakeElement(mistake, isLessonTag) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
         
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => this.isLessonTag(tag)) : '';
+        // 将所有需要作为标签展示的信息统一处理
+        const tagsToShow = [];
+        if (mistake.category) {
+            tagsToShow.push({ text: `分类: ${mistake.category}`, class: 'tag-category' });
+        }
+        if (mistake.difficulty) {
+            tagsToShow.push({ text: `难度: ${mistake.difficulty}`, class: 'tag-difficulty' });
+        }
+        // 处理课程标签
+        const lessonTag = mistake.tags ? mistake.tags.find(tag => isLessonTag(tag)) : '';
+        if (lessonTag) {
+            tagsToShow.push({ text: `课程: ${lessonTag}`, class: 'tag-lesson' });
+        }
         
         const messagesHtml = (mistake.messages || []).map(msg => `
             <div class="mistake-message message-${msg.role}">
@@ -44,9 +56,10 @@ export class UIManager {
             </div>
         `).join('');
 
-        const tagsHtml = mistake.tags && mistake.tags.length > 0 ? `
+        // 使用处理后的标签数组生成HTML
+        const tagsHtml = tagsToShow.length > 0 ? `
             <div class="mistake-tags">
-                ${mistake.tags.map(tag => `<span class="mistake-tag">${tag}</span>`).join('')}
+                ${tagsToShow.map(tag => `<span class="mistake-tag ${tag.class}">${tag.text}</span>`).join('')}
             </div>
         ` : '';
 
@@ -55,10 +68,7 @@ export class UIManager {
                 <div>
                     <div class="mistake-title">${this.escapeHtml(mistake.title)}</div>
                     <div class="mistake-meta">
-                        <span>分类: ${mistake.category || '未分类'}</span>
-                        <span>难度: ${mistake.difficulty || '未设置'}</span>
                         <span>日期: ${new Date(mistake.date).toLocaleDateString()}</span>
-                        ${lessonTag ? `<span>课程: ${lessonTag}</span>` : ''}
                     </div>
                 </div>
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
@@ -73,10 +83,10 @@ export class UIManager {
         return div;
     }
 
-    isLessonTag(tag) {
-        const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
-        return lessonTags.includes(tag);
-    }
+    // isLessonTag(tag) {
+    //     const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
+    //     return lessonTags.includes(tag);
+    // }
     
     escapeHtml(text) {
         const div = document.createElement('div');
@@ -84,12 +94,12 @@ export class UIManager {
         return div.innerHTML;
     }
 
-    fillEditModal(mistake) {
+    fillEditModal(mistake, isLessonTag) {
         this.editTitle.value = mistake.title || '';
         this.editMessages.value = JSON.stringify(mistake.messages || [], null, 2);
         this.editCategory.value = mistake.category || '其他';
         this.editDifficulty.value = mistake.difficulty || '中等';
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => this.isLessonTag(tag)) : '';
+        const lessonTag = mistake.tags ? mistake.tags.find(tag => isLessonTag(tag)) : '';
         this.editLesson.value = lessonTag || '';
     }
 
