@@ -96,6 +96,7 @@ def analyze_pta_questions():
 
         logger.info(f"成功合并 {len(questions)} 道题目，准备请求AI生成HTML报告...")
 
+        print(questions)
         # 2. 直接将题目列表转换为JSON字符串，一次性发送给AI
         # AI API需要字符串格式的输入，JSON是表示复杂数据结构最清晰的方式。
         ai_input_string = json.dumps(
