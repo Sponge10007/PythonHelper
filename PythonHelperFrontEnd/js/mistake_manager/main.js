@@ -19,6 +19,9 @@ class PageManager {
     async init() {
         await this.mistakeHandler.init();
         await this.pptHandler.init();
+        await this.loadAllTags();
+        // 初始化标签筛选功能
+        this.ui.initTagFilters();
     }
 
     bindEvents() {
@@ -254,6 +257,9 @@ class PageManager {
                     difficulty: new Set(difficulty.map(tag => tag.name))
                 };
                 
+                // 设置为全局变量，供UIManager使用
+                window.tagCategories = this.tagCategories;
+                
                 // 渲染所有类别的标签
                 this.renderTagCategory('course');
                 this.renderTagCategory('knowledge');
@@ -278,12 +284,15 @@ class PageManager {
         defaultCourseTags.forEach(tag => this.tagCategories.course.add(tag));
 
         // 默认知识点标签
-        const defaultKnowledgeTags = ['变量', '循环', '条件语句', '列表', '字典', '字符串', '文件操作', '异常处理', '类', '继承'];
+        const defaultKnowledgeTags = ['变量', '循环', '条件语句', '列表', '字典', '字符串', '文件操作', '类', '继承'];
         defaultKnowledgeTags.forEach(tag => this.tagCategories.knowledge.add(tag));
 
         // 默认难度标签
         const defaultDifficultyTags = ['简单', '中等', '困难', '基础', '进阶', '高级'];
         defaultDifficultyTags.forEach(tag => this.tagCategories.difficulty.add(tag));
+        
+        // 设置为全局变量，供UIManager使用
+        window.tagCategories = this.tagCategories;
     }
 
     /**

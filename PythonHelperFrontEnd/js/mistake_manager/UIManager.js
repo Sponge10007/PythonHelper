@@ -14,16 +14,30 @@ export class UIManager {
         this.editCategory = document.getElementById('editCategory');
         this.editDifficulty = document.getElementById('editDifficulty');
         this.editLesson = document.getElementById('editLesson');
+        
+        // 标签筛选相关元素
+        this.courseFilter = document.getElementById('courseFilter');
+        this.knowledgeFilter = document.getElementById('knowledgeFilter');
+        this.difficultyFilter = document.getElementById('difficultyFilter');
+        this.clearFiltersBtn = document.getElementById('clearFilters');
+        this.applyFiltersBtn = document.getElementById('applyFilters');
+        
+        // 当前选中的筛选标签
+        this.selectedFilters = {
+            course: new Set(),
+            knowledge: new Set(),
+            difficulty: new Set()
+        };
     }
 
-    renderMistakeList(mistakes, isLessonTag, onEdit, onDelete, onToggleSelect) {
+    renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
             this.mistakeList.innerHTML = `<div class="no-mistakes">暂无错题记录</div>`;
             return;
         }
         mistakes.forEach(mistake => {
-            const mistakeElement = this.createMistakeElement(mistake, isLessonTag);
+            const mistakeElement = this.createMistakeElement(mistake);
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
             mistakeElement.querySelector('.mistake-checkbox').addEventListener('change', (e) => onToggleSelect(mistake.id, e.target.checked));
@@ -31,22 +45,30 @@ export class UIManager {
         });
     }
 
-    createMistakeElement(mistake, isLessonTag) {
+    createMistakeElement(mistake) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
         
-        // 将所有需要作为标签展示的信息统一处理
+        // 处理标签显示 - 只使用新的标签数组格式
         const tagsToShow = [];
-        if (mistake.category) {
-            tagsToShow.push({ text: `分类: ${mistake.category}`, class: 'tag-category' });
-        }
-        if (mistake.difficulty) {
-            tagsToShow.push({ text: `难度: ${mistake.difficulty}`, class: 'tag-difficulty' });
-        }
-        // 处理课程标签
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => isLessonTag(tag)) : '';
-        if (lessonTag) {
-            tagsToShow.push({ text: `课程: ${lessonTag}`, class: 'tag-lesson' });
+        
+        if (mistake.tags && Array.isArray(mistake.tags)) {
+            mistake.tags.forEach(tag => {
+                if (typeof tag === 'string' && tag.trim()) {
+                    // 根据标签名称判断类别
+                    const tagName = tag.trim();
+                    if (this.isCourseTag(tagName)) {
+                        tagsToShow.push({ text: `课程: ${tagName}`, class: 'tag-lesson' });
+                    } else if (this.isKnowledgeTag(tagName)) {
+                        tagsToShow.push({ text: `知识点: ${tagName}`, class: 'tag-category' });
+                    } else if (this.isDifficultyTag(tagName)) {
+                        tagsToShow.push({ text: `难度: ${tagName}`, class: 'tag-difficulty' });
+                    } else {
+                        // 默认作为知识点标签显示
+                        tagsToShow.push({ text: `知识点: ${tagName}`, class: 'tag-category' });
+                    }
+                }
+            });
         }
         
         const messagesHtml = (mistake.messages || []).map(msg => `
@@ -94,7 +116,7 @@ export class UIManager {
         return div.innerHTML;
     }
 
-    fillEditModal(mistake, isLessonTag) {
+    fillEditModal(mistake) {
         this.editTitle.value = mistake.title || '';
         this.editMessages.value = JSON.stringify(mistake.messages || [], null, 2);
         
@@ -772,6 +794,184 @@ export class UIManager {
         if (window.pptHandler) {
             await window.pptHandler.previewInNewWindow(pptId);
         }
+    }
+
+    /**
+     * 判断标签是否为课程标签
+     */
+    isCourseTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.course) {
+            return window.tagCategories.course.has(tagName);
+        }
+        
+        // 备用：使用硬编码的课程标签
+        const courseTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
+        return courseTags.includes(tagName);
+    }
+
+    /**
+     * 判断标签是否为知识点标签
+     */
+    isKnowledgeTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.knowledge) {
+            return window.tagCategories.knowledge.has(tagName);
+        }
+        
+        // 备用：使用硬编码的知识点标签
+        const knowledgeTags = ['变量', '循环', '条件语句', '列表', '字典', '字符串', '文件操作', '类', '继承'];
+        return knowledgeTags.includes(tagName);
+    }
+
+    /**
+     * 判断标签是否为难度标签
+     */
+    isDifficultyTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.difficulty) {
+            return window.tagCategories.difficulty.has(tagName);
+        }
+        
+        // 备用：使用硬编码的难度标签
+        const difficultyTags = ['简单', '中等', '困难', '基础', '进阶', '高级'];
+        return difficultyTags.includes(tagName);
+    }
+
+    /**
+     * 初始化标签筛选器
+     */
+    initTagFilters() {
+        this.loadFilterTags();
+        this.bindFilterEvents();
+    }
+
+    /**
+     * 加载筛选标签
+     */
+    loadFilterTags() {
+        // 加载课程标签
+        this.loadFilterCategory('course', this.courseFilter, 'course-tag');
+        // 加载知识点标签
+        this.loadFilterCategory('knowledge', this.knowledgeFilter, 'knowledge-tag');
+        // 加载难度标签
+        this.loadFilterCategory('difficulty', this.difficultyFilter, 'difficulty-tag');
+    }
+
+    /**
+     * 加载特定类别的筛选标签
+     */
+    loadFilterCategory(category, container, cssClass) {
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // 从全局标签分类中获取标签
+        if (window.tagCategories && window.tagCategories[category]) {
+            window.tagCategories[category].forEach(tagName => {
+                const tagElement = document.createElement('div');
+                tagElement.className = `filter-tag-item ${cssClass}`;
+                tagElement.textContent = tagName;
+                tagElement.dataset.tagName = tagName;
+                tagElement.dataset.category = category;
+                
+                container.appendChild(tagElement);
+            });
+        }
+    }
+
+    /**
+     * 绑定筛选事件
+     */
+    bindFilterEvents() {
+        // 绑定标签点击事件
+        [this.courseFilter, this.knowledgeFilter, this.difficultyFilter].forEach(container => {
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('filter-tag-item')) {
+                        this.toggleFilterTag(e.target);
+                    }
+                });
+            }
+        });
+
+        // 绑定清除筛选按钮
+        if (this.clearFiltersBtn) {
+            this.clearFiltersBtn.addEventListener('click', () => {
+                this.clearAllFilters();
+            });
+        }
+
+        // 绑定应用筛选按钮
+        if (this.applyFiltersBtn) {
+            this.applyFiltersBtn.addEventListener('click', () => {
+                this.applyFilters();
+            });
+        }
+    }
+
+    /**
+     * 切换筛选标签选中状态
+     */
+    toggleFilterTag(tagElement) {
+        const tagName = tagElement.dataset.tagName;
+        const category = tagElement.dataset.category;
+        
+        if (tagElement.classList.contains('selected')) {
+            // 取消选中
+            tagElement.classList.remove('selected');
+            this.selectedFilters[category].delete(tagName);
+        } else {
+            // 选中
+            tagElement.classList.add('selected');
+            this.selectedFilters[category].add(tagName);
+        }
+    }
+
+    /**
+     * 清除所有筛选
+     */
+    clearAllFilters() {
+        // 清除选中状态
+        this.selectedFilters.course.clear();
+        this.selectedFilters.knowledge.clear();
+        this.selectedFilters.difficulty.clear();
+        
+        // 清除UI选中状态
+        document.querySelectorAll('.filter-tag-item.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 触发筛选更新
+        this.applyFilters();
+    }
+
+    /**
+     * 应用筛选
+     */
+    applyFilters() {
+        // 触发自定义事件，通知MistakeHandler更新筛选
+        const filterEvent = new CustomEvent('tagFilterChanged', {
+            detail: {
+                filters: {
+                    course: Array.from(this.selectedFilters.course),
+                    knowledge: Array.from(this.selectedFilters.knowledge),
+                    difficulty: Array.from(this.selectedFilters.difficulty)
+                }
+            }
+        });
+        document.dispatchEvent(filterEvent);
+    }
+
+    /**
+     * 获取当前筛选条件
+     */
+    getCurrentFilters() {
+        return {
+            course: Array.from(this.selectedFilters.course),
+            knowledge: Array.from(this.selectedFilters.knowledge),
+            difficulty: Array.from(this.selectedFilters.difficulty)
+        };
     }
 
     /**

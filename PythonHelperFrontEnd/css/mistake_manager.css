@@ -767,6 +767,140 @@ body {
     font-weight: 500;
 }
 
+/* 课程标签样式 */
+.mistake-tag.tag-lesson {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+/* 知识点标签样式 */
+.mistake-tag.tag-category {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* 难度标签样式 */
+.mistake-tag.tag-difficulty {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+/* 标签筛选样式 */
+.filter-tags {
+    margin-top: 16px;
+}
+
+.filter-tags h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.filter-categories {
+    margin-bottom: 16px;
+}
+
+.filter-category {
+    margin-bottom: 16px;
+}
+
+.filter-category h5 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.filter-tag-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.filter-tag-item:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.filter-tag-item.selected {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    color: #1976d2;
+    font-weight: 500;
+}
+
+.filter-tag-item.selected:hover {
+    background: #bbdefb;
+}
+
+/* 课程标签筛选样式 */
+.filter-tag-item.course-tag.selected {
+    background: #e8f5e8;
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+
+.filter-tag-item.course-tag.selected:hover {
+    background: #c8e6c9;
+}
+
+/* 知识点标签筛选样式 */
+.filter-tag-item.knowledge-tag.selected {
+    background: #fff3e0;
+    border-color: #f57c00;
+    color: #f57c00;
+}
+
+.filter-tag-item.knowledge-tag.selected:hover {
+    background: #ffe0b2;
+}
+
+/* 难度标签筛选样式 */
+.filter-tag-item.difficulty-tag.selected {
+    background: #fce4ec;
+    border-color: #c2185b;
+    color: #c2185b;
+}
+
+.filter-tag-item.difficulty-tag.selected:hover {
+    background: #f8bbd9;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    flex: 1;
+}
+
 .mistake-actions {
     display: flex;
     gap: 8px;

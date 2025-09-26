@@ -31,9 +31,38 @@
                         <h3>🔍 搜索筛选</h3>
                         <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
                         <div class="filter-tags">
-                            <h4>标签筛选</h4>
-                                                         <div id="tagFilter" class="tag-list">
-                                 </div>
+                            <h4>🏷️ 标签筛选</h4>
+                            <div class="filter-categories">
+                                <!-- 课程标签筛选 -->
+                                <div class="filter-category">
+                                    <h5>📚 课程标签</h5>
+                                    <div id="courseFilter" class="filter-tag-list">
+                                        <!-- 课程标签将动态加载 -->
+                                    </div>
+                                </div>
+                                
+                                <!-- 知识点标签筛选 -->
+                                <div class="filter-category">
+                                    <h5>💡 知识点标签</h5>
+                                    <div id="knowledgeFilter" class="filter-tag-list">
+                                        <!-- 知识点标签将动态加载 -->
+                                    </div>
+                                </div>
+                                
+                                <!-- 难度标签筛选 -->
+                                <div class="filter-category">
+                                    <h5>⚡ 难度标签</h5>
+                                    <div id="difficultyFilter" class="filter-tag-list">
+                                        <!-- 难度标签将动态加载 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 筛选控制按钮 -->
+                            <div class="filter-controls">
+                                <button id="clearFilters" class="btn-secondary btn-small">清除筛选</button>
+                                <button id="applyFilters" class="btn-primary btn-small">应用筛选</button>
+                            </div>
                         </div>
                     </div>
 

@@ -12,21 +12,76 @@ export class MistakeHandler {
         this.itemsPerPage = 10;
         this.editingMistakeId = null;
         this.currentFilters = { search: '', tags: new Set() };
+        
+        // 标签筛选条件
+        this.tagFilters = {
+            course: [],
+            knowledge: [],
+            difficulty: []
+        };
     }
 
     async init() {
         try {
             this.allMistakes = await api.fetchMistakes();
             this.filterAndRender();
+            this.bindFilterEvents();
         } catch (error) {
             console.error("初始化错题数据失败:", error);
         }
     }
-    
-    isLessonTag(tag) {
-        const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
-        return lessonTags.includes(tag);
+
+    /**
+     * 检查是否有活跃的标签筛选条件
+     */
+    hasActiveTagFilters() {
+        return this.tagFilters.course.length > 0 || 
+               this.tagFilters.knowledge.length > 0 || 
+               this.tagFilters.difficulty.length > 0;
     }
+
+    /**
+     * 检查错题标签是否匹配筛选条件
+     */
+    matchesTagFilters(mistakeTags) {
+        // 检查课程标签筛选
+        if (this.tagFilters.course.length > 0) {
+            const hasCourseMatch = this.tagFilters.course.some(filterTag => 
+                mistakeTags.includes(filterTag)
+            );
+            if (!hasCourseMatch) return false;
+        }
+
+        // 检查知识点标签筛选
+        if (this.tagFilters.knowledge.length > 0) {
+            const hasKnowledgeMatch = this.tagFilters.knowledge.some(filterTag => 
+                mistakeTags.includes(filterTag)
+            );
+            if (!hasKnowledgeMatch) return false;
+        }
+
+        // 检查难度标签筛选
+        if (this.tagFilters.difficulty.length > 0) {
+            const hasDifficultyMatch = this.tagFilters.difficulty.some(filterTag => 
+                mistakeTags.includes(filterTag)
+            );
+            if (!hasDifficultyMatch) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 绑定筛选事件
+     */
+    bindFilterEvents() {
+        // 监听标签筛选变化事件
+        document.addEventListener('tagFilterChanged', (e) => {
+            this.tagFilters = e.detail.filters;
+            this.filterAndRender();
+        });
+    }
+    
 
     async saveMistake() {
         if (!this.editingMistakeId) return;
@@ -57,7 +112,6 @@ export class MistakeHandler {
         };
         
         try {
-            // **核心修复：执行“乐观更新”**
             // 1. 立即用我们刚刚构造好的新对象来更新本地的题目列表
             this.allMistakes[index] = updatedMistake;
 
@@ -116,6 +170,19 @@ export class MistakeHandler {
                 }
             }
 
+            // --- 3. 新的标签分类筛选 ---
+            if (this.hasActiveTagFilters()) {
+                if (!Array.isArray(mistake.tags) || mistake.tags.length === 0) {
+                    return false; // 如果要求按标签筛选，但该错题没有任何标签，则过滤掉
+                }
+                
+                // 检查是否匹配任何选中的标签筛选条件
+                const matchesFilters = this.matchesTagFilters(mistake.tags);
+                if (!matchesFilters) {
+                    return false;
+                }
+            }
+
             // 如果错题通过了以上所有筛选条件，则保留它
             return true;
         });
@@ -127,7 +194,6 @@ export class MistakeHandler {
 
         this.ui.renderMistakeList(
             pageMistakes,
-            this.isLessonTag.bind(this), // 关键调用
             (id) => this.editMistake(id),
             (id) => this.deleteMistake(id),
             (id, isChecked) => this.toggleSelection(id, isChecked)
@@ -181,7 +247,7 @@ export class MistakeHandler {
         
         // 先加载标签，再填充编辑模态框
         await this.ui.loadTagsForEditModal();
-        this.ui.fillEditModal(mistake, this.isLessonTag.bind(this));
+        this.ui.fillEditModal(mistake);
         this.ui.toggleModal('modal', true);
     }
 
