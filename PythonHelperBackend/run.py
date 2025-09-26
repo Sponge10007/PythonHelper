@@ -13,8 +13,9 @@ if __name__ == '__main__':
     # 在应用启动前，确保数据库和表已创建
     with app.app_context():
         init_mistakes_db()
+        logger.info("数据库初始化完成")
 
     logger.info("启动Python教学助手后端服务...")
 
-    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能")
+    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理、标签管理功能")
     app.run(host='0.0.0.0', port=5000, debug=True)

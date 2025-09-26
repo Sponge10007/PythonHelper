@@ -79,7 +79,7 @@ class PopupManager {
     }
     
     openMistakeManager() {
-        chrome.tabs.create({ url: chrome.runtime.getURL('mistake_manager.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('html/mistake_manager.html') });
         window.close();
     }
 }

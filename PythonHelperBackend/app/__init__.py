@@ -30,10 +30,12 @@ def create_app(config_class=Config):
     from .routes.mistakes_routes import mistakes_bp
     from .routes.ppt_routes import ppt_bp
     from .routes.pta_routes import pta_bp
+    from .routes.tag_routes import tag_routes
 
     app.register_blueprint(main_bp)
     app.register_blueprint(mistakes_bp, url_prefix='/mistakes')
     app.register_blueprint(ppt_bp, url_prefix='/ppt')
     app.register_blueprint(pta_bp, url_prefix='/pta')
+    app.register_blueprint(tag_routes)
 
     return app

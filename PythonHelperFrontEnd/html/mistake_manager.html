@@ -206,35 +206,19 @@
                     <div class="form-group">
                         <label for="editLesson">课程标签</label>
                         <select id="editLesson" class="form-select">
-                            <option value="">选择标签...</option>
-                            <option value="数据类型及表达式">数据类型及表达式</option>
-                            <option value="复合数据类型">复合数据类型</option>
-                            <option value="面向对象">面向对象</option>
-                            <option value="函数">函数</option>
-                            <option value="流程控制">流程控制</option>
-                            <option value="文件概述">文件概述</option>
-                            <option value="异常处理">异常处理</option>
+                            <option value="">选择课程标签...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="editCategory">分类</label>
+                        <label for="editCategory">知识点标签</label>
                         <select id="editCategory" class="form-select">
-                            <option value="基础语法">基础语法</option>
-                            <option value="数据结构">数据结构</option>
-                            <option value="算法">算法</option>
-                            <option value="面向对象">面向对象</option>
-                            <option value="文件操作">文件操作</option>
-                            <option value="网络编程">网络编程</option>
-                            <option value="数据库">数据库</option>
-                            <option value="其他">其他</option>
+                            <option value="">选择知识点标签...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="editDifficulty">难度</label>
+                        <label for="editDifficulty">难度标签</label>
                         <select id="editDifficulty" class="form-select">
-                            <option value="简单">简单</option>
-                            <option value="中等">中等</option>
-                            <option value="困难">困难</option>
+                            <option value="">选择难度标签...</option>
                         </select>
                     </div>
                 </div>
@@ -246,26 +230,58 @@
         </div>
 
         <div id="tagModal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 800px;">
                 <div class="modal-header">
-                    <h2>管理标签</h2>
+                    <h2>🏷️ 标签管理</h2>
                     <button id="closeTagModal" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <!-- 标签类别选择 -->
                     <div class="form-group">
-                        <label for="newTagName">新标签名称</label>
-                        <input type="text" id="newTagName" placeholder="例如：数据类型及表达式" class="form-input">
+                        <label>标签类别</label>
+                        <div class="tag-category-tabs">
+                            <button class="category-tab active" data-category="course">📚 课程</button>
+                            <button class="category-tab" data-category="knowledge">💡 知识点</button>
+                            <button class="category-tab" data-category="difficulty">⚡ 难度</button>
+                        </div>
                     </div>
-                    <div class="existing-tags">
-                        <h4>现有标签</h4>
-                        <div id="existingTagsList" class="tag-list">
+
+                    <!-- 添加新标签 -->
+                    <div class="form-group">
+                        <label for="newTagName">添加新标签</label>
+                        <div class="add-tag-container">
+                            <input type="text" id="newTagName" placeholder="输入标签名称..." class="form-input">
+                            <button id="addNewTag" class="btn-primary">添加</button>
+                        </div>
+                    </div>
+
+                    <!-- 标签列表 -->
+                    <div class="tags-container">
+                        <!-- 课程标签 -->
+                        <div id="courseTags" class="tag-category-section active">
+                            <h4>📚 课程标签</h4>
+                            <div id="courseTagsList" class="tag-list">
                             </div>
+                        </div>
+
+                        <!-- 知识点标签 -->
+                        <div id="knowledgeTags" class="tag-category-section">
+                            <h4>💡 知识点标签</h4>
+                            <div id="knowledgeTagsList" class="tag-list">
+                            </div>
+                        </div>
+
+                        <!-- 难度标签 -->
+                        <div id="difficultyTags" class="tag-category-section">
+                            <h4>⚡ 难度标签</h4>
+                            <div id="difficultyTagsList" class="tag-list">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="addNewTag" class="btn-primary">添加标签</button>
-                    <button id="deleteTag" class="btn-danger">删除选中</button>
-                    <button id="cancelTagEdit" class="btn-secondary">取消</button>
+                    <button id="deleteSelectedTags" class="btn-danger">删除选中</button>
+                    <button id="cancelTagEdit" class="btn-secondary">完成</button>
                 </div>
             </div>
         </div>

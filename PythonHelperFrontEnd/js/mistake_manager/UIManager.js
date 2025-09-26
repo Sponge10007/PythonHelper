@@ -97,20 +97,105 @@ export class UIManager {
     fillEditModal(mistake, isLessonTag) {
         this.editTitle.value = mistake.title || '';
         this.editMessages.value = JSON.stringify(mistake.messages || [], null, 2);
-        this.editCategory.value = mistake.category || '其他';
-        this.editDifficulty.value = mistake.difficulty || '中等';
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => isLessonTag(tag)) : '';
-        this.editLesson.value = lessonTag || '';
+        
+        // 清空所有下拉框
+        this.editLesson.value = '';
+        this.editCategory.value = '';
+        this.editDifficulty.value = '';
+        
+        // 根据错题的标签设置下拉框的选中状态
+        if (mistake.tags && Array.isArray(mistake.tags)) {
+            mistake.tags.forEach(tag => {
+                // 检查课程标签
+                for (let option of this.editLesson.options) {
+                    if (option.value === tag) {
+                        this.editLesson.value = tag;
+                        break;
+                    }
+                }
+                // 检查知识点标签
+                for (let option of this.editCategory.options) {
+                    if (option.value === tag) {
+                        this.editCategory.value = tag;
+                        break;
+                    }
+                }
+                // 检查难度标签
+                for (let option of this.editDifficulty.options) {
+                    if (option.value === tag) {
+                        this.editDifficulty.value = tag;
+                        break;
+                    }
+                }
+            });
+        }
     }
 
     getEditModalData() {
-        const lesson = this.editLesson.value;
+        // 收集所有下拉框的选中值
+        const selectedTags = [];
+        
+        // 收集课程标签
+        if (this.editLesson.value) {
+            selectedTags.push(this.editLesson.value);
+        }
+        
+        // 收集知识点标签
+        if (this.editCategory.value) {
+            selectedTags.push(this.editCategory.value);
+        }
+        
+        // 收集难度标签
+        if (this.editDifficulty.value) {
+            selectedTags.push(this.editDifficulty.value);
+        }
+
         return {
             title: this.editTitle.value.trim(),
-            category: this.editCategory.value,
-            difficulty: this.editDifficulty.value,
-            tags: lesson ? [lesson] : [],
+            tags: selectedTags,
         };
+    }
+
+    async loadTagsForEditModal() {
+        try {
+            const response = await fetch('http://localhost:5000/api/tags/categories');
+            const result = await response.json();
+            
+            if (result.success) {
+                const { course, knowledge, difficulty } = result.data;
+                
+                // 清空现有选项（保留第一个空选项）
+                this.editLesson.innerHTML = '<option value="">选择课程标签...</option>';
+                this.editCategory.innerHTML = '<option value="">选择知识点标签...</option>';
+                this.editDifficulty.innerHTML = '<option value="">选择难度标签...</option>';
+                
+                // 添加课程标签
+                course.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editLesson.appendChild(option);
+                });
+                
+                // 添加知识点标签
+                knowledge.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editCategory.appendChild(option);
+                });
+                
+                // 添加难度标签
+                difficulty.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editDifficulty.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('加载标签失败:', error);
+        }
     }
 
     updatePagination(currentPage, totalPages) {
@@ -459,23 +544,6 @@ export class UIManager {
         if (error) error.classList.remove('hidden');
         if (errorText) errorText.textContent = errorMessage;
     }
-
-    /**
-     * 显示预览错误
-     */
-    showPreviewError(errorMessage) {
-        const modal = document.getElementById('ppt-preview-modal');
-        if (!modal) return;
-        
-        const loading = modal.querySelector('.preview-loading');
-        const error = modal.querySelector('.preview-error');
-        const errorText = modal.querySelector('.error-text');
-        
-        if (loading) loading.classList.add('hidden');
-        if (error) error.classList.remove('hidden');
-        if (errorText) errorText.textContent = errorMessage;
-    }
-
     /**
      * 更新缩略图
      */

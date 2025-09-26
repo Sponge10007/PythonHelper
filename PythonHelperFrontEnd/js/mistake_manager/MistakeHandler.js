@@ -46,26 +46,13 @@ export class MistakeHandler {
             return;
         }
         
-        // --- 标签管理逻辑 ---
-        // 1. 保留原始错题中所有非课程标签
-        const otherTags = (originalMistake.tags || []).filter(tag => !this.isLessonTag(tag));
-        
-        // 2. 从表单数据中获取新的课程标签 (formData.tags 是一个只包含新课程标签的数组)
-        const newLessonTag = formData.tags[0] || null;
-
-        // 3. 组合成最终的标签数组
-        const finalTags = [...otherTags];
-        if (newLessonTag) {
-            finalTags.push(newLessonTag);
-        }
-        // --- 结束标签管理 ---
+        // --- 新标签逻辑：以用户在编辑弹窗勾选的标签为准覆盖 ---
+        const finalTags = Array.isArray(formData.tags) ? formData.tags : [];
 
         // 组合成最终的、完整的错题对象
         const updatedMistake = {
             ...originalMistake,
             title: formData.title,
-            category: formData.category,
-            difficulty: formData.difficulty,
             tags: finalTags
         };
         
@@ -187,11 +174,14 @@ export class MistakeHandler {
         }
     }
     
-    editMistake(mistakeId) {
+    async editMistake(mistakeId) {
         const mistake = this.allMistakes.find(m => m.id === mistakeId);
         if (!mistake) return;
         this.editingMistakeId = mistakeId;
-        this.ui.fillEditModal(mistake, this.isLessonTag.bind(this)); // 新增isLessonTag函数调用
+        
+        // 先加载标签，再填充编辑模态框
+        await this.ui.loadTagsForEditModal();
+        this.ui.fillEditModal(mistake, this.isLessonTag.bind(this));
         this.ui.toggleModal('modal', true);
     }
 
