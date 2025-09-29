@@ -1,9 +1,5 @@
 // js/sidebar/SidebarManager.js
-
-import { UIManager } from './UIManager.js';
-import { ChatManager } from './ChatManager.js';
-// 导入 SettingsManager 来处理设置逻辑
-import { SettingsManager } from './SettingsManager.js';
+// 注意：UIManager, ChatManager, SettingsManager 将通过全局window对象访问
 
 // 获取后端URL函数
 function getBackendUrl() {
@@ -20,10 +16,10 @@ function getBackendUrl() {
 
 class SidebarManager {
     constructor() {
-        this.ui = new UIManager();
-        this.chatManager = new ChatManager(this.ui);
+        this.ui = new window.UIManager();
+        this.chatManager = new window.ChatManager(this.ui);
         // 新增：实例化 SettingsManager
-        this.settingsManager = new SettingsManager(this.ui);
+        this.settingsManager = new window.SettingsManager(this.ui);
         
         // 验证码发送状态跟踪
         this.verificationSent = false;
@@ -37,6 +33,8 @@ class SidebarManager {
         await this.settingsManager.init();
         await this.checkLoginStatus();
     }    bindEvents() {
+        console.log('正在绑定事件...'); // 调试信息
+        
         // --- 聊天相关事件 ---
         this.ui.welcomeScreen.querySelector('#startFirstChat').addEventListener('click', () => this.chatManager.createNewChat());
         this.ui.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.chatManager.sendMessage(this.ui.chatInput.value.trim()); });
@@ -95,13 +93,33 @@ class SidebarManager {
         // --- 登录界面事件绑定 ---
         this.bindAuthEvents();
         
-        // 打开错题管理器页面的按钮
-        const openMistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
-        if(openMistakeManagerBtn) {
-            openMistakeManagerBtn.addEventListener('click', () => {
-                 chrome.tabs.create({ url: chrome.runtime.getURL('html/mistake_manager.html') });
-            });
-        }
+        // 打开错题管理器页面的按钮 - 使用事件委托
+        document.addEventListener('click', (e) => {
+            console.log('点击事件:', e.target.id, e.target.className, e.target); // 调试所有点击
+            
+            if (e.target && (e.target.id === 'openMistakeManagerBtn' || e.target.closest('#openMistakeManagerBtn'))) {
+                console.log('🎯 点击了错题管理器按钮!'); // 调试信息
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 设置iframe的src为正确的扩展URL
+                const iframe = document.getElementById('mistakeManagerFrame');
+                if (iframe) {
+                    iframe.src = chrome.runtime.getURL('html/mistake_manager.html');
+                    console.log('📄 设置iframe src:', iframe.src);
+                } else {
+                    console.log('❌ 未找到iframe!');
+                }
+                
+                // 显示错题管理器视图
+                if (this.ui && this.ui.mistakeManagerView) {
+                    this.ui.showView(this.ui.mistakeManagerView);
+                    console.log('✅ 已调用showView');
+                } else {
+                    console.log('❌ UI或视图不存在!', this.ui, this.ui?.mistakeManagerView);
+                }
+            }
+        });
     }
 
     // 新增：处理PTA分析请求
@@ -168,6 +186,7 @@ class SidebarManager {
         document.getElementById('backToMainFromSettings').addEventListener('click', backToMain);
         document.getElementById('backToMainFromPta').addEventListener('click', backToMain);
         document.getElementById('backToMainFromLogin').addEventListener('click', backToMain);
+        document.getElementById('backToMainFromManager').addEventListener('click', backToMain);
     }
 
     // 检查登录状态
@@ -190,8 +209,16 @@ class SidebarManager {
         // 需要登录后才能使用的按钮
         const requireLoginButtons = [
             'mistakesBtn', 'settingsBtn', 'ptaBtn',
-            'openMistakeManagerBtn', 'toggleChatListBtn'
+            'toggleChatListBtn'
         ];
+        
+        // 错题管理器按钮不需要登录即可使用
+        const mistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
+        if (mistakeManagerBtn) {
+            mistakeManagerBtn.disabled = false;
+            mistakeManagerBtn.style.opacity = '1';
+            mistakeManagerBtn.style.pointerEvents = 'auto';
+        }
         
         if (isLoggedIn && userEmail) {
             // 用户已登录 - 启用所有功能
@@ -264,24 +291,35 @@ class SidebarManager {
 
     // 绑定认证相关事件
     bindAuthEvents() {
+        // 使用安全的元素获取和事件绑定
+        const bindSafeEvent = (elementId, eventType, handler) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener(eventType, handler);
+                console.log(`✅ 成功绑定事件: ${elementId} -> ${eventType}`);
+            } else {
+                console.warn(`⚠️ 未找到元素: ${elementId}`);
+            }
+        };
+
         // 登录提交
-        document.getElementById('loginSubmitBtn').addEventListener('click', () => this.handleLoginSubmit());
+        bindSafeEvent('loginSubmitBtn', 'click', () => this.handleLoginSubmit());
         
         // 注册提交
-        document.getElementById('registerSubmitBtn').addEventListener('click', () => this.handleRegisterSubmit());
+        bindSafeEvent('registerSubmitBtn', 'click', () => this.handleRegisterSubmit());
         
         // 忘记密码
-        document.getElementById('forgotPasswordBtn').addEventListener('click', () => this.handleForgotPassword());
+        bindSafeEvent('forgotPasswordBtn', 'click', () => this.handleForgotPassword());
         
         // 表单切换
-        document.getElementById('showRegisterForm').addEventListener('click', () => this.showAuthForm('register'));
-        document.getElementById('showLoginForm').addEventListener('click', () => this.showAuthForm('login'));
+        bindSafeEvent('showRegisterForm', 'click', () => this.showAuthForm('register'));
+        bindSafeEvent('showLoginForm', 'click', () => this.showAuthForm('login'));
         
         // 回车键提交
-        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+        bindSafeEvent('loginPassword', 'keypress', (e) => {
             if (e.key === 'Enter') this.handleLoginSubmit();
         });
-        document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+        bindSafeEvent('registerPassword', 'keypress', (e) => {
             if (e.key === 'Enter') this.handleRegisterSubmit();
         });
     }
@@ -291,12 +329,18 @@ class SidebarManager {
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         
-        if (type === 'register') {
-            loginForm.style.display = 'none';
-            registerForm.style.display = 'block';
+        if (loginForm && registerForm) {
+            if (type === 'register') {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                console.log('🔄 显示注册表单');
+            } else {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                console.log('🔄 显示登录表单');
+            }
         } else {
-            loginForm.style.display = 'block';
-            registerForm.style.display = 'none';
+            console.warn('⚠️ 未找到认证表单元素:', { loginForm, registerForm });
         }
     }
 
@@ -447,6 +491,9 @@ class SidebarManager {
     }
 }
 
+// 将SidebarManager暴露到全局window对象
+window.SidebarManager = SidebarManager;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new SidebarManager();
+    new window.SidebarManager();
 });

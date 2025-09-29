@@ -1,38 +1,34 @@
 // js/sidebar/SettingsManager.js
+// 注意：storage函数通过全局window对象访问
 
-import * as storage from '../common/storage.js';
-
-export class SettingsManager {
+class SettingsManager {
     constructor(uiManager) {
         this.ui = uiManager;
         this.settings = {};
 
         // 从 UIManager 获取设置相关的 DOM 元素
         this.aiApiKeyInput = this.ui.settingsInterface.querySelector('#aiApiKey');
-        this.aiApiEndpointInput = this.ui.settingsInterface.querySelector('#aiApiEndpoint');
         this.questionModeSelect = this.ui.settingsInterface.querySelector('#questionMode');
         this.saveSettingsBtn = this.ui.settingsInterface.querySelector('#saveSettings');
     }
 
     async init() {
-        this.settings = await storage.loadSettings();
+        this.settings = await window.loadSettings();
         this.loadSettingsToUI();
     }
 
     loadSettingsToUI() {
         this.aiApiKeyInput.value = this.settings.aiApiKey;
-        this.aiApiEndpointInput.value = this.settings.aiApiEndpoint;
         this.questionModeSelect.value = this.settings.questionMode;
     }
 
     async saveSettings() {
         const newSettings = {
             aiApiKey: this.aiApiKeyInput.value.trim(),
-            aiApiEndpoint: this.aiApiEndpointInput.value.trim(),
             questionMode: this.questionModeSelect.value
         };
 
-        const success = await storage.saveSettings(newSettings);
+        const success = await window.saveSettings(newSettings);
         
         if (success) {
             this.settings = newSettings;
@@ -46,3 +42,6 @@ export class SettingsManager {
         }
     }
 }
+
+// 将SettingsManager暴露到全局window对象
+window.SettingsManager = SettingsManager;

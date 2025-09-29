@@ -4,7 +4,7 @@
  * 从 chrome.storage 加载对话数据
  * @returns {Promise<Array>} - 对话列表
  */
-export async function loadChats() {
+async function loadChats() {
     try {
         const result = await chrome.storage.local.get(['chats']);
         return result.chats || [];
@@ -18,7 +18,7 @@ export async function loadChats() {
  * 将对话数据保存到 chrome.storage
  * @param {Array} chats - 要保存的对话列表
  */
-export async function saveChats(chats) {
+async function saveChats(chats) {
     try {
         await chrome.storage.local.set({ chats: chats });
     } catch (e) {
@@ -30,19 +30,17 @@ export async function saveChats(chats) {
  * 从 chrome.storage 加载设置
  * @returns {Promise<Object>} - 设置对象
  */
-export async function loadSettings() {
+async function loadSettings() {
     try {
-        const result = await chrome.storage.local.get(['aiApiKey', 'aiApiEndpoint', 'questionMode']);
+        const result = await chrome.storage.local.get(['aiApiKey', 'questionMode']);
         return {
             aiApiKey: result.aiApiKey || '',
-            aiApiEndpoint: result.aiApiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
             questionMode: result.questionMode || 'objective'
         };
     } catch (e) {
         console.warn("非扩展环境，使用默认设置。");
         return {
             aiApiKey: '',
-            aiApiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
             questionMode: 'objective'
         };
     }
@@ -52,7 +50,7 @@ export async function loadSettings() {
  * 将设置保存到 chrome.storage
  * @param {Object} settings - 要保存的设置对象
  */
-export async function saveSettings(settings) {
+async function saveSettings(settings) {
     try {
         await chrome.storage.local.set(settings);
         return true;
@@ -66,7 +64,7 @@ export async function saveSettings(settings) {
  * 从 chrome.storage 加载用户登录状态
  * @returns {Promise<Object>} - 用户状态对象
  */
-export async function loadUserStatus() {
+async function loadUserStatus() {
     try {
         const result = await chrome.storage.local.get(['userToken', 'userEmail', 'isLoggedIn']);
         return {
@@ -88,7 +86,7 @@ export async function loadUserStatus() {
  * 保存用户登录状态
  * @param {Object} userStatus - 用户状态对象
  */
-export async function saveUserStatus(userStatus) {
+async function saveUserStatus(userStatus) {
     try {
         await chrome.storage.local.set(userStatus);
         return true;
@@ -101,7 +99,7 @@ export async function saveUserStatus(userStatus) {
 /**
  * 清除用户登录状态（登出）
  */
-export async function clearUserStatus() {
+async function clearUserStatus() {
     try {
         await chrome.storage.local.remove(['userToken', 'userEmail', 'isLoggedIn']);
         return true;
@@ -110,3 +108,12 @@ export async function clearUserStatus() {
         return false;
     }
 }
+
+// 将所有storage函数暴露到全局window对象
+window.loadChats = loadChats;
+window.saveChats = saveChats;
+window.loadSettings = loadSettings;
+window.saveSettings = saveSettings;
+window.loadUserStatus = loadUserStatus;
+window.saveUserStatus = saveUserStatus;
+window.clearUserStatus = clearUserStatus;

@@ -1,6 +1,6 @@
 // js/sidebar/UIManager.js
 
-export class UIManager {
+class UIManager {
     constructor() {
         this.initElements();
     }
@@ -12,6 +12,7 @@ export class UIManager {
         this.welcomeScreen = document.getElementById('welcomeScreen');
         this.chatInterface = document.getElementById('chatInterface');
         this.mistakeCollection = document.getElementById('mistakeCollection');
+        this.mistakeManagerView = document.getElementById('mistakeManagerView');
         this.settingsInterface = document.getElementById('settingsInterface');
         this.ptaAnalysisInterface = document.getElementById('ptaAnalysisInterface');
         this.loginInterface = document.getElementById('loginInterface'); // 添加登录界面
@@ -25,7 +26,7 @@ export class UIManager {
     
     showView(viewToShow) {
         // 更新视图列表
-        [this.welcomeScreen, this.chatInterface, this.mistakeCollection, this.settingsInterface, this.ptaAnalysisInterface, this.loginInterface].forEach(view => {
+        [this.welcomeScreen, this.chatInterface, this.mistakeCollection, this.mistakeManagerView, this.settingsInterface, this.ptaAnalysisInterface, this.loginInterface].forEach(view => {
             view.classList.add('hidden');
         });
         viewToShow.classList.remove('hidden');
@@ -166,3 +167,6 @@ export class UIManager {
         this.sendMessageBtn.innerHTML = isLoading ? `<div class="loader"></div>` : `<span class="material-symbols-outlined">arrow_upward</span>`;
     }
 }
+
+// 将UIManager暴露到全局window对象
+window.UIManager = UIManager;

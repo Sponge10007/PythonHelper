@@ -1,9 +1,7 @@
 // js/sidebar/ChatManager.js
+// 注意：api和storage函数通过全局window对象访问
 
-import * as api from '../common/api.js';
-import * as storage from '../common/storage.js';
-
-export class ChatManager {
+class ChatManager {
     constructor(uiManager) {
         this.ui = uiManager; // 依赖 UIManager 来更新界面
         this.chats = [];
@@ -107,7 +105,7 @@ export class ChatManager {
         const placeholder = this.ui.appendMessage({ role: 'assistant', content: '思考中...' });
 
         try {
-            const data = await api.fetchAiResponse(chat.messages, this.settings.aiApiKey, this.settings.aiApiEndpoint);
+            const data = await window.fetchAiResponse(chat.messages, this.settings.aiApiKey, 'https://api.deepseek.com/v1/chat/completions');
             const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: data.response };
             chat.messages.push(aiMessage);
             
@@ -183,7 +181,7 @@ export class ChatManager {
         
         try {
             // 使用我们拆分出去的 api.js
-            await api.saveMistake(newMistake);
+            await window.saveMistake(newMistake);
             alert('已成功加入错题集！');
             this.toggleMistakeSelectionMode();
         } catch (error) {
@@ -195,7 +193,7 @@ export class ChatManager {
     async showMistakeCollection() {
         this.ui.showView(this.ui.mistakeCollection);
         try {
-            this.mistakes = await api.fetchMistakes();
+            this.mistakes = await window.fetchMistakes();
             this.ui.displayMistakes(this.mistakes);
         } catch (error) {
             console.error("加载错题集失败:", error);
@@ -203,3 +201,6 @@ export class ChatManager {
         }
     }
 }
+
+// 将ChatManager暴露到全局window对象
+window.ChatManager = ChatManager;

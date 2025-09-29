@@ -46,9 +46,8 @@ export class DataManager {
         if (newSettings.apiKey) {
             this.settings.aiApiKey = newSettings.apiKey;
         }
-        if (newSettings.apiEndpoint) {
-            this.settings.aiApiEndpoint = newSettings.apiEndpoint;
-        }
+        // API endpoint 使用硬编码的 DeepSeek API
+        this.settings.aiApiEndpoint = 'https://api.deepseek.com/v1/chat/completions';
         // 更新完整的设置对象
         this.settings = { ...this.settings, ...newSettings };
         console.log('后台设置已更新:', this.settings);

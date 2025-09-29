@@ -107,6 +107,18 @@
                 <div id="mistakeListContainer" class="mistake-list-container"></div>
             </div>
 
+            <div id="mistakeManagerView" class="view hidden">
+                <header class="sidebar-header">
+                    <button id="backToMainFromManager" class="header-action-btn" title="返回">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <h1>错题管理器</h1>
+                </header>
+                <div class="manager-container">
+                    <iframe id="mistakeManagerFrame" src="" style="width: 100%; height: calc(100vh - 60px); border: none;"></iframe>
+                </div>
+            </div>
+
             <div id="settingsInterface" class="view hidden">
                  <header class="sidebar-header">
                     <button id="backToMainFromSettings" class="header-action-btn" title="返回">
@@ -118,10 +130,6 @@
                     <div class="form-group">
                         <label for="aiApiKey">API Key</label>
                         <input type="password" id="aiApiKey" placeholder="请输入你的API Key">
-                    </div>
-                    <div class="form-group">
-                        <label for="aiApiEndpoint">API Endpoint</label>
-                        <input type="text" id="aiApiEndpoint">
                     </div>
                     <div class="form-group">
                         <label for="questionMode">问题模式</label>
@@ -246,7 +254,11 @@
         </main>
     </div>
 
+    <script src="../js/common/storage.js"></script>
     <script src="../js/common/api.js"></script>
-    <script type="module" src="../js/sidebar/SidebarManager.js"></script>
+    <script src="../js/sidebar/UIManager.js"></script>
+    <script src="../js/sidebar/ChatManager.js"></script>
+    <script src="../js/sidebar/SettingsManager.js"></script>
+    <script src="../js/sidebar/SidebarManager.js"></script>
 </body>
 </html>

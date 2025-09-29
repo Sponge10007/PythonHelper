@@ -64,7 +64,7 @@ export class MessageHandler {
                 body: JSON.stringify({
                     rawData: capturedRawData,
                     apiKey: settings.aiApiKey,
-                    apiEndpoint: settings.aiApiEndpoint
+                    apiEndpoint: 'https://api.deepseek.com/v1/chat/completions'
                 })
             });
 
