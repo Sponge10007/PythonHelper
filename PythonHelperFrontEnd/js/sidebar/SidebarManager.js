@@ -5,13 +5,29 @@ import { ChatManager } from './ChatManager.js';
 // 导入 SettingsManager 来处理设置逻辑
 import { SettingsManager } from './SettingsManager.js';
 
+// 获取后端URL函数
+function getBackendUrl() {
+    // 在Chrome扩展中检测环境
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+        return 'http://localhost:5000';
+    }
+    // 备用检测
+    const isLocalDev = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname === '';
+    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
+}
+
 class SidebarManager {
     constructor() {
         this.ui = new UIManager();
         this.chatManager = new ChatManager(this.ui);
         // 新增：实例化 SettingsManager
         this.settingsManager = new SettingsManager(this.ui);
-
+        
+        // 验证码发送状态跟踪
+        this.verificationSent = false;
+        
         this.bindEvents();
         this.init();
     }
@@ -19,9 +35,8 @@ class SidebarManager {
     async init() {
         await this.chatManager.init();
         await this.settingsManager.init();
-    }
-    
-    bindEvents() {
+        await this.checkLoginStatus();
+    }    bindEvents() {
         // --- 聊天相关事件 ---
         this.ui.welcomeScreen.querySelector('#startFirstChat').addEventListener('click', () => this.chatManager.createNewChat());
         this.ui.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.chatManager.sendMessage(this.ui.chatInput.value.trim()); });
@@ -58,8 +73,27 @@ class SidebarManager {
         document.getElementById('ptaBtn').addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));
         document.getElementById('startPtaAnalysisBtn').addEventListener('click', () => this.handlePtaAnalysis());
         
+        // --- 登录按钮事件绑定 ---
+        const loginBtn = document.getElementById('loginBtn');
+        const loginFromSidebar = document.getElementById('loginFromSidebar');
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.handleLogin();
+            });
+        }
+        
+        if (loginFromSidebar) {
+            loginFromSidebar.addEventListener('click', () => {
+                this.handleLogin();
+            });
+        }
+        
         // --- 返回按钮事件 ---
         this.bindBackButtons();
+        
+        // --- 登录界面事件绑定 ---
+        this.bindAuthEvents();
         
         // 打开错题管理器页面的按钮
         const openMistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
@@ -132,7 +166,284 @@ class SidebarManager {
         };
         document.getElementById('backToMain').addEventListener('click', backToMain);
         document.getElementById('backToMainFromSettings').addEventListener('click', backToMain);
-        document.getElementById('backToMainFromPta').addEventListener('click', backToMain); // 新增
+        document.getElementById('backToMainFromPta').addEventListener('click', backToMain);
+        document.getElementById('backToMainFromLogin').addEventListener('click', backToMain);
+    }
+
+    // 检查登录状态
+    async checkLoginStatus() {
+        try {
+            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail']);
+            this.updateUIBasedOnLoginStatus(result.isLoggedIn, result.userEmail);
+        } catch (error) {
+            console.error('检查登录状态失败:', error);
+            this.updateUIBasedOnLoginStatus(false, null);
+        }
+    }
+
+    // 根据登录状态更新UI
+    updateUIBasedOnLoginStatus(isLoggedIn, userEmail) {
+        const loginPrompt = document.getElementById('loginPrompt');
+        const startFirstChat = document.getElementById('startFirstChat');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        // 需要登录后才能使用的按钮
+        const requireLoginButtons = [
+            'mistakesBtn', 'settingsBtn', 'ptaBtn',
+            'openMistakeManagerBtn', 'toggleChatListBtn'
+        ];
+        
+        if (isLoggedIn && userEmail) {
+            // 用户已登录 - 启用所有功能
+            if (loginPrompt) loginPrompt.style.display = 'none';
+            if (startFirstChat) {
+                startFirstChat.disabled = false;
+                startFirstChat.textContent = '开始对话';
+                startFirstChat.style.opacity = '1';
+            }
+            
+            // 启用所有功能按钮
+            requireLoginButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                }
+            });
+            
+            // 更新登录按钮显示
+            if (loginBtn) {
+                loginBtn.innerHTML = '<span class="material-symbols-outlined">account_circle</span>';
+                loginBtn.title = `已登录: ${userEmail}`;
+                loginBtn.style.background = 'rgba(76, 175, 80, 0.3)';
+            }
+        } else {
+            // 用户未登录 - 显示登录提示
+            if (loginPrompt) loginPrompt.style.display = 'block';
+            if (startFirstChat) {
+                startFirstChat.disabled = true;
+                startFirstChat.textContent = '请先登录';
+                startFirstChat.style.opacity = '0.5';
+            }
+            
+            // 禁用功能按钮
+            requireLoginButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.pointerEvents = 'none';
+                }
+            });
+            
+            // 重置登录按钮显示
+            if (loginBtn) {
+                loginBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
+                loginBtn.title = '用户登录';
+                loginBtn.style.background = '';
+            }
+        }
+    }
+
+    // 处理登录按钮点击
+    handleLogin() {
+        this.ui.showView(this.ui.loginInterface);
+    }
+
+    // 处理登出
+    async handleLogout() {
+        try {
+            await chrome.storage.local.remove(['isLoggedIn', 'userEmail', 'userToken']);
+            this.updateUIBasedOnLoginStatus(false, null);
+            this.showMainView();
+        } catch (error) {
+            console.error('登出失败:', error);
+        }
+    }
+
+    // 绑定认证相关事件
+    bindAuthEvents() {
+        // 登录提交
+        document.getElementById('loginSubmitBtn').addEventListener('click', () => this.handleLoginSubmit());
+        
+        // 注册提交
+        document.getElementById('registerSubmitBtn').addEventListener('click', () => this.handleRegisterSubmit());
+        
+        // 忘记密码
+        document.getElementById('forgotPasswordBtn').addEventListener('click', () => this.handleForgotPassword());
+        
+        // 表单切换
+        document.getElementById('showRegisterForm').addEventListener('click', () => this.showAuthForm('register'));
+        document.getElementById('showLoginForm').addEventListener('click', () => this.showAuthForm('login'));
+        
+        // 回车键提交
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleLoginSubmit();
+        });
+        document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleRegisterSubmit();
+        });
+    }
+
+    // 显示认证表单
+    showAuthForm(type) {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        
+        if (type === 'register') {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+        } else {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+        }
+    }
+
+    // 显示认证消息
+    showAuthMessage(message, type = 'info') {
+        const messageEl = document.getElementById('authMessage');
+        if (!messageEl) return;
+        
+        messageEl.className = `auth-message ${type}`;
+        messageEl.textContent = message;
+        messageEl.classList.remove('hidden');
+        
+        // 3秒后自动隐藏成功消息
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, 3000);
+        }
+    }
+
+    // 验证邮箱格式
+    validateEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            this.showAuthMessage('请输入有效的邮箱地址', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    // 处理登录提交
+    async handleLoginSubmit() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        
+        if (!this.validateEmail(email)) return;
+        if (!password) {
+            this.showAuthMessage('请输入密码', 'error');
+            return;
+        }
+        
+        const btn = document.getElementById('loginSubmitBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '登录中...';
+        btn.disabled = true;
+        
+        try {
+            const response = await fetch(`${getBackendUrl()}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                await chrome.storage.local.set({
+                    isLoggedIn: true,
+                    userEmail: email,
+                    userToken: result.token || 'temp'
+                });
+                
+                this.showAuthMessage('登录成功！', 'success');
+                setTimeout(() => {
+                    this.showMainView();
+                    this.checkLoginStatus();
+                }, 1500);
+            } else {
+                this.showAuthMessage(result.message || '登录失败', 'error');
+            }
+        } catch (error) {
+            console.error('登录错误:', error);
+            this.showAuthMessage('网络错误，请稍后重试', 'error');
+        }
+        
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+
+    // 处理注册提交
+    async handleRegisterSubmit() {
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value.trim();
+        
+        if (!this.validateEmail(email)) return;
+        if (!password || password.length < 6) {
+            this.showAuthMessage('密码至少需要6位字符', 'error');
+            return;
+        }
+        
+        const btn = document.getElementById('registerSubmitBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '注册中...';
+        btn.disabled = true;
+        
+        try {
+            const response = await fetch(`${getBackendUrl()}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAuthMessage('注册成功！请检查邮箱验证邮件', 'success');
+                this.verificationSent = true;
+                setTimeout(() => {
+                    this.showAuthForm('login');
+                    document.getElementById('loginEmail').value = email;
+                }, 2000);
+            } else {
+                this.showAuthMessage(result.message || '注册失败', 'error');
+            }
+        } catch (error) {
+            console.error('注册错误:', error);
+            this.showAuthMessage('网络错误，请稍后重试', 'error');
+        }
+        
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+
+    // 处理忘记密码
+    async handleForgotPassword() {
+        const email = document.getElementById('loginEmail').value.trim();
+        
+        if (!this.validateEmail(email)) return;
+        
+        try {
+            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAuthMessage('密码重置邮件已发送', 'success');
+            } else {
+                this.showAuthMessage(result.message || '发送失败', 'error');
+            }
+        } catch (error) {
+            console.error('密码重置错误:', error);
+            this.showAuthMessage('网络错误，请稍后重试', 'error');
+        }
     }
 }
 

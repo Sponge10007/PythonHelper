@@ -16,6 +16,35 @@ export class UIManager {
         this.editLesson = document.getElementById('editLesson');
     }
 
+    /**
+     * 获取服务器URL - 支持开发和生产环境
+     */
+    getServerUrl() {
+        // Chrome扩展环境检测
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+            // 扩展环境：使用动态检测的后端地址
+            return getBackendUrl();
+        }
+        
+        // 检查是否设置了全局服务器地址
+        if (typeof window !== 'undefined' && window.SERVER_URL) {
+            return window.SERVER_URL;
+        }
+        
+        // 检查是否是生产环境
+        const isProduction = window.location.protocol === 'https:' || 
+                           (window.location.hostname !== 'localhost' && 
+                            window.location.hostname !== '127.0.0.1');
+        
+        if (isProduction) {
+            // 生产环境：使用当前域名
+            return `${window.location.protocol}//${window.location.hostname}`;
+        } else {
+            // 开发环境：使用localhost
+            return getBackendUrl();
+        }
+    }
+
     renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
@@ -268,7 +297,9 @@ export class UIManager {
             this.showPreviewLoading();
             
             const fileType = file.file_type.toLowerCase();
-            const previewUrl = `http://localhost:5000/ppt/files/${file.id}/preview?type=direct`;
+            // 使用动态服务器地址，支持生产环境部署
+            const serverUrl = await Promise.resolve(this.getServerUrl());
+            const previewUrl = `${serverUrl}/ppt/files/${file.id}/preview?type=direct`;
             
             // 根据文件类型创建不同的预览内容
             if (fileType === 'pdf') {
@@ -281,24 +312,36 @@ export class UIManager {
                     </iframe>
                 `;
             } else if (['ppt', 'pptx'].includes(fileType)) {
-                // PPT预览 - 使用Google Docs Viewer
-                const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + previewUrl)}&embedded=true`;
+                // PPT预览 - 提供多种预览选项
                 previewContainer.innerHTML = `
                     <div class="ppt-preview-wrapper">
-                        <iframe 
-                            src="${googleViewerUrl}" 
-                            style="width: 100%; height: 600px; border: none;"
-                            title="PPT预览">
-                        </iframe>
-                        <div class="preview-fallback">
-                            <p>如果预览无法显示，可以尝试:</p>
-                            <button class="btn-primary" onclick="window.open('${previewUrl}', '_blank')">
-                                在新窗口中打开
-                            </button>
-                            <button class="btn-secondary" onclick="this.closest('.preview-modal').querySelector('.btn-close-preview').click(); 
-                                     document.querySelector('[data-ppt-id=&quot;${file.id}&quot;] .btn-download').click();">
-                                直接下载
-                            </button>
+                        <div class="preview-options">
+                            <h4>PPT文件预览选项</h4>
+                            <div class="preview-buttons">
+                                <button class="btn-primary" onclick="window.open('${previewUrl}', '_blank')">
+                                    📱 在新窗口中预览
+                                </button>
+                                <button class="btn-secondary" onclick="this.tryOfficeViewer('${previewUrl}')">
+                                    🌐 使用Office Online预览
+                                </button>
+                                <button class="btn-secondary" onclick="this.closest('.preview-modal').querySelector('.btn-close-preview').click(); 
+                                         document.querySelector('[data-ppt-id=&quot;${file.id}&quot;] .btn-download').click();">
+                                    💾 直接下载
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-note">
+                            <p><strong>预览说明：</strong></p>
+                            <ul>
+                                <li>新窗口预览：在浏览器新标签页中打开文件</li>
+                                <li>Office Online：需要文件可公网访问（仅限生产环境）</li>
+                                <li>下载查看：下载到本地使用Office软件查看</li>
+                            </ul>
+                        </div>
+                        
+                        <div id="office-viewer-container" style="display: none;">
+                            <iframe id="office-viewer-frame" style="width: 100%; height: 600px; border: none;" title="Office预览"></iframe>
                         </div>
                     </div>
                 `;
@@ -693,6 +736,37 @@ export class UIManager {
         // 这个方法会被PPTHandler调用
         if (window.pptHandler) {
             await window.pptHandler.previewInNewWindow(pptId);
+        }
+    }
+
+    /**
+     * 尝试使用Office Online预览
+     */
+    tryOfficeViewer(previewUrl) {
+        const container = document.getElementById('office-viewer-container');
+        const frame = document.getElementById('office-viewer-frame');
+        
+        if (container && frame) {
+            // 使用Office Online Viewer
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`;
+            frame.src = officeViewerUrl;
+            container.style.display = 'block';
+            
+            // 隐藏预览选项
+            const options = container.parentElement.querySelector('.preview-options');
+            if (options) options.style.display = 'none';
+            
+            // 添加返回按钮
+            if (!container.querySelector('.back-button')) {
+                const backBtn = document.createElement('button');
+                backBtn.className = 'btn-secondary back-button';
+                backBtn.innerHTML = '← 返回选择预览方式';
+                backBtn.onclick = () => {
+                    container.style.display = 'none';
+                    if (options) options.style.display = 'block';
+                };
+                container.insertBefore(backBtn, frame);
+            }
         }
     }
 

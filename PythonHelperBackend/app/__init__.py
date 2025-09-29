@@ -10,8 +10,14 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # 初始化 CORS
-    CORS(app)
+    # 初始化 CORS - 支持Chrome扩展和跨域访问
+    CORS(app, origins=[
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "chrome-extension://*",
+        "moz-extension://*",
+        "*"  # 生产环境允许所有域名访问
+    ], supports_credentials=True)
 
     # 确保 PPT 上传目录存在
     ppt_folder = app.config['PPT_UPLOAD_FOLDER']
@@ -30,10 +36,12 @@ def create_app(config_class=Config):
     from .routes.mistakes_routes import mistakes_bp
     from .routes.ppt_routes import ppt_bp
     from .routes.pta_routes import pta_bp
+    from .routes.auth_routes import auth_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(mistakes_bp, url_prefix='/mistakes')
     app.register_blueprint(ppt_bp, url_prefix='/ppt')
     app.register_blueprint(pta_bp, url_prefix='/pta')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
 
     return app

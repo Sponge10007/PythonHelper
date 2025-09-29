@@ -101,6 +101,45 @@ def init_mistakes_db():
                        )
                        ''')
 
+        # 用户认证表
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS users
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           email
+                           TEXT
+                           UNIQUE
+                           NOT
+                           NULL,
+                           password_hash
+                           TEXT
+                           NOT
+                           NULL,
+                           verification_code
+                           TEXT,
+                           is_verified
+                           BOOLEAN
+                           DEFAULT
+                           FALSE,
+                           verification_code_expires
+                           DATETIME,
+                           created_at
+                           DATETIME
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           updated_at
+                           DATETIME
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           last_login
+                           DATETIME
+                       )
+                       ''')
+
         conn.commit()
         conn.close()
         logger.info("数据库初始化完成")

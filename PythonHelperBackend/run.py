@@ -16,5 +16,5 @@ if __name__ == '__main__':
 
     logger.info("启动Python教学助手后端服务...")
 
-    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能、用户认证")
+    app.run(host='0.0.0.0', port=5000, debug=False)

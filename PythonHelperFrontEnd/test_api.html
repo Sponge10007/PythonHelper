@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Python Helper 插件 API 测试</h1>
+    
+    <div class="test-section">
+        <h3>网络连接测试</h3>
+        <p>当前后端地址: <span id="backendUrl"></span></p>
+        <button onclick="testConnection()">测试连接</button>
+        <div id="connectionResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>邮件注册测试</h3>
+        <input type="email" id="testEmail" placeholder="输入测试邮箱" value="test@zju.edu.cn">
+        <input type="password" id="testPassword" placeholder="输入密码" value="test123456">
+        <button onclick="testRegister()">测试注册</button>
+        <div id="registerResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>登录测试</h3>
+        <input type="email" id="loginEmail" placeholder="登录邮箱" value="rzzhang@zju.edu.cn">
+        <input type="password" id="loginPassword" placeholder="登录密码" value="123456">
+        <button onclick="testLogin()">测试登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>登录状态模拟</h3>
+        <button onclick="simulateLogin()">模拟登录成功</button>
+        <button onclick="simulateLogout()">模拟登出</button>
+        <div id="statusResult" class="result"></div>
+    </div>
+
+    <script src="../js/common/api.js"></script>
+    <script>
+        // 显示当前后端地址
+        document.getElementById('backendUrl').textContent = getBackendUrl();
+        
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch(`${getBackendUrl()}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<span class="success">✅ 连接成功！响应: ${JSON.stringify(data)}</span>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ 连接失败: HTTP ${response.status}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ 网络错误: ${error.message}</span>`;
+            }
+        }
+        
+        async function testRegister() {
+            const resultDiv = document.getElementById('registerResult');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                resultDiv.innerHTML = '<span class="error">请输入邮箱和密码</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '注册中...';
+            
+            try {
+                const response = await fetch(`${getBackendUrl()}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `<span class="success">✅ 注册成功: ${data.message}</span>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ 注册失败: ${data.message || '未知错误'}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ 网络错误: ${error.message}</span>`;
+            }
+        }
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                resultDiv.innerHTML = '<span class="error">请输入邮箱和密码</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '登录中...';
+            
+            try {
+                const response = await fetch(`${getBackendUrl()}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `<span class="success">✅ 登录成功: ${data.message}</span>`;
+                    
+                    // 如果是Chrome扩展环境，保存登录状态
+                    if (typeof chrome !== 'undefined' && chrome.storage) {
+                        chrome.storage.local.set({
+                            isLoggedIn: true,
+                            userEmail: email
+                        });
+                    }
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ 登录失败: ${data.message || '未知错误'}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ 网络错误: ${error.message}</span>`;
+            }
+        }
+        
+        function simulateLogin() {
+            const resultDiv = document.getElementById('statusResult');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                chrome.storage.local.set({
+                    isLoggedIn: true,
+                    userEmail: 'test@example.com'
+                }, () => {
+                    resultDiv.innerHTML = '<span class="success">✅ 已模拟登录状态</span>';
+                });
+            } else {
+                resultDiv.innerHTML = '<span class="error">❌ 非Chrome扩展环境</span>';
+            }
+        }
+        
+        function simulateLogout() {
+            const resultDiv = document.getElementById('statusResult');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                chrome.storage.local.remove(['isLoggedIn', 'userEmail'], () => {
+                    resultDiv.innerHTML = '<span class="success">✅ 已清除登录状态</span>';
+                });
+            } else {
+                resultDiv.innerHTML = '<span class="error">❌ 非Chrome扩展环境</span>';
+            }
+        }
+        
+        // 自动测试连接
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

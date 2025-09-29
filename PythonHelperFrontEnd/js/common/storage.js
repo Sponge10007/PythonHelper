@@ -61,3 +61,52 @@ export async function saveSettings(settings) {
         return false;
     }
 }
+
+/**
+ * 从 chrome.storage 加载用户登录状态
+ * @returns {Promise<Object>} - 用户状态对象
+ */
+export async function loadUserStatus() {
+    try {
+        const result = await chrome.storage.local.get(['userToken', 'userEmail', 'isLoggedIn']);
+        return {
+            userToken: result.userToken || '',
+            userEmail: result.userEmail || '',
+            isLoggedIn: result.isLoggedIn || false
+        };
+    } catch (e) {
+        console.warn("非扩展环境，用户未登录。");
+        return {
+            userToken: '',
+            userEmail: '',
+            isLoggedIn: false
+        };
+    }
+}
+
+/**
+ * 保存用户登录状态
+ * @param {Object} userStatus - 用户状态对象
+ */
+export async function saveUserStatus(userStatus) {
+    try {
+        await chrome.storage.local.set(userStatus);
+        return true;
+    } catch (e) {
+        console.warn("非扩展环境，用户状态未保存。");
+        return false;
+    }
+}
+
+/**
+ * 清除用户登录状态（登出）
+ */
+export async function clearUserStatus() {
+    try {
+        await chrome.storage.local.remove(['userToken', 'userEmail', 'isLoggedIn']);
+        return true;
+    } catch (e) {
+        console.warn("非扩展环境，无法清除用户状态。");
+        return false;
+    }
+}

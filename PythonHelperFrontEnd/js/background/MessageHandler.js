@@ -1,5 +1,11 @@
 // js/background/MessageHandler.js
 
+// 获取后端URL函数
+function getBackendUrl() {
+    // 在background脚本中默认使用localhost
+    return 'http://localhost:5000';
+}
+
 export class MessageHandler {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -52,7 +58,7 @@ export class MessageHandler {
 
             console.log("数据捕获完成，正在发送到后端进行AI分析...");
             
-            const response = await fetch('http://localhost:5000/pta/analyze', {
+            const response = await fetch(`${getBackendUrl()}/pta/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

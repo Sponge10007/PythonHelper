@@ -349,3 +349,93 @@ def generate_thumbnail_svg(file_type, filename):
     </svg>'''
     
     return svg
+
+
+@ppt_bp.route('/files/<int:ppt_id>/slide/<int:slide_num>/image', methods=['GET'])
+def get_slide_image(ppt_id, slide_num):
+    """获取幻灯片图片"""
+    try:
+        # 获取文件信息
+        row = get_db().execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,)).fetchone()
+        if not row:
+            return jsonify({'error': '文件不存在'}), 404
+
+        file_info = dict(row)
+        file_path = file_info['file_path']
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': '文件不存在'}), 404
+
+        # 对于PDF文件，返回页面图片
+        if file_info['file_type'].lower() == 'pdf':
+            # 这里应该实现PDF页面转图片的逻辑
+            # 现在先返回一个占位符SVG
+            svg_content = f'''<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                <rect width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+                <text x="400" y="280" font-family="Arial" font-size="24" text-anchor="middle" fill="#6c757d">
+                    PDF 第 {slide_num} 页
+                </text>
+                <text x="400" y="320" font-family="Arial" font-size="16" text-anchor="middle" fill="#6c757d">
+                    {file_info['original_name']}
+                </text>
+            </svg>'''
+            
+            response = make_response(svg_content)
+            response.headers['Content-Type'] = 'image/svg+xml'
+            return response
+
+        # 对于PPT文件，返回幻灯片图片
+        elif file_info['file_type'].lower() in ['ppt', 'pptx']:
+            # 这里应该实现PPT转图片的逻辑
+            # 现在先返回一个占位符SVG
+            svg_content = f'''<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                <rect width="800" height="600" fill="#fff2cc" stroke="#d6b656" stroke-width="1"/>
+                <text x="400" y="280" font-family="Arial" font-size="24" text-anchor="middle" fill="#bf9000">
+                    PPT 幻灯片 {slide_num}
+                </text>
+                <text x="400" y="320" font-family="Arial" font-size="16" text-anchor="middle" fill="#bf9000">
+                    {file_info['original_name']}
+                </text>
+            </svg>'''
+            
+            response = make_response(svg_content)
+            response.headers['Content-Type'] = 'image/svg+xml'
+            return response
+            
+        else:
+            return jsonify({'error': '不支持的文件类型'}), 400
+
+    except Exception as e:
+        logger.error(f"获取幻灯片图片失败: {e}")
+        return jsonify({'error': f'获取幻灯片图片失败: {str(e)}'}), 500
+
+
+@ppt_bp.route('/files/<int:ppt_id>/slide/<int:slide_num>/thumbnail', methods=['GET'])
+def get_slide_thumbnail(ppt_id, slide_num):
+    """获取幻灯片缩略图"""
+    try:
+        # 获取文件信息
+        row = get_db().execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,)).fetchone()
+        if not row:
+            return jsonify({'error': '文件不存在'}), 404
+
+        file_info = dict(row)
+        
+        # 生成缩略图SVG
+        svg_content = f'''<svg width="150" height="112" xmlns="http://www.w3.org/2000/svg">
+            <rect width="150" height="112" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1" rx="4"/>
+            <text x="75" y="50" font-family="Arial" font-size="14" text-anchor="middle" fill="#6c757d">
+                第 {slide_num} 页
+            </text>
+            <text x="75" y="75" font-family="Arial" font-size="10" text-anchor="middle" fill="#6c757d">
+                {file_info['file_type'].upper()}
+            </text>
+        </svg>'''
+        
+        response = make_response(svg_content)
+        response.headers['Content-Type'] = 'image/svg+xml'
+        return response
+
+    except Exception as e:
+        logger.error(f"获取幻灯片缩略图失败: {e}")
+        return jsonify({'error': f'获取幻灯片缩略图失败: {str(e)}'}), 500

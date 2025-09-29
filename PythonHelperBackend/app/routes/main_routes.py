@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, send_from_directory
 # 移除: from app.services.question_service import question_service
 from app.services.ai_service import call_ai_api
 from app.database import get_db
@@ -105,3 +105,57 @@ def get_questions_stats():
     except Exception as e:
         logger.error(f"获取题目统计接口错误: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@main_bp.route('/auth')
+def auth_page():
+    """提供认证页面"""
+    try:
+        static_folder = current_app.config.get('STATIC_FOLDER', 'static')
+        html_path = os.path.join(static_folder, 'html')
+        return send_from_directory(html_path, 'auth.html')
+    except Exception as e:
+        logger.error(f"提供认证页面失败: {e}")
+        return jsonify({'error': '认证页面不可用'}), 404
+
+
+@main_bp.route('/css/<path:filename>')
+def serve_css(filename):
+    """提供CSS文件"""
+    try:
+        static_folder = current_app.config.get('STATIC_FOLDER', 'static')
+        css_path = os.path.join(static_folder, 'css')
+        return send_from_directory(css_path, filename)
+    except Exception as e:
+        logger.error(f"提供CSS文件失败: {e}")
+        return jsonify({'error': 'CSS文件不可用'}), 404
+
+
+@main_bp.route('/icons/<path:filename>')
+def serve_icons(filename):
+    """提供图标文件"""
+    try:
+        static_folder = current_app.config.get('STATIC_FOLDER', 'static')
+        icons_path = os.path.join(static_folder, 'icons')
+        return send_from_directory(icons_path, filename)
+    except Exception as e:
+        logger.error(f"提供图标文件失败: {e}")
+        return jsonify({'error': '图标文件不可用'}), 404
+
+
+@main_bp.route('/js/<path:filename>')
+def serve_js(filename):
+    """提供JavaScript文件"""
+    try:
+        static_folder = current_app.config.get('STATIC_FOLDER', 'static')
+        js_path = os.path.join(static_folder, 'js')
+        return send_from_directory(js_path, filename)
+    except Exception as e:
+        logger.error(f"提供JavaScript文件失败: {e}")
+        return jsonify({'error': 'JavaScript文件不可用'}), 404
+
+
+@main_bp.route('/')
+def index():
+    """根路径重定向到认证页面"""
+    return auth_page()
