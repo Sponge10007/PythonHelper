@@ -1,7 +1,8 @@
 // js/sidebar/SettingsManager.js
-// 注意：storage函数通过全局window对象访问
 
-class SettingsManager {
+import * as storage from '../common/storage.js';
+
+export class SettingsManager {
     constructor(uiManager) {
         this.ui = uiManager;
         this.settings = {};
@@ -13,7 +14,7 @@ class SettingsManager {
     }
 
     async init() {
-        this.settings = await window.loadSettings();
+        this.settings = await storage.loadSettings();
         this.loadSettingsToUI();
     }
 
@@ -28,7 +29,7 @@ class SettingsManager {
             questionMode: this.questionModeSelect.value
         };
 
-        const success = await window.saveSettings(newSettings);
+        const success = await storage.saveSettings(newSettings);
         
         if (success) {
             this.settings = newSettings;
@@ -42,6 +43,3 @@ class SettingsManager {
         }
     }
 }
-
-// 将SettingsManager暴露到全局window对象
-window.SettingsManager = SettingsManager;

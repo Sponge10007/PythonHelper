@@ -65,7 +65,7 @@ async function fetchWithFallback(url, options = {}) {
  * @param {string} apiEndpoint - API 端点
  * @returns {Promise<Object>} - AI的响应数据
  */
-async function fetchAiResponse(messages, apiKey, apiEndpoint) {
+export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
     const lastMessage = messages[messages.length - 1].content;
     const response = await fetchWithFallback(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
@@ -88,7 +88,7 @@ async function fetchAiResponse(messages, apiKey, apiEndpoint) {
  * 获取所有错题
  * @returns {Promise<Array>} - 错题列表
  */
-async function fetchMistakes() {
+export async function fetchMistakes() {
     const response = await fetch(`${BACKEND_URL}/mistakes`);
     if (!response.ok) {
         throw new Error('获取错题失败');
@@ -102,7 +102,7 @@ async function fetchMistakes() {
  * @param {Object} mistake - 新的错题对象
  * @returns {Promise<void>}
  */
-async function saveMistake(mistake) {
+export async function saveMistake(mistake) {
     // 这个函数用于添加一个全新的错题记录
     const currentMistakes = await fetchMistakes();
     currentMistakes.unshift(mistake);
@@ -124,7 +124,7 @@ async function saveMistake(mistake) {
  * @param {Object} updatedMistake - 更新后的错题对象
  * @returns {Promise<Object>}
  */
-async function updateMistake(mistakeId, updatedMistake) {
+export async function updateMistake(mistakeId, updatedMistake) {
     const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,7 @@ async function updateMistake(mistakeId, updatedMistake) {
  * 获取所有PPT文件列表
  * @returns {Promise<Array>} - PPT文件列表
  */
-async function fetchPPTFiles() {
+export async function fetchPPTFiles() {
     try {
         const response = await fetch(`${BACKEND_URL}/ppt/files`);
         if (!response.ok) {
@@ -167,7 +167,7 @@ async function fetchPPTFiles() {
  * @param {Function} onProgress - 上传进度回调函数 (可选)
  * @returns {Promise<Object>} - 上传结果
  */
-async function uploadPPTFile(file, description = '', tags = [], onProgress = null) {
+export async function uploadPPTFile(file, description = '', tags = [], onProgress = null) {
     try {
         if (!file) {
             throw new Error('文件不能为空');
@@ -243,7 +243,7 @@ async function uploadPPTFile(file, description = '', tags = [], onProgress = nul
  * @param {string} filename - 下载时的文件名 (可选)
  * @returns {Promise<void>} - 触发浏览器下载
  */
-async function downloadPPTFile(pptId, filename = null) {
+export async function downloadPPTFile(pptId, filename = null) {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -292,7 +292,7 @@ async function downloadPPTFile(pptId, filename = null) {
  * @param {number} pptId - PPT文件ID
  * @returns {Promise<void>}
  */
-async function deletePPTFile(pptId) {
+export async function deletePPTFile(pptId) {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -320,7 +320,7 @@ async function deletePPTFile(pptId) {
  * @param {Array<number>} pptIds - PPT文件ID数组
  * @returns {Promise<Object>} - 删除结果统计
  */
-async function batchDeletePPTFiles(pptIds) {
+export async function batchDeletePPTFiles(pptIds) {
     try {
         if (!pptIds || !Array.isArray(pptIds) || pptIds.length === 0) {
             throw new Error('PPT文件ID列表不能为空');
@@ -349,7 +349,7 @@ async function batchDeletePPTFiles(pptIds) {
  * 获取PPT文件统计信息
  * @returns {Promise<Object>} - 统计数据
  */
-async function getPPTFileStats() {
+export async function getPPTFileStats() {
     try {
         const response = await fetch(`${BACKEND_URL}/ppt/stats`);
         if (!response.ok) {
@@ -368,7 +368,7 @@ async function getPPTFileStats() {
  * @param {Object} filters - 搜索过滤条件 (可选)
  * @returns {Promise<Array>} - 搜索结果
  */
-async function searchPPTFiles(query, filters = {}) {
+export async function searchPPTFiles(query, filters = {}) {
     try {
         const params = new URLSearchParams();
         if (query) params.append('q', query);
@@ -403,7 +403,7 @@ async function searchPPTFiles(query, filters = {}) {
  * @param {string} previewType - 预览类型 ('pdf', 'thumbnail', 'slides')
  * @returns {Promise<string>} - 预览URL
  */
-async function getPPTPreviewUrl(pptId, previewType = 'pdf') {
+export async function getPPTPreviewUrl(pptId, previewType = 'pdf') {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -430,7 +430,7 @@ async function getPPTPreviewUrl(pptId, previewType = 'pdf') {
  * @param {Object} options - 缩略图选项
  * @returns {Promise<string>} - 缩略图Base64数据或URL
  */
-async function getPPTThumbnail(pptId, options = {}) {
+export async function getPPTThumbnail(pptId, options = {}) {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -473,7 +473,7 @@ async function getPPTThumbnail(pptId, options = {}) {
  * @param {number} pptId - PPT文件ID
  * @param {Object} options - 预览选项
  */
-async function previewPPTFile(pptId, options = {}) {
+export async function previewPPTFile(pptId, options = {}) {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -550,7 +550,7 @@ async function previewPPTFile(pptId, options = {}) {
  * @param {number} pptId - PPT文件ID
  * @returns {Promise<Array>} - 幻灯片信息数组
  */
-async function getPPTSlides(pptId) {
+export async function getPPTSlides(pptId) {
     try {
         if (!pptId) {
             throw new Error('PPT文件ID不能为空');
@@ -577,7 +577,7 @@ async function getPPTSlides(pptId) {
  * @param {HTMLElement} container - 容器元素
  * @param {Object} options - 预览选项
  */
-async function createEmbeddedPreview(pptId, container, options = {}) {
+export async function createEmbeddedPreview(pptId, container, options = {}) {
     try {
         if (!pptId || !container) {
             throw new Error('PPT文件ID和容器元素不能为空');
@@ -744,24 +744,3 @@ async function createSlideViewer(pptId, container, options = {}) {
         throw error;
     }
 }
-
-// 将所有API函数暴露到全局window对象，使其在浏览器环境中可用
-window.BACKEND_URL = BACKEND_URL;
-window.API_BASE_URL = API_BASE_URL;
-window.fetchWithFallback = fetchWithFallback;
-window.fetchAiResponse = fetchAiResponse;
-window.fetchMistakes = fetchMistakes;
-window.saveMistake = saveMistake;
-window.updateMistake = updateMistake;
-window.fetchPPTFiles = fetchPPTFiles;
-window.uploadPPTFile = uploadPPTFile;
-window.downloadPPTFile = downloadPPTFile;
-window.deletePPTFile = deletePPTFile;
-window.batchDeletePPTFiles = batchDeletePPTFiles;
-window.getPPTFileStats = getPPTFileStats;
-window.searchPPTFiles = searchPPTFiles;
-window.getPPTPreviewUrl = getPPTPreviewUrl;
-window.getPPTThumbnail = getPPTThumbnail;
-window.previewPPTFile = previewPPTFile;
-window.getPPTSlides = getPPTSlides;
-window.createEmbeddedPreview = createEmbeddedPreview;

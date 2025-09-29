@@ -4,7 +4,7 @@
  * 从 chrome.storage 加载对话数据
  * @returns {Promise<Array>} - 对话列表
  */
-async function loadChats() {
+export async function loadChats() {
     try {
         const result = await chrome.storage.local.get(['chats']);
         return result.chats || [];
@@ -18,7 +18,7 @@ async function loadChats() {
  * 将对话数据保存到 chrome.storage
  * @param {Array} chats - 要保存的对话列表
  */
-async function saveChats(chats) {
+export async function saveChats(chats) {
     try {
         await chrome.storage.local.set({ chats: chats });
     } catch (e) {
@@ -30,7 +30,7 @@ async function saveChats(chats) {
  * 从 chrome.storage 加载设置
  * @returns {Promise<Object>} - 设置对象
  */
-async function loadSettings() {
+export async function loadSettings() {
     try {
         const result = await chrome.storage.local.get(['aiApiKey', 'questionMode']);
         return {
@@ -50,7 +50,7 @@ async function loadSettings() {
  * 将设置保存到 chrome.storage
  * @param {Object} settings - 要保存的设置对象
  */
-async function saveSettings(settings) {
+export async function saveSettings(settings) {
     try {
         await chrome.storage.local.set(settings);
         return true;
@@ -64,7 +64,7 @@ async function saveSettings(settings) {
  * 从 chrome.storage 加载用户登录状态
  * @returns {Promise<Object>} - 用户状态对象
  */
-async function loadUserStatus() {
+export async function loadUserStatus() {
     try {
         const result = await chrome.storage.local.get(['userToken', 'userEmail', 'isLoggedIn']);
         return {
@@ -86,7 +86,7 @@ async function loadUserStatus() {
  * 保存用户登录状态
  * @param {Object} userStatus - 用户状态对象
  */
-async function saveUserStatus(userStatus) {
+export async function saveUserStatus(userStatus) {
     try {
         await chrome.storage.local.set(userStatus);
         return true;
@@ -99,7 +99,7 @@ async function saveUserStatus(userStatus) {
 /**
  * 清除用户登录状态（登出）
  */
-async function clearUserStatus() {
+export async function clearUserStatus() {
     try {
         await chrome.storage.local.remove(['userToken', 'userEmail', 'isLoggedIn']);
         return true;
@@ -108,12 +108,3 @@ async function clearUserStatus() {
         return false;
     }
 }
-
-// 将所有storage函数暴露到全局window对象
-window.loadChats = loadChats;
-window.saveChats = saveChats;
-window.loadSettings = loadSettings;
-window.saveSettings = saveSettings;
-window.loadUserStatus = loadUserStatus;
-window.saveUserStatus = saveUserStatus;
-window.clearUserStatus = clearUserStatus;
