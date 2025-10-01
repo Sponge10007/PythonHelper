@@ -218,6 +218,51 @@ html, body {
     font-size: 20px;
 }
 
+/* 代码块样式 */
+.message-content pre {
+    background-color: #2d3748;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    /* border: 1px solid #4a5568; */
+}
+
+/* 确保代码块内所有元素都使用相同的背景色 */
+.message-content pre * {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+.message-content code {
+    background-color: #f7fafc;
+    color: #2d3748;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    font-size: 13px;
+    border: 1px solid #e2e8f0;
+}
+
+.message-content pre code {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+}
+
+/* 行内代码在深色背景下的样式调整 */
+.assistant-message .message-content code {
+    background-color: #4a5568;
+    color: #e2e8f0;
+    border-color: #718096;
+}
+
 /* ADDED: Styles for message selector checkbox */
 .message-selector {
     flex-shrink: 0;
@@ -308,4 +353,205 @@ html, body {
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* 加载动画 */
+.loader {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 记忆管理对话框样式 */
+.memory-manage-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.memory-manage-dialog .dialog-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.memory-manage-dialog .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.memory-manage-dialog .dialog-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.memory-manage-dialog .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-manage-dialog .close-btn:hover {
+    color: #333;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+}
+
+.memory-manage-dialog .dialog-body {
+    padding: 24px;
+}
+
+.memory-manage-dialog .memory-stats h4,
+.memory-manage-dialog .memory-actions h4,
+.memory-manage-dialog .memory-info h4 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.memory-manage-dialog .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.memory-manage-dialog .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.memory-manage-dialog .stat-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.memory-manage-dialog .stat-value {
+    color: #333;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.memory-manage-dialog .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.memory-manage-dialog .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.memory-manage-dialog .action-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.memory-manage-dialog .action-btn.clear-history-btn:hover {
+    border-color: #ffc107;
+    background-color: #fff8e1;
+}
+
+.memory-manage-dialog .action-btn.clear-all-btn:hover {
+    border-color: #dc3545;
+    background-color: #ffeaea;
+}
+
+.memory-manage-dialog .memory-info {
+    background-color: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.memory-manage-dialog .memory-info p {
+    margin: 8px 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 记忆状态提示消息 */
+.memory-status-message {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 100;
+    animation: slideDown 0.3s ease-out;
+}
+
+.memory-status-message.info {
+    background-color: #007bff;
+}
+
+.memory-status-message.success {
+    background-color: #28a745;
+}
+
+.memory-status-message.warning {
+    background-color: #ffc107;
+    color: #333;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }

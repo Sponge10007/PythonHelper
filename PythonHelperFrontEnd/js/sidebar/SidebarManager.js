@@ -33,6 +33,22 @@ class SidebarManager {
         });
         this.ui.chatInput.addEventListener('input', () => this.ui.adjustTextareaHeight());
         document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
+        
+        // --- 记忆管理事件绑定 ---
+        document.getElementById('memoryManageBtn').addEventListener('click', () => {
+            if (this.chatManager.currentChatId) {
+                const stats = this.chatManager.getChatStatistics(this.chatManager.currentChatId);
+                if (stats) {
+                    this.ui.showMemoryManageDialog(stats, (keepRecent) => {
+                        this.chatManager.clearChatHistory(this.chatManager.currentChatId, keepRecent);
+                        this.ui.showMemoryStatusMessage(
+                            keepRecent === 0 ? '已清空全部对话历史' : `已清理历史，保留最近${keepRecent}条消息`,
+                            'success'
+                        );
+                    });
+                }
+            }
+        });
 
         // --- 错题事件绑定 ---
         document.getElementById('enterMistakeModeBtn').addEventListener('click', () => this.chatManager.toggleMistakeSelectionMode());

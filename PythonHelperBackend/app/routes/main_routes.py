@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from app.services.ai_service import call_ai_api
+from app.services.ai_service import call_ai_api, call_ai_api_with_memory
 from app.database import get_db
 import logging
 import os
@@ -37,20 +37,26 @@ def health_check():
 
 @main_bp.route('/ai/chat', methods=['POST'])
 def ai_chat():
-    # ... (此路由内容与原代码相同)
+    """AI聊天接口 - 支持持久记忆"""
     try:
         data = request.get_json()
-        message = data.get('message', '')
+        messages = data.get('messages', [])  # 接收完整对话历史
         api_key = data.get('apiKey', '')
-        if not message: return jsonify({'error': '消息不能为空'}), 400
+        
+        if not messages or len(messages) == 0:
+            return jsonify({'error': '消息不能为空'}), 400
+            
         if not api_key:
             logger.warning("未提供API密钥，使用模拟回复")
-            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
+            last_message = messages[-1].get('content', '') if messages else ''
+            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
             return jsonify({'response': mock_response, 'status': 'success', 'note': '使用模拟回复，请配置API密钥'})
 
         system = data.get('system', '你是一个专业的Python教学助手，请用简洁明了的中文回答用户的问题。')
         api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
-        response = call_ai_api(message, api_key, api_endpoint, system)
+        
+        # 使用新的持久记忆API调用
+        response = call_ai_api_with_memory(messages, api_key, api_endpoint, system)
         return jsonify({'response': response, 'status': 'success'})
     except Exception as e:
         logger.error(f"AI聊天接口错误: {e}")

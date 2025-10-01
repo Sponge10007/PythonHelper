@@ -5,19 +5,18 @@ const BACKEND_URL = 'http://localhost:5000';
 // const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--5000.ap-shanghai2.cloudstudio.club";
 
 /**
- * 与AI后端进行对话
- * @param {Array} messages - 对话消息数组
+ * 与AI后端进行对话 - 支持持久记忆
+ * @param {Array} messages - 完整对话消息数组
  * @param {string} apiKey - 用户的 API Key
  * @param {string} apiEndpoint - API 端点
  * @returns {Promise<Object>} - AI的响应数据
  */
 export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
-    const lastMessage = messages[messages.length - 1].content;
     const response = await fetch(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            message: lastMessage,
+            messages: messages,  // 发送完整对话历史
             apiKey: apiKey,
             apiEndpoint: apiEndpoint
         })

@@ -20,6 +20,7 @@ export class UIManager {
         this.sendMessageBtn = document.getElementById('sendMessage');
         this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
         this.mistakeListContainer = document.getElementById('mistakeListContainer');
+        this.memoryManageBtn = document.getElementById('memoryManageBtn');
     }
     
     showView(viewToShow) {
@@ -135,11 +136,45 @@ export class UIManager {
             <input type="checkbox" class="message-selector" title="选择此消息">
             <div class="message-avatar">${avatarContent}</div>
             <div class="message-bubble-container">
-                <div class="message-content"><div>${message.content || ''}</div></div>
+                <div class="message-content"><div>${this.formatMessageContent(message.content || '')}</div></div>
                 ${actionsHtml}
             </div>
         `;
         return element;
+    }
+
+    /**
+     * 格式化消息内容，处理markdown代码块
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
+        
+        // 处理代码块 (```language 或 ```)
+        let formattedContent = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            const lang = language ? ` class="language-${language}"` : '';
+            return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // 处理行内代码 (`code`)
+        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 处理换行
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        
+        return formattedContent;
+    }
+
+    /**
+     * 转义HTML特殊字符
+     * @param {string} text - 需要转义的文本
+     * @returns {string} - 转义后的文本
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     scrollToBottom() {
@@ -163,5 +198,119 @@ export class UIManager {
     setLoadingState(isLoading) {
         this.sendMessageBtn.disabled = isLoading;
         this.sendMessageBtn.innerHTML = isLoading ? `<div class="loader"></div>` : `<span class="material-symbols-outlined">arrow_upward</span>`;
+    }
+    
+    /**
+     * 显示记忆管理对话框
+     * @param {Object} chatStats - 对话统计信息
+     * @param {Function} onClearHistory - 清理历史回调
+     */
+    showMemoryManageDialog(chatStats, onClearHistory) {
+        const dialog = document.createElement('div');
+        dialog.className = 'memory-manage-dialog';
+        dialog.innerHTML = `
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3>🧠 记忆管理</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <div class="memory-stats">
+                        <h4>📊 对话统计</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">总消息数:</span>
+                                <span class="stat-value">${chatStats.totalMessages}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">用户消息:</span>
+                                <span class="stat-value">${chatStats.userMessages}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">AI回复:</span>
+                                <span class="stat-value">${chatStats.aiMessages}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">总字符数:</span>
+                                <span class="stat-value">${chatStats.totalCharacters}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">平均长度:</span>
+                                <span class="stat-value">${chatStats.averageMessageLength}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">创建时间:</span>
+                                <span class="stat-value">${new Date(chatStats.createdAt).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="memory-actions">
+                        <h4>🔧 记忆操作</h4>
+                        <div class="action-buttons">
+                            <button class="action-btn clear-history-btn">
+                                <span class="material-symbols-outlined">delete_sweep</span>
+                                清理历史 (保留最近5条)
+                            </button>
+                            <button class="action-btn clear-all-btn">
+                                <span class="material-symbols-outlined">clear_all</span>
+                                清空全部
+                            </button>
+                        </div>
+                    </div>
+                    <div class="memory-info">
+                        <h4>💡 记忆说明</h4>
+                        <p>• 当对话超过20条消息时，系统会自动压缩历史记忆</p>
+                        <p>• 压缩会保留最近10条消息，并生成历史摘要</p>
+                        <p>• 这样可以保持AI的记忆能力，同时控制token消耗</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // 绑定事件
+        dialog.querySelector('.close-btn').addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+        
+        dialog.querySelector('.clear-history-btn').addEventListener('click', () => {
+            onClearHistory(5);
+            document.body.removeChild(dialog);
+        });
+        
+        dialog.querySelector('.clear-all-btn').addEventListener('click', () => {
+            onClearHistory(0);
+            document.body.removeChild(dialog);
+        });
+        
+        // 点击背景关闭
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                document.body.removeChild(dialog);
+            }
+        });
+    }
+    
+    /**
+     * 显示记忆管理状态提示
+     * @param {string} message - 提示消息
+     * @param {string} type - 提示类型 (info, success, warning)
+     */
+    showMemoryStatusMessage(message, type = 'info') {
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `memory-status-message ${type}`;
+        statusDiv.textContent = message;
+        
+        // 添加到聊天界面顶部
+        const chatInterface = document.getElementById('chatInterface');
+        chatInterface.insertBefore(statusDiv, chatInterface.firstChild);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            if (statusDiv.parentNode) {
+                statusDiv.parentNode.removeChild(statusDiv);
+            }
+        }, 3000);
     }
 }
