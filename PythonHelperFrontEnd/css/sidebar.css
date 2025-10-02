@@ -479,3 +479,85 @@ html, body {
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
+
+/* 用户信息页面样式 */
+.user-profile-container {
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-profile-content {
+    text-align: center;
+    max-width: 300px;
+    width: 100%;
+}
+
+.user-avatar {
+    margin-bottom: 20px;
+}
+
+.user-avatar .material-symbols-outlined {
+    font-size: 80px;
+    color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login-status {
+    margin-bottom: 15px;
+}
+
+.login-status h2 {
+    color: #28a745;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.user-email {
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.user-email span {
+    font-size: 16px;
+    color: #495057;
+    font-weight: 500;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.logout-btn .material-symbols-outlined {
+    font-size: 18px;
+}

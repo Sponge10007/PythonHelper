@@ -9,21 +9,22 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     line-height: 1.6;
-    color: #333;
-    background-color: #f8f9fa;
+    color: #4a4a4a;
+    background-color: #FDF9FF;
 }
 
 .container {
-    min-height: 100vh;
+    min-height: 50vh;
     display: flex;
     flex-direction: column;
 }
 
 /* 头部样式 */
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: white;
     color: white;
-    padding: 20px;
+    padding: 10px 20px;
+    height: 80px;
     display: flex;
     /* justify-content: space-between; */
     align-items: center;
@@ -31,6 +32,7 @@ body {
 }
 
 .header h1 {
+    color: #000000;
     font-size: 24px;
     font-weight: 600;
 }
@@ -43,7 +45,7 @@ body {
 /* 顶部导航栏样式 */
 .top-nav {
     background: white;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -61,7 +63,7 @@ body {
     padding: 16px 24px;
     font-size: 16px;
     font-weight: 500;
-    color: #666;
+    color: #7c7c7c;
     cursor: pointer;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
@@ -69,14 +71,14 @@ body {
 }
 
 .nav-btn:hover {
-    color: #333;
-    background: #f8f9fa;
+    color: #7A3797;
+    background: #FDF9FF;
 }
 
 .nav-btn.active {
-    color: #1976d2;
-    border-bottom-color: #1976d2;
-    background: #f0f8ff;
+    color: #7A3797;
+    border-bottom-color: #7A3797;
+    background: #f3e8ff;
 }
 
 .nav-btn.active::after {
@@ -86,7 +88,7 @@ body {
     left: 0;
     right: 0;
     height: 3px;
-    background: #1976d2;
+    background: #7A3797;
 }
 
 /* 按钮样式 */
@@ -101,32 +103,32 @@ body {
 }
 
 .btn-primary {
-    background: #007bff;
+    background: #7A3797;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #0056b3;
+    background: #653088;
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #8e8e93;
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #545b62;
+    background: #6d6d70;
     transform: translateY(-1px);
 }
 
 .btn-danger {
-    background: #dc3545;
+    background: #8e8e93;
     color: white;
 }
 
 .btn-danger:hover {
-    background: #c82333;
+    background: #6d6d70;
     transform: translateY(-1px);
 }
 
@@ -174,7 +176,7 @@ body {
 
 .search-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
@@ -182,22 +184,23 @@ body {
 .search-input {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     font-size: 14px;
     margin-bottom: 16px;
     transition: border-color 0.2s ease;
+    background: white;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    border-color: #7A3797;
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.1);
 }
 
 .filter-tags h4 {
     margin-bottom: 8px;
-    color: #666;
+    color: #7c7c7c;
     font-size: 14px;
     font-weight: 500;
 }
@@ -209,25 +212,25 @@ body {
 }
 
 .tag-item {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 16px;
     padding: 6px 12px;
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .tag-item:hover {
-    background: #e9ecef;
-    border-color: #1976d2;
-    color: #1976d2;
+    background: #f3e8ff;
+    border-color: #7A3797;
+    color: #7A3797;
 }
 
 .tag-item.active {
-    background: #1976d2;
-    border-color: #1976d2;
+    background: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
@@ -238,7 +241,7 @@ body {
 
 .stats-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
@@ -250,8 +253,8 @@ body {
 }
 
 .stat-item {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 12px;
     text-align: center;
@@ -261,13 +264,13 @@ body {
     display: block;
     font-size: 20px;
     font-weight: 600;
-    color: #1976d2;
+    color: #7A3797;
     margin-bottom: 4px;
 }
 
 .stat-label {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 /* 针对训练区域 */
@@ -277,7 +280,7 @@ body {
 
 .training-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
@@ -338,21 +341,21 @@ body {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    border: 2px dashed #d1d5db;
+    border: 2px dashed #d1d1d6;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: #f8f9fa;
+    background: white;
 }
 
 .upload-label:hover {
-    border-color: #1976d2;
-    background: #f0f8ff;
+    border-color: #7A3797;
+    background: #f3e8ff;
 }
 
 .upload-label.drag-over {
-    border-color: #1976d2;
-    background: #e3f2fd;
+    border-color: #7A3797;
+    background: #f3e8ff;
     transform: scale(1.02);
 }
 
@@ -363,7 +366,7 @@ body {
 
 .upload-hint {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     margin-top: 4px;
 }
 
@@ -374,7 +377,7 @@ body {
 .progress-bar {
     width: 100%;
     height: 8px;
-    background: #e1e5e9;
+    background: #e5e5e7;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -382,14 +385,14 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    background: linear-gradient(90deg, #7A3797, #9333ea);
     width: 0%;
     transition: width 0.3s ease;
 }
 
 .progress-text {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     text-align: center;
 }
 
@@ -410,19 +413,19 @@ body {
 }
 
 .upload-status-info {
-    background: #1976d2;
+    background: #7A3797;
 }
 
 .upload-status-success {
-    background: #2e7d32;
+    background: #8e8e93;
 }
 
 .upload-status-warning {
-    background: #f57c00;
+    background: #a1a1aa;
 }
 
 .upload-status-error {
-    background: #d32f2f;
+    background: #8e8e93;
 }
 
 @keyframes slideIn {
@@ -438,10 +441,10 @@ body {
 
 /* 改进拖拽上传区域样式 */
 .upload-area.drag-over .upload-label {
-    border-color: #1976d2;
-    background: #e3f2fd;
+    border-color: #7A3797;
+    background: #f3e8ff;
     transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+    box-shadow: 0 4px 12px rgba(122, 55, 151, 0.2);
 }
 
 .upload-area.drag-over .upload-icon {
@@ -451,8 +454,8 @@ body {
 
 /* 上传统计区域 */
 .upload-stats {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 12px;
     margin-bottom: 16px;
@@ -470,14 +473,14 @@ body {
 
 .stats-label {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     margin-bottom: 4px;
 }
 
 .stats-value {
     font-size: 18px;
     font-weight: 600;
-    color: #1976d2;
+    color: #7A3797;
 }
 
 /* 改进上传提示样式 */
@@ -546,16 +549,17 @@ body {
 .ppt-search .search-input {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     font-size: 14px;
     transition: border-color 0.2s ease;
+    background: white;
 }
 
 .ppt-search .search-input:focus {
     outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    border-color: #7A3797;
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.1);
 }
 
 .ppt-list {
@@ -568,7 +572,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px;
-    border: 1px solid #e1e5e9;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     margin-bottom: 8px;
     background: white;
@@ -585,7 +589,7 @@ body {
 .ppt-name {
     flex: 1;
     font-size: 12px;
-    color: #333;
+    color: #4a4a4a;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -617,10 +621,10 @@ body {
 .ppt-card-btn {
     flex: 1;
     padding: 6px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 6px; /* Increased roundness */
     background: transparent;
-    color: #666;
+    color: #7c7c7c;
     font-size: 12px;
     font-weight: 500; /* Made text bolder */
     cursor: pointer;
@@ -632,53 +636,53 @@ body {
 }
 
 .ppt-card-btn:hover {
-    background: #f0f8ff; /* Lighter blue on hover */
-    border-color: #1976d2;
-    color: #1976d2;
+    background: #f3e8ff; /* Lighter purple on hover */
+    border-color: #7A3797;
+    color: #7A3797;
 }
 
 /* ADDED: New styles for specific button colors */
 .ppt-card-btn.btn-preview {
-    background-color: #545454;
-    border-color: #545454;
+    background-color: #8e8e93;
+    border-color: #8e8e93;
     color: white;
 }
 
 .ppt-card-btn.btn-download {
-    background-color: #7a3898;
-    border-color: #7a3898;
+    background-color: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
 .ppt-card-btn.btn-preview:hover {
-    background-color: #6a6a6a;
-    border-color: #6a6a6a;
+    background-color: #6d6d70;
+    border-color: #6d6d70;
 }
 
 .ppt-card-btn.btn-download:hover {
-    background-color: #9343b8;
-    border-color: #9343b8;
+    background-color: #553c9a;
+    border-color: #553c9a;
 }
 
 
 .ppt-card-btn.primary {
-    background: #1976d2;
-    border-color: #1976d2;
+    background: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
 .ppt-card-btn.primary:hover {
-    background: #1565c0;
+    background: #653088;
 }
 
 /* 工具栏样式 */
 .toolbar {
     padding: 16px 20px;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fafafa;
+    background: white;
 }
 
 .toolbar-left, .toolbar-right {
@@ -689,7 +693,7 @@ body {
 
 .sort-select {
     padding: 6px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 4px;
     font-size: 14px;
     background: white;
@@ -702,7 +706,7 @@ body {
 
 .mistake-item {
     background: white;
-    border: 1px solid #e1e5e9;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
@@ -710,7 +714,7 @@ body {
 }
 
 .mistake-item:hover {
-    border-color: #1976d2;
+    border-color: #7A3797;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -728,7 +732,7 @@ body {
 .mistake-title {
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: #4a4a4a;
     margin-bottom: 4px;
 }
 
@@ -736,7 +740,7 @@ body {
     display: flex;
     gap: 12px;
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 .mistake-content {
@@ -745,8 +749,8 @@ body {
 }
 
 .mistake-answer {
-    background: #f8f9fa;
-    border-left: 4px solid #28a745;
+    background: #f3e8ff;
+    border-left: 4px solid #7A3797;
     padding: 12px;
     margin-bottom: 12px;
     border-radius: 0 4px 4px 0;
@@ -759,8 +763,8 @@ body {
 }
 
 .mistake-tag {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: #f3e8ff;
+    color: #7A3797;
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 12px;
@@ -779,8 +783,8 @@ body {
 
 /* NEW: Styles for message history in mistake item */
 .mistake-conversation {
-    background: #f8f9fa;
-    border: 1px solid #eef;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 12px;
@@ -804,11 +808,11 @@ body {
 }
 
 .message-user .message-role {
-    color: #007bff;
+    color: #7A3797;
 }
 
 .message-assistant .message-role {
-    color: #28a745;
+    color: #8e8e93;
 }
 
 .message-content {
@@ -826,13 +830,13 @@ body {
     justify-content: center;
     align-items: center;
     gap: 16px;
-    border-top: 1px solid #e1e5e9;
-    background: #fafafa;
+    border-top: 1px solid #e5e5e7;
+    background: white;
 }
 
 #pageInfo {
     font-size: 14px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 /* 模态框样式 */
@@ -1020,7 +1024,7 @@ body {
 /* 文档工具栏 */
 .ppt-toolbar {
     padding: 16px 0;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1222,15 +1226,15 @@ body {
 } 
 
 .logo {
-    width: 36px;
-    height: 36px;
+    width: 70px;
+    height: 70px;
     object-fit: contain;
     flex-shrink: 0;
     /* 确保logo保持原始宽高比 */
     object-position: center;
     /* 添加一些内边距让logo看起来更协调 */
-    padding: 1px;
-    margin-right: 10px;
+    padding: 2px;
+    margin-right: 15px;
     /* 确保logo在工具栏中垂直居中 */
     align-self: center;
 }

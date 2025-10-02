@@ -48,7 +48,7 @@
             <div id="welcomeScreen" class="view">
                 <div class="welcome-content">
                     <span class="welcome-icon material-symbols-outlined">auto_awesome</span>
-                    <h2>Python课程AI助教</h2>
+                    <h2>一站式Python课程AI助教</h2>
                     
                     <!-- 登录提示区域 -->
                     <div id="loginPrompt" style="background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;">
@@ -231,10 +231,44 @@
                             </div>
                         </div>
 
-
-
                        <!-- 状态提示 -->
                        <div id="authMessage" class="auth-message hidden"></div>
+                   </div>
+               </div>
+           </div>
+
+           <!-- 用户信息页面 -->
+           <div id="userProfileInterface" class="view hidden">
+                <header class="sidebar-header">
+                   <button id="backToMainFromProfile" class="header-action-btn" title="返回">
+                       <span class="material-symbols-outlined">arrow_back</span>
+                   </button>
+                   <h1>用户信息</h1>
+               </header>
+               <div class="user-profile-container">
+                   <div class="user-profile-content">
+                       <!-- 用户头像 -->
+                       <div class="user-avatar">
+                           <span class="material-symbols-outlined">account_circle</span>
+                       </div>
+                       
+                       <!-- 登录状态 -->
+                       <div class="login-status">
+                           <h2>已登录</h2>
+                       </div>
+                       
+                       <!-- 用户邮箱 -->
+                       <div class="user-email">
+                           <span id="displayUserEmail">user@zju.edu.cn</span>
+                       </div>
+                       
+                       <!-- 操作按钮 -->
+                       <div class="profile-actions">
+                           <button id="logoutBtn" class="logout-btn">
+                               <span class="material-symbols-outlined">logout</span>
+                               退出登录
+                           </button>
+                       </div>
                    </div>
                </div>
            </div>
