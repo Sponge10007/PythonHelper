@@ -5,7 +5,7 @@ from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
-
+# d3f4ebk44jevfv89d6e0 浙大智能体密钥
 def convert_markdown_to_html(markdown_text: str) -> str:
     """将markdown文本转换为HTML"""
     try:
@@ -90,7 +90,7 @@ def call_ai_api(message: str, api_key: str, api_endpoint: str, system: str) -> s
         }
 
         if 'deepseek' in api_endpoint.lower():
-            model = 'deepseek-chat'
+            model = 'deepseek-reasoner'
         else:
             # 默认使用兼容OpenAI的 gpt-3.5-turbo 模型
             model = 'gpt-3.5-turbo'

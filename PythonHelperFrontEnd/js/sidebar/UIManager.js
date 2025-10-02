@@ -105,12 +105,18 @@ export class UIManager {
             if (!msg.id) msg.id = `msg-${Date.now()}-${Math.random()}`;
             this.appendMessage(msg);
         });
+        // Render math for the entire chat history
+        this.renderMathInElement(this.chatMessages);
     }
 
     appendMessage(message) {
         const messageElement = this.createMessageElement(message);
         this.chatMessages.appendChild(messageElement);
         this.scrollToBottom();
+        
+        // After appending, render math in the new message
+        this.renderMathInElement(messageElement);
+        
         return messageElement;
     }
     
@@ -144,15 +150,51 @@ export class UIManager {
     }
 
     /**
+     * Renders LaTeX math expressions in a given HTML element using MathJax.
+     * @param {HTMLElement} element - The element to render math in.
+     */
+    renderMathInElement(element) {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([element]).catch((err) =>
+                console.log('MathJax typesetting error:', err)
+            );
+        } else if (window.MathJax && window.MathJax.Hub) {
+            // 兼容MathJax v2
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
+        } else {
+            console.warn('MathJax not loaded or typesetPromise method not available');
+        }
+    }
+
+    /**
      * 格式化消息内容，处理markdown代码块
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
+     */
+ /**
+     * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
      * @param {string} content - 原始消息内容
      * @returns {string} - 格式化后的HTML内容
      */
     formatMessageContent(content) {
         if (!content) return '';
-        
-        // 处理代码块 (```language 或 ```)
-        let formattedContent = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+
+        const latexPlaceholders = [];
+        const placeholder = "LATEX_PLACEHOLDER_";
+
+        // 1. 保护LaTeX公式块，用占位符替换
+        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+
+        // 2. 现在可以安全地处理Markdown格式了
+        // 处理代码块 (```language or ```)
+        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
             const lang = language ? ` class="language-${language}"` : '';
             return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
         });
@@ -160,12 +202,25 @@ export class UIManager {
         // 处理行内代码 (`code`)
         formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
         
-        // 处理换行
+        // 改进的换行处理：
+        // 1. 先将3个或更多连续换行替换为2个换行（限制最大空行）
+        formattedContent = formattedContent.replace(/\n{3,}/g, '\n\n');
+        // 2. 将2个连续换行替换为段落分隔
+        formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
+        // 3. 将单个换行替换为<br>
         formattedContent = formattedContent.replace(/\n/g, '<br>');
-        
+        // 4. 包装在段落标签中
+        formattedContent = '<p>' + formattedContent + '</p>';
+        // 5. 清理空段落
+        formattedContent = formattedContent.replace(/<p><\/p>/g, '').replace(/<p><br><\/p>/g, '');
+
+        // 3. 恢复LaTeX公式
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        console.log(formattedContent)
         return formattedContent;
     }
-
     /**
      * 转义HTML特殊字符
      * @param {string} text - 需要转义的文本

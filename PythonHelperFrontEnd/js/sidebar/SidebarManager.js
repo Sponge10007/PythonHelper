@@ -19,6 +19,26 @@ class SidebarManager {
     async init() {
         await this.chatManager.init();
         await this.settingsManager.init();
+        this.setupMessageListener();
+    }
+
+    setupMessageListener() {
+        // 监听来自background script的消息
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            console.log('Sidebar收到消息:', message.type);
+            switch (message.type) {
+                case 'TEXT_SELECTED':
+                    // 处理选中文本，填充到输入框
+                    if (this.ui.chatInput) {
+                        this.ui.chatInput.value = message.text;
+                        this.ui.adjustTextareaHeight();
+                    }
+                    break;
+                default:
+                    console.log('未处理的消息类型:', message.type);
+            }
+            return true;
+        });
     }
     
     bindEvents() {
