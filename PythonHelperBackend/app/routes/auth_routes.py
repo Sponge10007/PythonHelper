@@ -300,9 +300,10 @@ def reset_password():
             }), 400
             
         db = get_db()
+        
+        # 首先检查用户是否存在
         user = db.execute('''
-            SELECT id, verification_code, verification_code_expires
-            FROM users WHERE email = ?
+            SELECT id FROM users WHERE email = ?
         ''', (email,)).fetchone()
         
         if not user:
@@ -310,17 +311,30 @@ def reset_password():
                 'success': False,
                 'message': '用户不存在'
             }), 404
+        
+        # 从pending_verifications表中验证验证码
+        verification_record = db.execute('''
+            SELECT verification_code, expires_at
+            FROM pending_verifications WHERE email = ?
+            ORDER BY created_at DESC LIMIT 1
+        ''', (email,)).fetchone()
+        
+        if not verification_record:
+            return jsonify({
+                'success': False,
+                'message': '验证码不存在，请重新获取'
+            }), 400
             
         # 验证码过期检查
-        if not user['verification_code_expires'] or \
-           datetime.now() > datetime.fromisoformat(user['verification_code_expires']):
+        expires_at = datetime.fromisoformat(verification_record['expires_at'])
+        if datetime.now() > expires_at:
             return jsonify({
                 'success': False,
                 'message': '验证码已过期，请重新获取'
             }), 400
             
         # 验证码匹配检查
-        if user['verification_code'] != verification_code:
+        if verification_record['verification_code'] != verification_code:
             return jsonify({
                 'success': False,
                 'message': '验证码错误'
@@ -329,11 +343,16 @@ def reset_password():
         # 更新密码
         new_password_hash = generate_password_hash(new_password)
         db.execute('''
-            UPDATE users 
-            SET password_hash = ?, verification_code = NULL, verification_code_expires = NULL,
-                updated_at = CURRENT_TIMESTAMP
+            UPDATE users
+            SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
             WHERE email = ?
         ''', (new_password_hash, email))
+        
+        # 清理验证码记录
+        db.execute('''
+            DELETE FROM pending_verifications WHERE email = ?
+        ''', (email,))
+        
         db.commit()
         
         return jsonify({
@@ -387,7 +406,7 @@ def resend_verification():
         # 更新验证码
         verification_expires = get_verification_code_expiry()
         db.execute('''
-            UPDATE users 
+            UPDATE users
             SET verification_code = ?, verification_code_expires = ?
             WHERE email = ?
         ''', (verification_code, verification_expires, email))
@@ -428,21 +447,22 @@ def check_auth():
 
 @auth_bp.route('/send-verification', methods=['POST'])
 def send_verification():
-    """发送验证码到指定邮箱（用于注册前验证）"""
+    """发送验证码到指定邮箱（用于注册前验证或重置密码）"""
     try:
         data = request.get_json()
         email = data.get('email', '').strip().lower()
+        verification_type = data.get('type', 'register')  # 默认为注册类型
         
         if not email:
             return jsonify({
-                'status': 'error',
+                'success': False,
                 'message': '邮箱不能为空'
             }), 400
             
         # 验证浙大邮箱
         if not is_zju_email(email):
             return jsonify({
-                'status': 'error',
+                'success': False,
                 'message': '只允许使用@zju.edu.cn邮箱'
             }), 400
             
@@ -452,10 +472,25 @@ def send_verification():
             'SELECT id FROM users WHERE email = ?', (email,)
         ).fetchone()
         
-        if existing_user:
+        # 根据验证类型进行不同的检查
+        if verification_type == 'register':
+            # 注册验证：邮箱不应该已被注册
+            if existing_user:
+                return jsonify({
+                    'success': False,
+                    'message': '该邮箱已被注册，请直接登录'
+                }), 400
+        elif verification_type == 'reset':
+            # 重置密码验证：邮箱必须已被注册
+            if not existing_user:
+                return jsonify({
+                    'success': False,
+                    'message': '该邮箱未注册，请先注册账户'
+                }), 400
+        else:
             return jsonify({
-                'status': 'error',
-                'message': '该邮箱已被注册，请直接登录'
+                'success': False,
+                'message': '无效的验证类型'
             }), 400
             
         # 生成验证码
@@ -465,11 +500,11 @@ def send_verification():
         # 发送验证邮件
         if not email_service.send_verification_email(email, verification_code):
             return jsonify({
-                'status': 'error',
+                'success': False,
                 'message': '验证码发送失败，请稍后重试'
             }), 500
             
-        # 临时存储验证码（用于后续注册验证）
+        # 临时存储验证码（用于后续验证）
         expiry = get_verification_code_expiry()
         db.execute('''
             INSERT OR REPLACE INTO pending_verifications
@@ -478,15 +513,15 @@ def send_verification():
         ''', (email, verification_code, expiry, datetime.now()))
         db.commit()
 
-        logger.info(f"验证码已发送至: {email}")
+        logger.info(f"验证码已发送至: {email} (类型: {verification_type})")
         return jsonify({
-            'status': 'success',
+            'success': True,
             'message': '验证码已发送，请查收邮件'
         })
 
     except Exception as e:
         logger.error(f"发送验证码失败: {str(e)}")
         return jsonify({
-            'status': 'error',
+            'success': False,
             'message': '验证码发送失败，请稍后重试'
         }), 500
