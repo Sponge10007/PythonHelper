@@ -543,7 +543,7 @@ html, body {
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: #dc3545;
+    background: #7a3898;
     color: white;
     border: none;
     border-radius: 6px;
@@ -554,7 +554,7 @@ html, body {
 }
 
 .logout-btn:hover {
-    background: #c82333;
+    background: #7a3898;
     transform: translateY(-1px);
 }
 

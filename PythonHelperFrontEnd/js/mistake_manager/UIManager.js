@@ -79,6 +79,9 @@ export class UIManager {
             </div>
         ` : '';
 
+        // 生成唯一的ID用于折叠功能
+        const collapseId = `analysis-${mistake.id}`;
+
         div.innerHTML = `
             <div class="mistake-header">
                 <div>
@@ -92,13 +95,65 @@ export class UIManager {
                 </div>
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
-            <div class="mistake-conversation">${messagesHtml}</div>
             ${tagsHtml}
+            <div class="analysis-collapse">
+                <button class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
+                    <span class="analysis-toggle-text">展开解析</span>
+                    <span class="analysis-toggle-icon">▼</span>
+                </button>
+            </div>
+            <div class="analysis-content" id="${collapseId}" style="display: none;">
+                <div class="mistake-conversation">${messagesHtml}</div>
+            </div>
             <div class="mistake-actions">
                 <button class="edit-mistake-btn btn-secondary" data-mistake-id="${mistake.id}">编辑</button>
                 <button class="delete-mistake-btn btn-danger" data-mistake-id="${mistake.id}">删除</button>
             </div>
         `;
+        
+        // 添加折叠切换事件
+        const toggleBtn = div.querySelector('.analysis-toggle');
+        const content = div.querySelector('.analysis-content');
+        const toggleText = div.querySelector('.analysis-toggle-text');
+        const toggleIcon = div.querySelector('.analysis-toggle-icon');
+        
+        toggleBtn.addEventListener('click', () => {
+            const isExpanded = toggleBtn.dataset.expanded === 'true';
+            if (isExpanded) {
+                // 收起
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.offsetHeight; // 强制重排
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+                setTimeout(() => {
+                    content.style.display = 'none';
+                    content.style.maxHeight = '';
+                    content.style.opacity = '';
+                }, 300);
+                
+                toggleText.textContent = '展开解析';
+                toggleIcon.textContent = '▼';
+                toggleBtn.dataset.expanded = 'false';
+            } else {
+                // 展开
+                content.style.display = 'block';
+                const height = content.scrollHeight;
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+                content.offsetHeight; // 强制重排
+                content.style.maxHeight = height + 'px';
+                content.style.opacity = '1';
+                setTimeout(() => {
+                    content.style.maxHeight = '';
+                    content.style.opacity = '';
+                }, 300);
+                
+                toggleText.textContent = '收起解析';
+                toggleIcon.textContent = '▲';
+                toggleBtn.dataset.expanded = 'true';
+            }
+        });
+        
         return div;
     }
 
@@ -180,13 +235,11 @@ export class UIManager {
             const previewBtn = pptCard.querySelector('.btn-preview');
             const downloadBtn = pptCard.querySelector('.btn-download');
             const deleteBtn = pptCard.querySelector('.btn-delete');
-            const newWindowBtn = pptCard.querySelector('.btn-new-window');
             const selectCheckbox = pptCard.querySelector('.ppt-checkbox');
 
             if (previewBtn) previewBtn.addEventListener('click', () => onPreview(ppt.id));
             if (downloadBtn) downloadBtn.addEventListener('click', () => onDownload(ppt.id));
             if (deleteBtn) deleteBtn.addEventListener('click', () => onDelete(ppt.id));
-            if (newWindowBtn) newWindowBtn.addEventListener('click', () => this.previewInNewWindow(ppt.id));
             if (selectCheckbox) selectCheckbox.addEventListener('change', (e) => onToggleSelect(ppt.id));
 
             this.pptGrid.appendChild(pptCard);
@@ -198,9 +251,6 @@ export class UIManager {
         pptCard.className = 'ppt-card';
         pptCard.setAttribute('data-ppt-id', ppt.id);
         
-        // 获取文件类型图标
-        const fileIcon = this.getFileIcon(ppt.file_type);
-        
         // 格式化文件大小
         const fileSize = this.formatFileSize(ppt.file_size || 0);
         
@@ -210,39 +260,31 @@ export class UIManager {
         pptCard.innerHTML = `
             <div class="ppt-card-header">
                 <input type="checkbox" class="ppt-checkbox" data-ppt-id="${ppt.id}">
-                <div class="ppt-type-badge">${ppt.file_type.toUpperCase()}</div>
             </div>
             
-            <div class="ppt-thumbnail" id="ppt-thumb-${ppt.id}">
-                <div class="thumbnail-placeholder">
-                    <div class="file-icon">${fileIcon}</div>
-                    <div class="loading-spinner">加载中...</div>
+            <div class="ppt-card-content">
+                <div class="ppt-title" title="${ppt.original_name}">${this.truncateText(ppt.original_name, 40)}</div>
+                
+                <div class="ppt-tags">
+                    <span class="ppt-tag ppt-type">${ppt.file_type.toUpperCase()}</span>
+                    <span class="ppt-tag ppt-size">${fileSize}</span>
+                    <span class="ppt-tag ppt-pages">${ppt.slides_count || 0}页</span>
+                    <span class="ppt-tag ppt-date">${uploadDate}</span>
                 </div>
-            </div>
-            
-            <div class="ppt-info">
-                <div class="ppt-title" title="${ppt.original_name}">${this.truncateText(ppt.original_name, 30)}</div>
-                <div class="ppt-meta">
-                    <span class="ppt-size">${fileSize}</span>
-                    <span class="ppt-slides">${ppt.slides_count || 0}页</span>
-                    <span class="ppt-date">${uploadDate}</span>
-                </div>
+                
                 ${ppt.description ? `<div class="ppt-description">${this.escapeHtml(ppt.description)}</div>` : ''}
                 ${this.renderPPTTags(ppt.tags)}
             </div>
             
             <div class="ppt-actions">
-                <button class="btn-preview btn-primary" title="预览">
-                    <span class="icon">👁️</span> 预览
+                <button class="ppt-card-btn btn-preview" title="查看">
+                    <img src="../icons/preview.png" alt="查看" class="btn-icon"> 查看
                 </button>
-                <button class="btn-new-window btn-secondary" title="新窗口预览">
-                    <span class="icon">🔗</span>
+                <button class="ppt-card-btn btn-download" title="下载">
+                    <img src="../icons/download.png" alt="下载" class="btn-icon"> 下载
                 </button>
-                <button class="btn-download btn-secondary" title="下载">
-                    <span class="icon">⬇️</span>
-                </button>
-                <button class="btn-delete btn-danger" title="删除">
-                    <span class="icon">🗑️</span>
+                <button class="ppt-card-btn btn-delete" title="删除">
+                    <img src="../icons/delete.png" alt="删除" class="btn-icon"> 删除
                 </button>
             </div>
         `;
@@ -563,19 +605,6 @@ export class UIManager {
     /**
      * 工具方法
      */
-    getFileIcon(fileType) {
-        const iconMap = {
-            'pdf': '📄',
-            'ppt': '📊',
-            'pptx': '📊',
-            'doc': '📝',
-            'docx': '📝',
-            'xls': '📈',
-            'xlsx': '📈'
-        };
-        return iconMap[fileType.toLowerCase()] || '📁';
-    }
-
     formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
         const k = 1024;
@@ -771,7 +800,7 @@ export class UIManager {
     }
 
     /**
-     * 安全渲染PPT标签
+     * 安全渲染PPT标签（只显示自定义标签，避免与基本信息重复）
      */
     renderPPTTags(tags) {
         // 处理各种可能的标签格式
@@ -792,13 +821,22 @@ export class UIManager {
             tagArray = [String(tags)];
         }
 
+        // 过滤掉基本信息标签（文件类型、大小等），只保留自定义标签
+        const excludeBasicInfo = ['pdf', 'ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'];
+        tagArray = tagArray.filter(tag => {
+            const tagStr = String(tag).toLowerCase();
+            return !excludeBasicInfo.some(basicTag => tagStr.includes(basicTag)) &&
+                   !tagStr.match(/^\d+(\.\d+)?\s*(b|kb|mb|gb)$/i) && // 过滤文件大小格式
+                   !tagStr.match(/^\d+页$/); // 过滤页数格式
+        });
+
         // 确保是数组且有内容
         if (!Array.isArray(tagArray) || tagArray.length === 0) {
             return '';
         }
 
         return `
-            <div class="ppt-tags">
+            <div class="ppt-custom-tags">
                 ${tagArray.map(tag => `<span class="ppt-tag">${this.escapeHtml(String(tag))}</span>`).join('')}
             </div>
         `;

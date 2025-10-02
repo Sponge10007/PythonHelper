@@ -394,6 +394,86 @@ export class PPTHandler {
     }
 
     /**
+     * 切换PPT选择状态
+     */
+    toggleSelectPPT(pptId) {
+        // 确保pptId是字符串类型
+        pptId = String(pptId);
+        
+        if (this.selectedFiles.has(pptId)) {
+            this.selectedFiles.delete(pptId);
+        } else {
+            this.selectedFiles.add(pptId);
+        }
+        
+        // 更新复选框状态
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 更新所有复选框状态
+     */
+    updateCheckboxes() {
+        const checkboxes = document.querySelectorAll('.ppt-checkbox');
+        checkboxes.forEach(checkbox => {
+            const pptId = String(checkbox.getAttribute('data-ppt-id'));
+            const isSelected = this.selectedFiles.has(pptId);
+            checkbox.checked = isSelected;
+            
+            // 更新PPT卡片的选中状态样式
+            const pptCard = checkbox.closest('.ppt-card');
+            if (pptCard) {
+                if (isSelected) {
+                    pptCard.classList.add('selected');
+                } else {
+                    pptCard.classList.remove('selected');
+                }
+            }
+        });
+    }
+
+    /**
+     * 进入编辑模式
+     */
+    enterEditMode() {
+        this.selectedFiles.clear();
+        document.querySelector('.ppt-grid').classList.add('edit-mode');
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 退出编辑模式
+     */
+    exitEditMode() {
+        this.selectedFiles.clear();
+        document.querySelector('.ppt-grid').classList.remove('edit-mode');
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 选择所有当前页的文件
+     */
+    selectAllFiles() {
+        this.filteredPptFiles.forEach(file => {
+            this.selectedFiles.add(String(file.id));
+        });
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 取消选择所有文件
+     */
+    deselectAllFiles() {
+        this.selectedFiles.clear();
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
      * 批量删除选中的文件
      */
     async batchDeleteSelected() {
@@ -487,7 +567,14 @@ export class PPTHandler {
      */
     renderSelectedActions() {
         const hasSelected = this.selectedFiles.size > 0;
-        this.ui.toggleBatchActions(hasSelected, this.selectedFiles.size);
+        const batchDeleteBtn = document.getElementById('batchDeletePPTs');
+        
+        if (batchDeleteBtn) {
+            batchDeleteBtn.disabled = !hasSelected;
+            batchDeleteBtn.textContent = hasSelected 
+                ? `批量删除 (${this.selectedFiles.size})`
+                : '批量删除';
+        }
     }
 
     /**

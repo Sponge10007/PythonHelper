@@ -633,7 +633,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/reset-password-confirm`, {
+            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

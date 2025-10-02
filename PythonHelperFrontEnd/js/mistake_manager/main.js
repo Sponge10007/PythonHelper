@@ -19,6 +19,16 @@ class PageManager {
     async init() {
         await this.mistakeHandler.init();
         await this.pptHandler.init();
+        // 确保"全部"标签默认激活
+        this.initializeTagFilter();
+    }
+
+    // 初始化标签筛选状态
+    initializeTagFilter() {
+        const allTag = document.querySelector('#tagFilter .tag-item');
+        if (allTag && allTag.textContent.trim() === '全部') {
+            allTag.classList.add('active');
+        }
     }
 
     bindEvents() {
@@ -28,11 +38,21 @@ class PageManager {
 
         // --- 错题相关事件 ---
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.mistakeHandler.filter({ search: e.target.value });
+            this.mistakeHandler.applyFilters({ search: e.target.value });
         });
         document.getElementById('sortBy').addEventListener('change', (e) => {
             this.mistakeHandler.sort(e.target.value);
         });
+        
+        // 标签筛选事件
+        this.bindTagFilters();
+        
+        // --- 批量操作和编辑模式事件 ---
+        this.bindBatchOperations();
+        
+        // --- 分页事件 ---
+        this.bindPaginationEvents();
+        
         // ... 绑定错题的批量删除、分页等按钮事件到 this.mistakeHandler 的方法
 
         // --- PPT 相关事件 ---
@@ -63,6 +83,26 @@ class PageManager {
             });
         }
 
+        // PPT编辑模式
+        const editModePPT = document.getElementById('editModePPT');
+        const cancelEditPPT = document.getElementById('cancelEditPPT');
+
+        if (editModePPT) {
+            editModePPT.addEventListener('click', () => {
+                this.pptHandler.enterEditMode();
+                document.getElementById('editModePPT').style.display = 'none';
+                document.getElementById('batchActionsPPT').style.display = 'flex';
+            });
+        }
+
+        if (cancelEditPPT) {
+            cancelEditPPT.addEventListener('click', () => {
+                this.pptHandler.exitEditMode();
+                document.getElementById('editModePPT').style.display = 'inline-block';
+                document.getElementById('batchActionsPPT').style.display = 'none';
+            });
+        }
+
         // PPT批量操作
         const selectAllPPTs = document.getElementById('selectAllPPTs');
         const deselectAllPPTs = document.getElementById('deselectAllPPTs');
@@ -71,15 +111,13 @@ class PageManager {
 
         if (selectAllPPTs) {
             selectAllPPTs.addEventListener('click', () => {
-                this.pptHandler.toggleSelectAll();
+                this.pptHandler.selectAllFiles();
             });
         }
 
         if (deselectAllPPTs) {
             deselectAllPPTs.addEventListener('click', () => {
-                this.pptHandler.selectedFiles.clear();
-                this.pptHandler.renderSelectedActions();
-                this.ui.updateAllFilesSelection([]);
+                this.pptHandler.deselectAllFiles();
             });
         }
 
@@ -112,6 +150,122 @@ class PageManager {
         modal.querySelector('#closeModal').addEventListener('click', () => this.ui.toggleModal('modal', false));
         modal.querySelector('#cancelEdit').addEventListener('click', () => this.ui.toggleModal('modal', false));
 
+    }
+
+    // 绑定标签筛选事件
+    bindTagFilters() {
+        const tagFilter = document.getElementById('tagFilter');
+        if (tagFilter) {
+            tagFilter.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tag-item')) {
+                    const tagText = e.target.textContent.trim();
+                    this.handleTagClick(tagText, e.target);
+                }
+            });
+        }
+    }
+
+    // 处理标签点击
+    handleTagClick(tagText, tagElement) {
+        console.log('标签点击:', tagText); // 调试信息
+        
+        // 移除所有标签的激活状态
+        const allTags = document.querySelectorAll('#tagFilter .tag-item');
+        allTags.forEach(tag => tag.classList.remove('active'));
+        
+        // 激活当前点击的标签
+        tagElement.classList.add('active');
+        
+        // 如果点击的是"全部"，清除所有筛选
+        if (tagText === '全部') {
+            console.log('显示全部错题'); // 调试信息
+            this.mistakeHandler.applyFilters({ tags: new Set() });
+        } else {
+            // 否则按照选中的标签进行筛选
+            console.log('按标签筛选:', tagText); // 调试信息
+            this.mistakeHandler.applyFilters({ tags: new Set([tagText]) });
+        }
+    }
+
+    // 绑定批量操作事件
+    bindBatchOperations() {
+        const editModeBtn = document.getElementById('editMode');
+        const batchActions = document.getElementById('batchActions');
+        const selectAllBtn = document.getElementById('selectAll');
+        const deselectAllBtn = document.getElementById('deselectAll');
+        const batchDeleteBtn = document.getElementById('batchDelete');
+        const cancelEditBtn = document.getElementById('cancelEdit');
+
+        let isEditMode = false;
+
+        // 编辑按钮点击事件
+        if (editModeBtn) {
+            editModeBtn.addEventListener('click', () => {
+                this.toggleEditMode(true);
+            });
+        }
+
+        // 取消编辑按钮点击事件
+        if (cancelEditBtn) {
+            cancelEditBtn.addEventListener('click', () => {
+                this.toggleEditMode(false);
+            });
+        }
+
+        // 全选按钮
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                this.mistakeHandler.selectAllMistakes();
+            });
+        }
+
+        // 取消全选按钮
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => {
+                this.mistakeHandler.deselectAllMistakes();
+            });
+        }
+
+        // 批量删除按钮
+        if (batchDeleteBtn) {
+            batchDeleteBtn.addEventListener('click', () => {
+                this.mistakeHandler.batchDeleteSelected();
+            });
+        }
+    }
+
+    // 切换编辑模式
+    toggleEditMode(isEditMode) {
+        const editModeBtn = document.getElementById('editMode');
+        const batchActions = document.getElementById('batchActions');
+
+        if (isEditMode) {
+            editModeBtn.style.display = 'none';
+            batchActions.style.display = 'flex';
+            this.mistakeHandler.enterEditMode();
+        } else {
+            editModeBtn.style.display = 'block';
+            batchActions.style.display = 'none';
+            this.mistakeHandler.exitEditMode();
+        }
+    }
+
+    // 绑定分页事件
+    bindPaginationEvents() {
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', () => {
+                this.mistakeHandler.goToPage(this.mistakeHandler.currentPage - 1);
+            });
+        }
+
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', () => {
+                this.mistakeHandler.goToPage(this.mistakeHandler.currentPage + 1);
+            });
+        }
     }
 
     switchMode(mode) {

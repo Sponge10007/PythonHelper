@@ -30,11 +30,21 @@
                 <div id="mistakeModeSidebar" class="sidebar-content active">
                     <div class="search-section">
                         <h3>检索错题</h3>
-                        <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
+                        <div class="search-input-container">
+                            <img src="../icons/search.png" class="search-icon" alt="搜索">
+                            <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
+                        </div>
                         <div class="filter-tags">
-                            <h4>标签筛选</h4>
-                                                         <div id="tagFilter" class="tag-list">
-                                 </div>
+                                <div id="tagFilter" class="tag-list">
+                                    <span class="tag-item active">全部</span>
+                                    <span class="tag-item">数据类型及表达式</span>
+                                    <span class="tag-item">函数</span>
+                                    <span class="tag-item">面向对象</span>
+                                    <span class="tag-item">复合数据类型</span>
+                                    <span class="tag-item">流程控制</span>
+                                    <span class="tag-item">文件概述</span>
+                                    <span class="tag-item">异常处理</span>
+                                </div>
                         </div>
                     </div>
 
@@ -58,9 +68,8 @@
 
                     <div class="training-section">
                         <h3>针对训练</h3>
-                        <button id="startTraining" class="btn-primary">开始训练</button>
-                        <button id="trainingHistory" class="btn-secondary">训练历史</button>
-                        <button id="weaknessAnalysis" class="btn-secondary">薄弱点分析</button>
+                        <button id="manualTraining" class="btn-primary">手动组卷</button>
+                        <button id="smartTraining" class="btn-secondary">智能组卷</button>
                     </div>
 
                     <div class="exam-section">
@@ -73,11 +82,14 @@
 
                 <div id="pptModeSidebar" class="sidebar-content">
                     <div class="ppt-section">
-                        <h3>📊 课堂PPT</h3>
+                        <h3>课堂PPT</h3>
+                        <p>您可以查看、下载教师上课课件，配合插件检索提问。</p>
+                        <p>您可以上传Python相关的个人笔记统一管理系统绝不会泄露隐私。</p>
+                        <br>
+                        <h3>上传资料</h3>
                         <div class="upload-area" id="uploadArea">
                             <input type="file" id="pptFileInput" accept=".ppt,.pptx,.doc,.docx,.pdf" class="file-input" multiple>
                             <label for="pptFileInput" class="upload-label">
-                                <span class="upload-icon">📁</span>
                                 <span>点击上传或拖拽文件到此处</span>
                                 <span class="upload-hint">支持 PPT、PPTX、DOC、DOCX、PDF 格式</span>
                                 <span class="upload-hint">单个文件最大 100MB，支持批量上传</span>
@@ -104,18 +116,21 @@
                             </div>
                         </div>
                         <div class="ppt-search">
-                            <input type="text" id="pptSearchInput" placeholder="搜索文档文件..." class="search-input">
+                            <div class="search-input-container">
+                                <img src="../icons/search.png" class="search-icon" alt="搜索">
+                                <input type="text" id="pptSearchInput" placeholder="搜索文件" class="search-input">
+                            </div>
                         </div>
                         <div class="ppt-list" id="pptList">
                             </div>
                     </div>
 
                     <div class="ppt-stats-section">
-                        <h3>📈 PPT统计</h3>
+                        <h3>统计信息</h3>
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <span class="stat-number" id="totalPPTs">0</span>
-                                <span class="stat-label">总PPT数</span>
+                                <span class="stat-label">文件数</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-number" id="totalSlides">0</span>
@@ -124,10 +139,6 @@
                         </div>
                     </div>
                     
-                    <div class="ppt-management-section">
-                        <h3>管理操作</h3>
-                        <button id="clearAllPPTs" class="btn-secondary">清空所有</button>
-                    </div>
                 </div>
             </aside>
 
@@ -135,18 +146,22 @@
                 <div id="mistakeModeContent" class="content-area active">
                     <div class="toolbar">
                         <div class="toolbar-left">
-                            <button id="selectAll" class="btn-secondary">全选</button>
-                            <button id="deselectAll" class="btn-secondary">取消全选</button>
-                            <button id="batchDelete" class="btn-danger" disabled>批量删除</button>
+                            <button id="editMode" class="btn-primary">编辑</button>
+                            <div id="batchActions" class="batch-actions" style="display: none;">
+                                <button id="selectAll" class="btn-secondary">全选</button>
+                                <button id="deselectAll" class="btn-secondary">取消全选</button>
+                                <button id="batchDelete" class="btn-danger" disabled>批量删除</button>
+                                <button id="cancelEdit" class="btn-secondary">取消</button>
+                            </div>
                         </div>
                         <div class="toolbar-right">
                             <select id="sortBy" class="sort-select">
-                                <option value="date">按日期排序</option>
-                                <option value="category">按分类排序</option>
-                                <option value="difficulty">按难度排序</option>
-                                                                 <option value="lesson">按标签排序</option>
+                                <option value="class">按课程排序</option>
+                                <option value="knowledge">按知识点排序</option>
+                                <option value="easy">由易到难</option>
+                                <option value="difficulty">由难到易</option>
                             </select>
-                                                         <button id="addTag" class="btn-primary">添加标签</button>
+                                <button id="addTag" class="btn-primary">添加标签</button>
                         </div>
                     </div>
 
@@ -162,15 +177,17 @@
 
                 <div id="pptModeContent" class="content-area">
                     <div class="ppt-content">
-                                                 <h2>📊 课堂PPT管理</h2>
-                         <p>在这里管理你的Python课程PPT文件，支持上传、预览和管理。</p>
                         
-                                                 <div class="ppt-toolbar">
+                          <div class="ppt-toolbar">
                             <div class="ppt-toolbar-left">
-                                <button id="selectAllPPTs" class="btn-secondary">全选</button>
-                                <button id="deselectAllPPTs" class="btn-secondary">取消全选</button>
-                                <button id="batchDeletePPTs" class="btn-danger" disabled>批量删除</button>
-                                <button id="debugInfo" class="btn-secondary">调试信息</button>
+                                <button id="editModePPT" class="btn-primary">编辑</button>
+                                <div id="batchActionsPPT" class="batch-actions" style="display: none;">
+                                    <button id="selectAllPPTs" class="btn-secondary">全选</button>
+                                    <button id="deselectAllPPTs" class="btn-secondary">取消全选</button>
+                                    <button id="batchDeletePPTs" class="btn-danger" disabled>批量删除</button>
+                                    <button id="cancelEditPPT" class="btn-secondary">取消</button>
+                                </div>
+                                
                             </div>
                             <div class="ppt-toolbar-right">
                                 <select id="pptSortBy" class="sort-select">

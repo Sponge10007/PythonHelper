@@ -38,10 +38,14 @@ export class MistakeHandler {
             if (!searchCondition) return false;
 
             if (this.currentFilters.tags.size > 0) {
-                return Array.from(this.currentFilters.tags).some(tag => mistake.tags && mistake.tags.includes(tag));
+                const hasMatchingTag = Array.from(this.currentFilters.tags).some(tag => mistake.tags && mistake.tags.includes(tag));
+                console.log(`错题 "${mistake.title}" 标签:`, mistake.tags, '筛选标签:', Array.from(this.currentFilters.tags), '匹配:', hasMatchingTag); // 调试信息
+                return hasMatchingTag;
             }
             return true;
         });
+
+        console.log(`筛选结果: ${this.filteredMistakes.length} / ${this.allMistakes.length} 条错题`); // 调试信息
 
         // 渲染逻辑
         const totalPages = Math.ceil(this.filteredMistakes.length / this.itemsPerPage);
@@ -63,10 +67,14 @@ export class MistakeHandler {
         };
         // 假设pptStats是一个空对象，因为这个模块不处理PPT
         this.ui.updateStats(stats, { total: 0, slides: 0 });
+        
+        // 更新复选框状态以保持选中状态同步
+        setTimeout(() => this.updateCheckboxes(), 0);
     }
     
     applyFilters(newFilters) {
         this.currentFilters = { ...this.currentFilters, ...newFilters };
+        console.log('应用筛选器:', this.currentFilters); // 调试信息
         this.currentPage = 1;
         this.filterAndRender();
     }
@@ -139,10 +147,122 @@ export class MistakeHandler {
     }
 
     toggleSelection(mistakeId, isChecked) {
+        // 确保mistakeId是字符串类型
+        mistakeId = String(mistakeId);
+        
         if (isChecked) {
             this.selectedMistakes.add(mistakeId);
         } else {
             this.selectedMistakes.delete(mistakeId);
+        }
+        
+        // 立即更新对应错题项的选中状态样式
+        const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistakeId}"]`);
+        if (checkbox) {
+            const mistakeItem = checkbox.closest('.mistake-item');
+            if (mistakeItem) {
+                if (isChecked) {
+                    mistakeItem.classList.add('selected');
+                } else {
+                    mistakeItem.classList.remove('selected');
+                }
+            }
+        }
+        
+        this.updateBatchDeleteButton();
+    }
+
+    // 进入编辑模式
+    enterEditMode() {
+        this.selectedMistakes.clear();
+        document.querySelector('.mistake-list').classList.add('edit-mode');
+        this.filterAndRender();
+        this.updateBatchDeleteButton();
+    }
+
+    // 退出编辑模式
+    exitEditMode() {
+        this.selectedMistakes.clear();
+        document.querySelector('.mistake-list').classList.remove('edit-mode');
+        this.filterAndRender();
+    }
+
+    // 全选错题
+    selectAllMistakes() {
+        const currentPageMistakes = this.getCurrentPageMistakes();
+        currentPageMistakes.forEach(mistake => {
+            this.selectedMistakes.add(String(mistake.id));
+        });
+        this.updateCheckboxes();
+        this.updateBatchDeleteButton();
+    }
+
+    // 取消全选错题
+    deselectAllMistakes() {
+        this.selectedMistakes.clear();
+        this.updateCheckboxes();
+        this.updateBatchDeleteButton();
+    }
+
+    // 批量删除选中的错题
+    async batchDeleteSelected() {
+        if (this.selectedMistakes.size === 0) {
+            alert('请先选择要删除的错题');
+            return;
+        }
+
+        if (!confirm(`确定要删除选中的 ${this.selectedMistakes.size} 个错题吗？`)) {
+            return;
+        }
+
+        try {
+            const selectedIds = Array.from(this.selectedMistakes);
+            // 逐个删除错题
+            for (const mistakeId of selectedIds) {
+                this.allMistakes = this.allMistakes.filter(m => m.id !== mistakeId);
+            }
+            
+            this.selectedMistakes.clear();
+            this.filterAndRender();
+            this.updateBatchDeleteButton();
+            
+            alert(`成功删除 ${selectedIds.length} 个错题`);
+        } catch (error) {
+            alert('批量删除失败: ' + error.message);
+        }
+    }
+
+    // 获取当前页的错题
+    getCurrentPageMistakes() {
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        return this.filteredMistakes.slice(startIndex, startIndex + this.itemsPerPage);
+    }
+
+    // 更新复选框状态
+    updateCheckboxes() {
+        const checkboxes = document.querySelectorAll('.mistake-checkbox');
+        checkboxes.forEach(checkbox => {
+            const mistakeId = String(checkbox.getAttribute('data-mistake-id'));
+            const isSelected = this.selectedMistakes.has(mistakeId);
+            checkbox.checked = isSelected;
+            
+            // 更新错题项的选中状态样式
+            const mistakeItem = checkbox.closest('.mistake-item');
+            if (mistakeItem) {
+                if (isSelected) {
+                    mistakeItem.classList.add('selected');
+                } else {
+                    mistakeItem.classList.remove('selected');
+                }
+            }
+        });
+    }
+
+    // 更新批量删除按钮状态
+    updateBatchDeleteButton() {
+        const batchDeleteBtn = document.getElementById('batchDelete');
+        if (batchDeleteBtn) {
+            batchDeleteBtn.disabled = this.selectedMistakes.size === 0;
         }
     }
 
