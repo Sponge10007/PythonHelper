@@ -11,15 +11,13 @@ class BackgroundService {
     async run() {
         await this.dataManager.init();
         this.messageHandler.listen();
-        this.setupSidePanel();
-        console.log('Python教学助手后台脚本已初始化');
-    }
-
-    setupSidePanel() {
-        // 确保只有一个激活的tab可以打开侧边栏
-        chrome.sidePanel
-            .setPanelBehavior({ openPanelOnActionClick: true })
-            .catch(error => console.error(error));
+        
+        // 设置点击扩展图标时打开侧边栏
+        chrome.action.onClicked.addListener(async (tab) => {
+            await chrome.sidePanel.open({ windowId: tab.windowId });
+        });
+        
+        console.log('Python教学助手后台脚本已初始化 - 侧边栏模式');
     }
 }
 

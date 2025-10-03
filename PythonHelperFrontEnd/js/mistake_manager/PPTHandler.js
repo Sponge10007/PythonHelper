@@ -148,7 +148,7 @@ export class PPTHandler {
     }
 
     /**
-     * 预览PPT文件
+     * 预览PPT文件 - 提供多种查看选项
      */
     async previewPPT(pptId) {
         try {
@@ -157,13 +157,152 @@ export class PPTHandler {
                 throw new Error('文件不存在');
             }
 
-            // 直接显示预览模态框，UIManager会处理内容加载
-            this.ui.showPreviewModal(file);
+            // 显示预览选项菜单
+            this.showPreviewOptions(file);
 
         } catch (error) {
             console.error('预览失败:', error);
             alert(`预览失败: ${error.message}`);
         }
+    }
+
+    /**
+     * 显示预览选项
+     */
+    showPreviewOptions(file) {
+        // 构建文件URL
+        const serverUrl = getBackendUrl();
+        const fileUrl = `${serverUrl}/ppt/files/${file.id}/download`;
+        const fileType = (file.file_type || '').toLowerCase();
+
+        // 移除现有的选项窗口
+        const existingModal = document.getElementById('previewOptionsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 创建预览选项窗口
+        const modalHTML = `
+            <div id="previewOptionsModal" class="ppt-viewer-modal active">
+                <div class="viewer-backdrop" id="previewBackdrop"></div>
+                <div class="viewer-content" style="max-width: 500px; margin: auto; padding: 20px;">
+                    <div class="viewer-header">
+                        <div class="viewer-info">
+                            <h2 class="viewer-title">${file.original_name}</h2>
+                            <div class="viewer-subtitle">选择预览方式</div>
+                        </div>
+                        <div class="viewer-controls">
+                            <button class="btn-viewer-close" id="btnPreviewClose">×</button>
+                        </div>
+                    </div>
+                    <div class="preview-options" style="padding: 20px;">
+                        <button id="btnDownload" 
+                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer;">
+                            📄 直接下载文件
+                        </button>
+                        
+                        ${fileType === 'pdf' ? `
+                        <button id="btnPdfViewer" 
+                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
+                            📋 浏览器内置PDF查看器
+                        </button>
+                        <button id="btnGoogleDocsPdf" 
+                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #28a745; color: white; border-radius: 4px; cursor: pointer;">
+                            🌐 Google Docs 在线查看
+                        </button>
+                        ` : ''}
+                        
+                        ${(fileType === 'ppt' || fileType === 'pptx') ? `
+                        <button id="btnOfficeOnline" 
+                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #fd7e14; color: white; border-radius: 4px; cursor: pointer;">
+                            📊 Office Online 查看器
+                        </button>
+                        <button id="btnGoogleDocsPpt" 
+                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #28a745; color: white; border-radius: 4px; cursor: pointer;">
+                            🌐 Google Docs 在线查看
+                        </button>
+                        ` : ''}
+
+                        <div style="margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 4px; font-size: 14px; color: #6c757d;">
+                            💡 提示：如果在线查看器无法使用，请直接下载文件用本地软件打开
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 添加到页面
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // 绑定事件
+        this.bindPreviewEvents(file, fileUrl, fileType);
+    }
+
+    /**
+     * 绑定预览选项事件
+     */
+    bindPreviewEvents(file, fileUrl, fileType) {
+        const closeModal = () => {
+            const modal = document.getElementById('previewOptionsModal');
+            if (modal) modal.remove();
+        };
+
+        // 关闭按钮和背景点击
+        document.getElementById('btnPreviewClose')?.addEventListener('click', closeModal);
+        document.getElementById('previewBackdrop')?.addEventListener('click', closeModal);
+
+        // 下载按钮
+        document.getElementById('btnDownload')?.addEventListener('click', () => {
+            window.open(fileUrl, '_blank');
+            closeModal();
+        });
+
+        // PDF特有按钮
+        if (fileType === 'pdf') {
+            document.getElementById('btnPdfViewer')?.addEventListener('click', () => {
+                window.open(fileUrl, '_blank');
+                closeModal();
+            });
+            
+            document.getElementById('btnGoogleDocsPdf')?.addEventListener('click', () => {
+                const googleUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}`;
+                window.open(googleUrl, '_blank');
+                closeModal();
+            });
+        }
+
+        // PPT特有按钮
+        if (fileType === 'ppt' || fileType === 'pptx') {
+            document.getElementById('btnOfficeOnline')?.addEventListener('click', () => {
+                const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+                window.open(officeUrl, '_blank');
+                closeModal();
+            });
+            
+            document.getElementById('btnGoogleDocsPpt')?.addEventListener('click', () => {
+                const googleUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}`;
+                window.open(googleUrl, '_blank');
+                closeModal();
+            });
+        }
+
+        // ESC键关闭
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
+
+    /**
+     * 格式化文件大小
+     */
+    formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
     }
 
     /**
@@ -252,6 +391,86 @@ export class PPTHandler {
         
         this.renderSelectedActions();
         this.ui.updateAllFilesSelection(Array.from(this.selectedFiles));
+    }
+
+    /**
+     * 切换PPT选择状态
+     */
+    toggleSelectPPT(pptId) {
+        // 确保pptId是字符串类型
+        pptId = String(pptId);
+        
+        if (this.selectedFiles.has(pptId)) {
+            this.selectedFiles.delete(pptId);
+        } else {
+            this.selectedFiles.add(pptId);
+        }
+        
+        // 更新复选框状态
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 更新所有复选框状态
+     */
+    updateCheckboxes() {
+        const checkboxes = document.querySelectorAll('.ppt-checkbox');
+        checkboxes.forEach(checkbox => {
+            const pptId = String(checkbox.getAttribute('data-ppt-id'));
+            const isSelected = this.selectedFiles.has(pptId);
+            checkbox.checked = isSelected;
+            
+            // 更新PPT卡片的选中状态样式
+            const pptCard = checkbox.closest('.ppt-card');
+            if (pptCard) {
+                if (isSelected) {
+                    pptCard.classList.add('selected');
+                } else {
+                    pptCard.classList.remove('selected');
+                }
+            }
+        });
+    }
+
+    /**
+     * 进入编辑模式
+     */
+    enterEditMode() {
+        this.selectedFiles.clear();
+        document.querySelector('.ppt-grid').classList.add('edit-mode');
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 退出编辑模式
+     */
+    exitEditMode() {
+        this.selectedFiles.clear();
+        document.querySelector('.ppt-grid').classList.remove('edit-mode');
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 选择所有当前页的文件
+     */
+    selectAllFiles() {
+        this.filteredPptFiles.forEach(file => {
+            this.selectedFiles.add(String(file.id));
+        });
+        this.updateCheckboxes();
+        this.renderSelectedActions();
+    }
+
+    /**
+     * 取消选择所有文件
+     */
+    deselectAllFiles() {
+        this.selectedFiles.clear();
+        this.updateCheckboxes();
+        this.renderSelectedActions();
     }
 
     /**
@@ -348,7 +567,14 @@ export class PPTHandler {
      */
     renderSelectedActions() {
         const hasSelected = this.selectedFiles.size > 0;
-        this.ui.toggleBatchActions(hasSelected, this.selectedFiles.size);
+        const batchDeleteBtn = document.getElementById('batchDeletePPTs');
+        
+        if (batchDeleteBtn) {
+            batchDeleteBtn.disabled = !hasSelected;
+            batchDeleteBtn.textContent = hasSelected 
+                ? `批量删除 (${this.selectedFiles.size})`
+                : '批量删除';
+        }
     }
 
     /**

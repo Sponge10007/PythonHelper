@@ -1,4 +1,11 @@
 /* 全局样式 */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* 防止页面滚动条 */
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -9,21 +16,23 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     line-height: 1.6;
-    color: #333;
-    background-color: #f8f9fa;
+    color: #4a4a4a;
+    background-color: #FDF9FF;
 }
 
 .container {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 /* 头部样式 */
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: white;
     color: white;
-    padding: 20px;
+    padding: 10px 20px;
+    height: 80px;
     display: flex;
     /* justify-content: space-between; */
     align-items: center;
@@ -31,6 +40,7 @@ body {
 }
 
 .header h1 {
+    color: #000000;
     font-size: 24px;
     font-weight: 600;
 }
@@ -43,7 +53,7 @@ body {
 /* 顶部导航栏样式 */
 .top-nav {
     background: white;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -61,7 +71,7 @@ body {
     padding: 16px 24px;
     font-size: 16px;
     font-weight: 500;
-    color: #666;
+    color: #7c7c7c;
     cursor: pointer;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
@@ -69,14 +79,14 @@ body {
 }
 
 .nav-btn:hover {
-    color: #333;
-    background: #f8f9fa;
+    color: #7A3797;
+    background: #FDF9FF;
 }
 
 .nav-btn.active {
-    color: #1976d2;
-    border-bottom-color: #1976d2;
-    background: #f0f8ff;
+    color: #7A3797;
+    border-bottom-color: #7A3797;
+    background: #f3e8ff;
 }
 
 .nav-btn.active::after {
@@ -86,7 +96,7 @@ body {
     left: 0;
     right: 0;
     height: 3px;
-    background: #1976d2;
+    background: #7A3797;
 }
 
 /* 按钮样式 */
@@ -101,32 +111,32 @@ body {
 }
 
 .btn-primary {
-    background: #007bff;
+    background: #7A3797;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #0056b3;
+    background: #653088;
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #8e8e93;
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #545b62;
+    background: #6d6d70;
     transform: translateY(-1px);
 }
 
 .btn-danger {
-    background: #dc3545;
+    background: #8e8e93;
     color: white;
 }
 
 .btn-danger:hover {
-    background: #c82333;
+    background: #6d6d70;
     transform: translateY(-1px);
 }
 
@@ -145,6 +155,8 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    overflow: hidden;
+    height: calc(100vh - 80px - 59px); /* 减去header和nav的高度 */
 }
 
 /* 左侧边栏 */
@@ -155,16 +167,22 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     flex-shrink: 0;
-    height: fit-content;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 侧边栏内容切换 */
 .sidebar-content {
     display: none;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .sidebar-content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 搜索和筛选区域 */
@@ -174,30 +192,55 @@ body {
 
 .search-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
 
+/* 搜索输入框容器 */
+.search-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+    z-index: 1;
+    pointer-events: none;
+}
+
 .search-input {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
+    padding: 10px 12px 10px 36px; /* 左侧留出图标空间 */
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     font-size: 14px;
-    margin-bottom: 16px;
     transition: border-color 0.2s ease;
+    background: white;
+}
+
+/* 针对没有图标的搜索框保持原样式 */
+.search-input:not(.search-input-container .search-input) {
+    padding: 10px 12px;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    border-color: #7A3797;
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.1);
 }
 
 .filter-tags h4 {
     margin-bottom: 8px;
-    color: #666;
+    color: #7c7c7c;
     font-size: 14px;
     font-weight: 500;
 }
@@ -209,25 +252,25 @@ body {
 }
 
 .tag-item {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 16px;
     padding: 6px 12px;
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .tag-item:hover {
-    background: #e9ecef;
-    border-color: #1976d2;
-    color: #1976d2;
+    background: #f3e8ff;
+    border-color: #7A3797;
+    color: #7A3797;
 }
 
 .tag-item.active {
-    background: #1976d2;
-    border-color: #1976d2;
+    background: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
@@ -238,20 +281,26 @@ body {
 
 .stats-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
 
 .stats-grid {
     display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+/* PPT统计区域专用样式 - 2列布局占满宽度 */
+.ppt-stats-section .stats-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
 
 .stat-item {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 12px;
     text-align: center;
@@ -261,13 +310,13 @@ body {
     display: block;
     font-size: 20px;
     font-weight: 600;
-    color: #1976d2;
+    color: #7A3797;
     margin-bottom: 4px;
 }
 
 .stat-label {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 /* 针对训练区域 */
@@ -277,7 +326,7 @@ body {
 
 .training-section h3 {
     margin-bottom: 12px;
-    color: #333;
+    color: #4a4a4a;
     font-size: 16px;
     font-weight: 600;
 }
@@ -338,21 +387,21 @@ body {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    border: 2px dashed #d1d5db;
+    border: 2px dashed #d1d1d6;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: #f8f9fa;
+    background: white;
 }
 
 .upload-label:hover {
-    border-color: #1976d2;
-    background: #f0f8ff;
+    border-color: #7A3797;
+    background: #f3e8ff;
 }
 
 .upload-label.drag-over {
-    border-color: #1976d2;
-    background: #e3f2fd;
+    border-color: #7A3797;
+    background: #f3e8ff;
     transform: scale(1.02);
 }
 
@@ -363,7 +412,7 @@ body {
 
 .upload-hint {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     margin-top: 4px;
 }
 
@@ -374,7 +423,7 @@ body {
 .progress-bar {
     width: 100%;
     height: 8px;
-    background: #e1e5e9;
+    background: #e5e5e7;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -382,14 +431,14 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    background: linear-gradient(90deg, #7A3797, #9333ea);
     width: 0%;
     transition: width 0.3s ease;
 }
 
 .progress-text {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     text-align: center;
 }
 
@@ -410,19 +459,19 @@ body {
 }
 
 .upload-status-info {
-    background: #1976d2;
+    background: #7A3797;
 }
 
 .upload-status-success {
-    background: #2e7d32;
+    background: #8e8e93;
 }
 
 .upload-status-warning {
-    background: #f57c00;
+    background: #a1a1aa;
 }
 
 .upload-status-error {
-    background: #d32f2f;
+    background: #8e8e93;
 }
 
 @keyframes slideIn {
@@ -438,10 +487,10 @@ body {
 
 /* 改进拖拽上传区域样式 */
 .upload-area.drag-over .upload-label {
-    border-color: #1976d2;
-    background: #e3f2fd;
+    border-color: #7A3797;
+    background: #f3e8ff;
     transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+    box-shadow: 0 4px 12px rgba(122, 55, 151, 0.2);
 }
 
 .upload-area.drag-over .upload-icon {
@@ -451,8 +500,8 @@ body {
 
 /* 上传统计区域 */
 .upload-stats {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 12px;
     margin-bottom: 16px;
@@ -470,14 +519,14 @@ body {
 
 .stats-label {
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
     margin-bottom: 4px;
 }
 
 .stats-value {
     font-size: 18px;
     font-weight: 600;
-    color: #1976d2;
+    color: #7A3797;
 }
 
 /* 改进上传提示样式 */
@@ -544,18 +593,8 @@ body {
 }
 
 .ppt-search .search-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.2s ease;
-}
-
-.ppt-search .search-input:focus {
-    outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    margin-bottom: 0; /* 重置margin，因为容器已经有了 */
+    padding: 8px 12px 8px 36px; /* PPT搜索框稍微小一点 */
 }
 
 .ppt-list {
@@ -568,7 +607,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px;
-    border: 1px solid #e1e5e9;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     margin-bottom: 8px;
     background: white;
@@ -585,7 +624,7 @@ body {
 .ppt-name {
     flex: 1;
     font-size: 12px;
-    color: #333;
+    color: #4a4a4a;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -617,10 +656,10 @@ body {
 .ppt-card-btn {
     flex: 1;
     padding: 6px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 6px; /* Increased roundness */
     background: transparent;
-    color: #666;
+    color: #7c7c7c;
     font-size: 12px;
     font-weight: 500; /* Made text bolder */
     cursor: pointer;
@@ -632,53 +671,64 @@ body {
 }
 
 .ppt-card-btn:hover {
-    background: #f0f8ff; /* Lighter blue on hover */
-    border-color: #1976d2;
-    color: #1976d2;
+    background: #f3e8ff; /* Lighter purple on hover */
+    border-color: #7A3797;
+    color: #7A3797;
 }
 
 /* ADDED: New styles for specific button colors */
 .ppt-card-btn.btn-preview {
-    background-color: #545454;
-    border-color: #545454;
+    background-color: #8e8e93;
+    border-color: #8e8e93;
     color: white;
 }
 
 .ppt-card-btn.btn-download {
-    background-color: #7a3898;
-    border-color: #7a3898;
+    background-color: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
 .ppt-card-btn.btn-preview:hover {
-    background-color: #6a6a6a;
-    border-color: #6a6a6a;
+    background-color: #6d6d70;
+    border-color: #6d6d70;
 }
 
 .ppt-card-btn.btn-download:hover {
-    background-color: #9343b8;
-    border-color: #9343b8;
+    background-color: #553c9a;
+    border-color: #553c9a;
 }
 
 
 .ppt-card-btn.primary {
-    background: #1976d2;
-    border-color: #1976d2;
+    background: #7A3797;
+    border-color: #7A3797;
     color: white;
 }
 
 .ppt-card-btn.primary:hover {
-    background: #1565c0;
+    background: #653088;
+}
+
+.ppt-card-btn.btn-delete {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.ppt-card-btn.btn-delete:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
 }
 
 /* 工具栏样式 */
 .toolbar {
     padding: 16px 20px;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fafafa;
+    background: white;
 }
 
 .toolbar-left, .toolbar-right {
@@ -687,9 +737,20 @@ body {
     align-items: center;
 }
 
+/* 批量操作样式 */
+.batch-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.batch-actions.active {
+    display: flex;
+}
+
 .sort-select {
     padding: 6px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e5e7;
     border-radius: 4px;
     font-size: 14px;
     background: white;
@@ -698,11 +759,13 @@ body {
 /* 错题列表样式 */
 .mistake-list {
     padding: 20px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .mistake-item {
     background: white;
-    border: 1px solid #e1e5e9;
+    border: 1px solid #e5e5e7;
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
@@ -710,8 +773,14 @@ body {
 }
 
 .mistake-item:hover {
-    border-color: #1976d2;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #7A3797;
+    box-shadow: 0 2px 8px rgba(122, 55, 151, 0.1);
+}
+
+.mistake-item.selected {
+    background: #f9f7ff;
+    border-color: #7A3797;
+    box-shadow: 0 2px 8px rgba(122, 55, 151, 0.15);
 }
 
 .mistake-item:last-child {
@@ -728,7 +797,7 @@ body {
 .mistake-title {
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: #4a4a4a;
     margin-bottom: 4px;
 }
 
@@ -736,7 +805,7 @@ body {
     display: flex;
     gap: 12px;
     font-size: 12px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 .mistake-content {
@@ -745,8 +814,8 @@ body {
 }
 
 .mistake-answer {
-    background: #f8f9fa;
-    border-left: 4px solid #28a745;
+    background: #f3e8ff;
+    border-left: 4px solid #7A3797;
     padding: 12px;
     margin-bottom: 12px;
     border-radius: 0 4px 4px 0;
@@ -759,8 +828,8 @@ body {
 }
 
 .mistake-tag {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: #f3e8ff;
+    color: #7A3797;
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 12px;
@@ -907,14 +976,97 @@ body {
     justify-content: flex-end;
 }
 
+/* 折叠解析样式 */
+.analysis-collapse {
+    margin: 12px 0 8px 0;
+}
+
+.analysis-toggle {
+    width: 100%;
+    background: #f8f9fa;
+    border: 1px solid #e5e5e7;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #7c7c7c;
+}
+
+.analysis-toggle:hover {
+    background: #f3e8ff;
+    border-color: #7A3797;
+    color: #7A3797;
+}
+
+.analysis-toggle-text {
+    font-weight: 500;
+}
+
+.analysis-toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.analysis-content {
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* 自定义复选框样式 */
 .mistake-checkbox {
-    margin-right: 8px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e5e5e7;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    margin-right: 0;
+    margin-left: 8px;
+    flex-shrink: 0;
+    display: none; /* 默认隐藏 */
+}
+
+/* 编辑模式下显示复选框 */
+.edit-mode .mistake-checkbox {
+    display: block;
+}
+
+.mistake-checkbox:hover {
+    border-color: #7A3797;
+    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+}
+
+.mistake-checkbox:checked {
+    background-color: #7A3797;
+    border-color: #7A3797;
+}
+
+.mistake-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
 }
 
 /* NEW: Styles for message history in mistake item */
 .mistake-conversation {
-    background: #f8f9fa;
-    border: 1px solid #eef;
+    background: white;
+    border: 1px solid #e5e5e7;
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 12px;
@@ -938,11 +1090,11 @@ body {
 }
 
 .message-user .message-role {
-    color: #007bff;
+    color: #7A3797;
 }
 
 .message-assistant .message-role {
-    color: #28a745;
+    color: #8e8e93;
 }
 
 .message-content {
@@ -960,13 +1112,13 @@ body {
     justify-content: center;
     align-items: center;
     gap: 16px;
-    border-top: 1px solid #e1e5e9;
-    background: #fafafa;
+    border-top: 1px solid #e5e5e7;
+    background: white;
 }
 
 #pageInfo {
     font-size: 14px;
-    color: #666;
+    color: #7c7c7c;
 }
 
 /* 模态框样式 */
@@ -1268,26 +1420,36 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* 内容区域切换 */
 .content-area {
     display: none;
+    height: 100%;
+    overflow-y: auto;
+    flex-direction: column;
 }
 
 .content-area.active {
-    display: block;
+    display: flex;
 }
 
 /* 文档内容区域 */
 .ppt-content {
-    padding: 24px;
+    padding: 0px 20px;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 文档工具栏 */
 .ppt-toolbar {
     padding: 16px 0;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e5e5e7;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1315,8 +1477,11 @@ body {
 
 .ppt-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px 0;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .ppt-card {
@@ -1325,15 +1490,17 @@ body {
     border-radius: 8px;
     padding: 16px;
     transition: all 0.3s ease;
-    cursor: pointer;
     position: relative;
-    display: flex; /* Added for layout */
-    flex-direction: column; /* Added for layout */
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+    box-sizing: border-box;
+    overflow: hidden; /* 防止内容溢出 */
 }
 
 .ppt-card.selected {
-    border-color: #1976d2;
-    background: #f0f8ff;
+    border-color: #7A3797;
+    background: #f9f7ff;
 }
 
 .ppt-card-checkbox {
@@ -1345,82 +1512,248 @@ body {
     cursor: pointer;
 }
 
+/* PPT 复选框自定义样式 */
+.ppt-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e5e5e7;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    transition: all 0.2s ease;
+    margin: 0;
+    flex-shrink: 0;
+    display: none; /* 默认隐藏 */
+}
+
+/* 编辑模式下显示PPT复选框 */
+.edit-mode .ppt-checkbox {
+    display: block;
+}
+
+.ppt-checkbox:hover {
+    border-color: #7A3797;
+    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+}
+
+.ppt-checkbox:checked {
+    background-color: #7A3797;
+    border-color: #7A3797;
+}
+
+.ppt-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+}
+
 .ppt-card:hover {
-    border-color: #1976d2;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    border-color: #7A3797;
+    box-shadow: 0 2px 8px rgba(122, 55, 151, 0.1);
 }
 
 .ppt-card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     margin-bottom: 12px;
-    flex: 1; /* Allow header to grow */
+    position: relative;
 }
 
-.ppt-card-icon {
-    font-size: 24px;
-    color: #1976d2;
-}
-
-.ppt-card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-}
-
-.ppt-card-info {
+.ppt-card-content {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    flex: 1;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0; /* 允许flex子项收缩 */
 }
 
-.ppt-card-meta {
+/* PPT卡片标题样式 */
+.ppt-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* PPT卡片标签容器 */
+.ppt-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+/* PPT单个标签样式 */
+.ppt-tag {
+    padding: 4px 8px;
+    border-radius: 12px;
     font-size: 11px;
-    color: #888;
+    font-weight: 500;
+    border: 1px solid #f0f0f0;
+    background: #f8f8f8;
+    color: #666;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.ppt-card-meta span {
-    background: #f8f9fa;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid #e1e5e9;
+/* 不同类型的标签颜色 - 都使用极浅的灰色主题 */
+.ppt-tag.ppt-type {
+    background: #f5f5f5;
+    color: #555;
+    border-color: #e8e8e8;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.ppt-card-description {
+.ppt-tag.ppt-size {
+    background: #f5f5f5;
+    color: #555;
+    border-color: #e8e8e8;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ppt-tag.ppt-pages {
+    background: #f5f5f5;
+    color: #555;
+    border-color: #e8e8e8;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ppt-tag.ppt-date {
+    background: #f5f5f5;
+    color: #555;
+    border-color: #e8e8e8;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* 保留原有的标签样式作为默认 - 使用灰色主题 */
+.ppt-tag:not(.ppt-type):not(.ppt-size):not(.ppt-pages):not(.ppt-date) {
+    background: #f5f5f5;
+    color: #666;
+    border-color: #e8e8e8;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* 自定义标签容器 */
+.ppt-custom-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* PPT描述样式 */
+.ppt-description {
     font-size: 12px;
     color: #666;
     margin-top: 8px;
     padding: 8px;
     background: #f8f9fa;
     border-radius: 4px;
-    border-left: 3px solid #1976d2;
+    border-left: 3px solid #7A3797;
+    line-height: 1.4;
 }
 
-.ppt-card-slides {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 2px 6px;
-    border-radius: 4px;
+/* 按钮图标样式 */
+.btn-icon {
+    width: 12px; /* 减小图标尺寸 */
+    height: 12px;
+    margin-right: 2px; /* 减小右边距 */
+    vertical-align: middle;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+    filter: invert(1); /* 黑白反转：背景透明，主体黑色 */
+    flex-shrink: 0; /* 防止图标被压缩 */
 }
 
-.ppt-card-type {
-    background: #f3e5f5;
-    color: #7b1fa2;
-    padding: 2px 6px;
-    border-radius: 4px;
+.ppt-card-btn:hover .btn-icon {
+    opacity: 1;
 }
 
-/* MODIFIED: Updated button container styles */
-.ppt-card-actions {
+/* PPT操作按钮容器 */
+.ppt-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 16px; /* Increased top margin */
+    gap: 6px; /* 减小间距 */
+    margin-top: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* PPT操作按钮样式 */
+.ppt-actions .ppt-card-btn {
+    flex: 1;
+    padding: 6px 8px; /* 减小内边距 */
+    border: 1px solid #e5e5e7;
+    border-radius: 4px; /* 减小圆角 */
+    background: white;
+    color: #7c7c7c;
+    font-size: 11px; /* 减小字体 */
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px; /* 减小间距 */
+    min-width: 0; /* 允许flex子项缩小 */
+    box-sizing: border-box;
+    white-space: nowrap; /* 防止文字换行 */
+    overflow: hidden;
+}
+
+.ppt-actions .ppt-card-btn:hover {
+    background: #f3e8ff;
+    border-color: #7A3797;
+    color: #7A3797;
+}
+
+.ppt-actions .ppt-card-btn.btn-preview {
+    background-color: #545454;
+    border-color: #545454;
+    color: white;
+}
+
+.ppt-actions .ppt-card-btn.btn-download {
+    background-color: #7a3898;
+    border-color: #7a3898;
+    color: white;
+}
+
+.ppt-actions .ppt-card-btn.btn-delete {
+    background-color: #4660af;
+    border-color: #4660af;
+    color: white;
+}
+
+.ppt-actions .ppt-card-btn.btn-preview:hover {
+    background-color: #3d3d3d;
+    border-color: #3d3d3d;
+}
+
+.ppt-actions .ppt-card-btn.btn-download:hover {
+    background-color: #5d2b72;
+    border-color: #5d2b72;
+}
+
+.ppt-actions .ppt-card-btn.btn-delete:hover {
+    background-color: #34498c;
+    border-color: #34498c;
 }
 
 /* 响应式设计 */
@@ -1489,15 +1822,15 @@ body {
 } 
 
 .logo {
-    width: 36px;
-    height: 36px;
+    width: 70px;
+    height: 70px;
     object-fit: contain;
     flex-shrink: 0;
     /* 确保logo保持原始宽高比 */
     object-position: center;
     /* 添加一些内边距让logo看起来更协调 */
-    padding: 1px;
-    margin-right: 10px;
+    padding: 2px;
+    margin-right: 15px;
     /* 确保logo在工具栏中垂直居中 */
     align-self: center;
 }
@@ -1506,175 +1839,82 @@ body {
 /* PPT 预览相关样式 */
 /* ================================ */
 
-/* PPT卡片样式增强 */
-.ppt-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: all 0.3s ease;
-    position: relative;
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+        padding: 10px;
+        height: calc(100vh - 80px - 59px); /* 保持高度计算 */
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+        margin-bottom: 10px;
+        overflow-y: auto;
+    }
+    
+    .content {
+        flex: 1;
+        min-height: 0; /* 确保在flex容器中能够缩小 */
+    }
+    
+    .nav-container {
+        padding: 0 10px;
+    }
+    
+    .nav-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .toolbar-left, .toolbar-right {
+        justify-content: center;
+    }
+    
+    .ppt-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
-.ppt-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.ppt-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.ppt-checkbox {
-    cursor: pointer;
-    transform: scale(1.2);
-}
-
-.ppt-type-badge {
-    background: #007bff;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.ppt-thumbnail {
-    height: 160px;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.thumbnail-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-
-.thumbnail-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.file-icon {
-    font-size: 48px;
-    margin-bottom: 8px;
-    opacity: 0.6;
-}
-
-.loading-spinner {
-    font-size: 12px;
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
     color: #6c757d;
 }
 
-.ppt-info {
-    padding: 12px;
+.empty-state h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
 }
 
-.ppt-title {
-    font-weight: 600;
+.empty-state p {
     font-size: 14px;
-    margin-bottom: 8px;
-    color: #2c3e50;
-    line-height: 1.4;
-}
-
-.ppt-meta {
-    display: flex;
-    gap: 8px;
-    font-size: 12px;
-    color: #6c757d;
-    margin-bottom: 8px;
-}
-
-.ppt-meta span {
-    padding: 2px 6px;
-    background: #e9ecef;
-    border-radius: 4px;
-}
-
-.ppt-description {
-    font-size: 12px;
-    color: #6c757d;
-    margin-bottom: 8px;
-    line-height: 1.4;
-}
-
-.ppt-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.ppt-tag {
-    padding: 2px 6px;
-    background: #e3f2fd;
-    color: #1976d2;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 500;
-}
-
-.ppt-actions {
-    padding: 12px;
-    display: flex;
-    gap: 8px;
-    border-top: 1px solid #e9ecef;
-}
-
-.ppt-actions button {
-    flex: 1;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-.btn-preview {
-    background: #007bff;
-    color: white;
-}
-
-.btn-preview:hover {
-    background: #0056b3;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #545b62;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #c82333;
+    margin-bottom: 20px;
 }
 
 /* PPT预览模态框 */
@@ -2009,12 +2249,20 @@ body {
     }
     
     .ppt-actions {
-        flex-direction: column;
+        flex-direction: row; /* 保持水平布局 */
         gap: 4px;
     }
     
-    .ppt-actions button {
-        flex: none;
+    .ppt-actions .ppt-card-btn {
+        padding: 4px 6px; /* 进一步减小移动端按钮内边距 */
+        font-size: 10px; /* 减小移动端字体 */
+        gap: 2px;
+    }
+    
+    .btn-icon {
+        width: 10px; /* 移动端更小的图标 */
+        height: 10px;
+        margin-right: 1px;
     }
     
     .slide-thumbnails {

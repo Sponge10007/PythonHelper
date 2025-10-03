@@ -13,7 +13,9 @@ export class UIManager {
         this.chatInterface = document.getElementById('chatInterface');
         this.mistakeCollection = document.getElementById('mistakeCollection');
         this.settingsInterface = document.getElementById('settingsInterface');
-        this.ptaAnalysisInterface = document.getElementById('ptaAnalysisInterface'); // 新增
+        this.ptaAnalysisInterface = document.getElementById('ptaAnalysisInterface');
+        this.loginInterface = document.getElementById('loginInterface'); // 添加登录界面
+        this.userProfileInterface = document.getElementById('userProfileInterface'); // 添加用户信息界面
         this.currentChatTitle = document.getElementById('currentChatTitle');
         this.chatMessages = document.getElementById('chatMessages');
         this.chatInput = document.getElementById('chatInput');
@@ -25,7 +27,7 @@ export class UIManager {
     
     showView(viewToShow) {
         // 更新视图列表
-        [this.welcomeScreen, this.chatInterface, this.mistakeCollection, this.settingsInterface, this.ptaAnalysisInterface].forEach(view => {
+        [this.welcomeScreen, this.chatInterface, this.mistakeCollection, this.settingsInterface, this.ptaAnalysisInterface, this.loginInterface, this.userProfileInterface].forEach(view => {
             view.classList.add('hidden');
         });
         viewToShow.classList.remove('hidden');

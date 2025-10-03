@@ -73,20 +73,86 @@ class Database:
         
         # 创建PPT文件表（兼容原有结构）
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS ppt_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT NOT NULL,
-                original_name TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_size INTEGER,
-                file_type TEXT,
-                upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                slides_count INTEGER,
-                description TEXT,
-                tags TEXT
-            )
-        ''')
-        
+                       CREATE TABLE IF NOT EXISTS ppt_files
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY,
+                           filename
+                           TEXT
+                           NOT
+                           NULL,
+                           original_name
+                           TEXT
+                           NOT
+                           NULL,
+                           file_path
+                           TEXT
+                           NOT
+                           NULL,
+                           file_size
+                           INTEGER
+                           NOT
+                           NULL,
+                           file_type
+                           TEXT
+                           NOT
+                           NULL,
+                           upload_date
+                           TEXT
+                           NOT
+                           NULL,
+                           slides_count
+                           INTEGER
+                           DEFAULT
+                           0,
+                           description
+                           TEXT,
+                           tags
+                           TEXT
+                       )
+                       ''')
+
+        # 用户认证表
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS users
+                       (
+                           id
+                           INTEGER
+                           PRIMARY
+                           KEY
+                           AUTOINCREMENT,
+                           email
+                           TEXT
+                           UNIQUE
+                           NOT
+                           NULL,
+                           password_hash
+                           TEXT
+                           NOT
+                           NULL,
+                           verification_code
+                           TEXT,
+                           is_verified
+                           BOOLEAN
+                           DEFAULT
+                           FALSE,
+                           verification_code_expires
+                           DATETIME,
+                           created_at
+                           DATETIME
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           updated_at
+                           DATETIME
+                           DEFAULT
+                           CURRENT_TIMESTAMP,
+                           last_login
+                           DATETIME
+                       )
+                       ''')
+
         conn.commit()
         conn.close()
         

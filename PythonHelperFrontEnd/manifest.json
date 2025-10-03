@@ -19,7 +19,8 @@
   "host_permissions": [
     "http://*/*",
     "https://*/*",
-    "http://localhost:5000/*",
+    "http://47.98.249.0/*",
+    "http://47.98.249.0/*",
     "https://pintia.cn/*",
     "https://*.cloudstudio.club/*"
   ],
@@ -37,6 +38,7 @@
   "side_panel": {
     "default_path": "html/sidebar.html"
   },
+
   "icons": {
     "16": "icons/logo.png",
     "32": "icons/logo.png",
@@ -45,7 +47,7 @@
   },
   "action": {
     "default_title": "Python课程AI教学助手",
-    "default_popup": "html/popup.html"
+    "default_popup": ""
   },
   "web_accessible_resources": [
     {

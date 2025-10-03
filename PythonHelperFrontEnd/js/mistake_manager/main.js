@@ -31,11 +31,21 @@ class PageManager {
 
         // --- 错题相关事件 ---
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.mistakeHandler.filter({ search: e.target.value });
+            this.mistakeHandler.applyFilters({ search: e.target.value });
         });
         document.getElementById('sortBy').addEventListener('change', (e) => {
             this.mistakeHandler.sort(e.target.value);
         });
+        
+        // 标签筛选事件
+        this.bindTagFilters();
+        
+        // --- 批量操作和编辑模式事件 ---
+        this.bindBatchOperations();
+        
+        // --- 分页事件 ---
+        this.bindPaginationEvents();
+        
         // ... 绑定错题的批量删除、分页等按钮事件到 this.mistakeHandler 的方法
 
         // --- PPT 相关事件 ---
@@ -66,6 +76,26 @@ class PageManager {
             });
         }
 
+        // PPT编辑模式
+        const editModePPT = document.getElementById('editModePPT');
+        const cancelEditPPT = document.getElementById('cancelEditPPT');
+
+        if (editModePPT) {
+            editModePPT.addEventListener('click', () => {
+                this.pptHandler.enterEditMode();
+                document.getElementById('editModePPT').style.display = 'none';
+                document.getElementById('batchActionsPPT').style.display = 'flex';
+            });
+        }
+
+        if (cancelEditPPT) {
+            cancelEditPPT.addEventListener('click', () => {
+                this.pptHandler.exitEditMode();
+                document.getElementById('editModePPT').style.display = 'inline-block';
+                document.getElementById('batchActionsPPT').style.display = 'none';
+            });
+        }
+
         // PPT批量操作
         const selectAllPPTs = document.getElementById('selectAllPPTs');
         const deselectAllPPTs = document.getElementById('deselectAllPPTs');
@@ -74,15 +104,13 @@ class PageManager {
 
         if (selectAllPPTs) {
             selectAllPPTs.addEventListener('click', () => {
-                this.pptHandler.toggleSelectAll();
+                this.pptHandler.selectAllFiles();
             });
         }
 
         if (deselectAllPPTs) {
             deselectAllPPTs.addEventListener('click', () => {
-                this.pptHandler.selectedFiles.clear();
-                this.pptHandler.renderSelectedActions();
-                this.ui.updateAllFilesSelection([]);
+                this.pptHandler.deselectAllFiles();
             });
         }
 

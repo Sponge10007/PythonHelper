@@ -14,7 +14,6 @@ const BACKEND_URL = 'http://localhost:5000';
 export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
     const response = await fetch(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             messages: messages,  // 发送完整对话历史
             apiKey: apiKey,

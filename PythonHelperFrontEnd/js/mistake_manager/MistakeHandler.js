@@ -209,6 +209,7 @@ export class MistakeHandler {
     }    
     applyFilters(newFilters) {
         this.currentFilters = { ...this.currentFilters, ...newFilters };
+        console.log('应用筛选器:', this.currentFilters); // 调试信息
         this.currentPage = 1;
         this.filterAndRender();
     }

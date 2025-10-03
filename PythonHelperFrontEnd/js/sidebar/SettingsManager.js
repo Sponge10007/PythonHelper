@@ -9,7 +9,6 @@ export class SettingsManager {
 
         // 从 UIManager 获取设置相关的 DOM 元素
         this.aiApiKeyInput = this.ui.settingsInterface.querySelector('#aiApiKey');
-        this.aiApiEndpointInput = this.ui.settingsInterface.querySelector('#aiApiEndpoint');
         this.questionModeSelect = this.ui.settingsInterface.querySelector('#questionMode');
         this.saveSettingsBtn = this.ui.settingsInterface.querySelector('#saveSettings');
     }
@@ -21,14 +20,12 @@ export class SettingsManager {
 
     loadSettingsToUI() {
         this.aiApiKeyInput.value = this.settings.aiApiKey;
-        this.aiApiEndpointInput.value = this.settings.aiApiEndpoint;
         this.questionModeSelect.value = this.settings.questionMode;
     }
 
     async saveSettings() {
         const newSettings = {
             aiApiKey: this.aiApiKeyInput.value.trim(),
-            aiApiEndpoint: this.aiApiEndpointInput.value.trim(),
             questionMode: this.questionModeSelect.value
         };
 
