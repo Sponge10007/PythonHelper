@@ -57,7 +57,7 @@ class SidebarManager {
         });
     }
     
-    bindEvents() {
+    async bindEvents() {
         await this.checkLoginStatus();
     }    bindEvents() {
         // --- 聊天相关事件 ---
@@ -70,7 +70,7 @@ class SidebarManager {
             }
         });
         this.ui.chatInput.addEventListener('input', () => this.ui.adjustTextareaHeight());
-        document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
+        // document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
         
         // --- 记忆管理事件绑定 ---
         document.getElementById('memoryManageBtn').addEventListener('click', () => {

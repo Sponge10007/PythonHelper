@@ -15,26 +15,29 @@
         <div class="sidebar-column">
             <div class="sidebar-icons">
                 <div class="icon-group top">
-                    <button id="toggleChatListBtn" title="切换对话列表">
-                        <span class="material-symbols-outlined">menu</span>
+                    <button id="toggleChatListBtn" class="icon-group-top-btn" data-tip="切换对话列表">
+                        <img src="../侧边栏icon补充/40.png" class="mistakeset-btn">
                     </button>
-                    <button id="newChatBtn" title="新对话">
-                        <span class="material-symbols-outlined">add</span>
+                    <button id="newChatBtn" class="icon-group-top-btn" data-tip="新对话">
+                        <img src="../侧边栏icon/28.png" class="mistakeset-btn">
+                    </button>
+                    <button id="jumpwebpageBtn" class="icon-group-top-btn" data-tip="跳转网页">
+                        <img src="../侧边栏icon/29.png" class="mistakeset-btn">
                     </button>
                 </div>
                 <div class="icon-group bottom">
-                    <button id="loginBtn" title="用户登录" style="background: rgba(255, 0, 0, 0.2) !important;">
-                        <span class="material-symbols-outlined">account_circle</span>
+                    <button id="userBtn" class="icon-group-top-btn" data-tip="用户页面">
+                        <img src="../侧边栏icon/30.png" class="mistakeset-btn">
                     </button>
-                    <button id="ptaBtn" title="PTA题目分析">
-                        <span class="material-symbols-outlined">analytics</span>
+                    <button id="mistakesBtn" class="icon-group-top-btn" data-tip="错题集">
+                        <img src="../侧边栏icon/31.png" class="mistakeset-btn">
                     </button>
-                    <button id="mistakesBtn" title="错题集">
-                        <img src="../icons/MistakeSet.png" alt="Python课程AI教学助手" class="mistakeset-btn">
+                    <button id="ReportBtn" class="icon-group-top-btn" data-tip="套题报告">
+                        <img src="../侧边栏icon/32.png" class="mistakeset-btn">
                     </button>
-                    <button id="settingsBtn" title="设置">
+                    <!-- <button id="settingsBtn" class="icon-group-top-btn" data-tip="设置">
                         <span class="material-symbols-outlined">settings</span>
-                    </button>
+                    </button> -->
                 </div>
             </div>
 
@@ -72,10 +75,10 @@
                     <h1 id="currentChatTitle">新对话</h1>
                     <div class="header-actions-right">
                         <button id="memoryManageBtn" class="header-action-btn" title="记忆管理">
-                            <span class="material-symbols-outlined">psychology</span>
+                            <img src="../侧边栏icon补充/35.png" class="mistakeset-btn">
                         </button>
                         <button id="enterMistakeModeBtn" class="header-action-btn" title="保存错题记录">
-                            <span class="material-symbols-outlined">bookmark_add</span>
+                            <img src="../侧边栏icon补充/36.png" class="mistakeset-btn">
                         </button>
                         <!-- <button id="clearChatBtn" class="header-action-btn" title="清空对话">
                             <span class="material-symbols-outlined">delete_sweep</span>
@@ -281,7 +284,7 @@
         </main>
     </div>
 
-    <script src="../js/common/api.js"></script>
+    <script type="module" src="../js/common/api.js"></script>
     <script type="module" src="../js/sidebar/SidebarManager.js"></script>
 </body>
 </html>
