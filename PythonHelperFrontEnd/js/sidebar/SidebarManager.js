@@ -293,8 +293,13 @@ class SidebarManager {
         const requireLoginButtons = [
             'mistakesBtn', 'settingsBtn', 'ptaBtn', 
             'openMistakeManagerBtn', 'toggleChatListBtn',
-            'userBtn', 'ReportBtn'
+            'ReportBtn', 'newChatBtn', 'memoryManageBtn',
+            'enterMistakeModeBtn', 'saveSelectionBtn'
         ];
+        
+        // 聊天相关按钮（单独处理）
+        const chatButtons = ['sendMessageBtn'];
+        const allButtons = [...requireLoginButtons, ...chatButtons];
         
         if (isLoggedIn && userEmail) {
             console.log('用户已登录，启用所有功能');
@@ -315,7 +320,7 @@ class SidebarManager {
             }
             
             // 启用所有功能按钮
-            requireLoginButtons.forEach(btnId => {
+            allButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = false;
@@ -362,7 +367,7 @@ class SidebarManager {
             }
             
             // 禁用所有功能按钮
-            requireLoginButtons.forEach(btnId => {
+            allButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = true;
@@ -374,6 +379,15 @@ class SidebarManager {
                     console.warn(`找不到按钮: ${btnId}`);
                 }
             });
+            
+            // 特别处理userBtn，未登录时仍可点击用于登录
+            const userBtn = document.getElementById('userBtn');
+            if (userBtn) {
+                userBtn.disabled = false;
+                userBtn.style.opacity = '1';
+                userBtn.style.pointerEvents = 'auto';
+                userBtn.style.filter = 'none';
+            }
             
             // 重置登录按钮显示
             if (userBtn) {
@@ -528,6 +542,9 @@ class SidebarManager {
         // 清除之前的错误消息
         this.hideAuthMessage();
         
+        // 重置所有验证码发送按钮状态
+        this.resetVerificationButtons();
+        
         if (type === 'register') {
             registerForm.classList.remove('hidden');
             registerTab.classList.add('active');
@@ -616,7 +633,13 @@ class SidebarManager {
             }
         } catch (error) {
             console.error('登录错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -673,7 +696,13 @@ class SidebarManager {
             }
         } catch (error) {
             console.error('注册错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -724,19 +753,33 @@ class SidebarManager {
                 body: JSON.stringify({ email, type: 'register' })
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
                 this.showAuthMessage('验证码已发送到您的邮箱', 'success');
                 this.startVerificationCountdown(btn, 60);
             } else {
-                this.showAuthMessage(result.message || '发送失败', 'error');
+                this.showAuthMessage(result.message || '发送失败，请检查邮箱地址', 'error');
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
             console.error('发送验证码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，数据库配置问题，请联系管理员', 'error');
+            } else if (error.message.includes('HTTP 404')) {
+                this.showAuthMessage('服务不可用，请检查服务器状态', 'error');
+            } else if (error.message.includes('HTTP')) {
+                this.showAuthMessage(`服务器错误：${error.message}`, 'error');
+            } else {
+                this.showAuthMessage('发送失败，请稍后重试', 'error');
+            }
             btn.textContent = originalText;
             btn.disabled = false;
         }
@@ -760,19 +803,33 @@ class SidebarManager {
                 body: JSON.stringify({ email, type: 'reset' })
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
                 this.showAuthMessage('验证码已发送到您的邮箱', 'success');
                 this.startVerificationCountdown(btn, 60);
             } else {
-                this.showAuthMessage(result.message || '发送失败', 'error');
+                this.showAuthMessage(result.message || '发送失败，请检查邮箱地址', 'error');
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
             console.error('发送验证码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，数据库配置问题，请联系管理员', 'error');
+            } else if (error.message.includes('HTTP 404')) {
+                this.showAuthMessage('服务不可用，请检查服务器状态', 'error');
+            } else if (error.message.includes('HTTP')) {
+                this.showAuthMessage(`服务器错误：${error.message}`, 'error');
+            } else {
+                this.showAuthMessage('发送失败，请稍后重试', 'error');
+            }
             btn.textContent = originalText;
             btn.disabled = false;
         }
@@ -829,7 +886,13 @@ class SidebarManager {
             }
         } catch (error) {
             console.error('重置密码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -838,19 +901,60 @@ class SidebarManager {
 
     // 验证码倒计时
     startVerificationCountdown(button, seconds) {
-        let remaining = seconds;
-        const originalText = button.textContent;
+        // 清除可能存在的之前的倒计时
+        if (button.countdownInterval) {
+            clearInterval(button.countdownInterval);
+        }
         
-        const countdown = setInterval(() => {
-            button.textContent = `${remaining}秒后重发`;
+        let remaining = seconds;
+        const originalText = button.dataset.originalText || button.textContent;
+        
+        // 保存原始文本
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = originalText;
+        }
+        
+        // 立即禁用按钮并显示倒计时
+        button.disabled = true;
+        button.textContent = `${remaining}秒后重发`;
+        
+        button.countdownInterval = setInterval(() => {
             remaining--;
             
-            if (remaining < 0) {
-                clearInterval(countdown);
+            if (remaining > 0) {
+                button.textContent = `${remaining}秒后重发`;
+            } else {
+                // 倒计时结束，恢复按钮
+                clearInterval(button.countdownInterval);
+                button.countdownInterval = null;
                 button.textContent = originalText;
                 button.disabled = false;
+                console.log('验证码发送倒计时结束，按钮已恢复');
             }
         }, 1000);
+        
+        console.log(`开始${seconds}秒验证码发送倒计时`);
+    }
+
+    // 重置验证码发送按钮状态
+    resetVerificationButtons() {
+        const buttons = [
+            { id: 'sendVerificationBtn', text: '发送验证码' },
+            { id: 'sendResetCodeBtn', text: '发送验证码' }
+        ];
+        
+        buttons.forEach(({ id, text }) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.textContent = text;
+                btn.disabled = false;
+                // 清除可能存在的倒计时
+                if (btn.countdownInterval) {
+                    clearInterval(btn.countdownInterval);
+                    btn.countdownInterval = null;
+                }
+            }
+        });
     }
 
     // 隐藏认证消息

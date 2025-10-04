@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录功能修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            filter: grayscale(1);
+            pointer-events: none;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .hidden { display: none; }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>登录功能修复测试</h1>
+    
+    <div class="test-section">
+        <h2>测试1：未登录时按钮状态</h2>
+        <p>这些按钮在未登录时应该被禁用：</p>
+        <button id="mistakesBtn" class="btn">错题管理</button>
+        <button id="settingsBtn" class="btn">设置</button>
+        <button id="ptaBtn" class="btn">PTA分析</button>
+        <button id="newChatBtn" class="btn">新建对话</button>
+        <button id="sendMessageBtn" class="btn">发送消息</button>
+        <button id="userBtn" class="btn">用户登录</button>
+        
+        <div>
+            <button onclick="testLoginStatus(false)">测试未登录状态</button>
+            <button onclick="testLoginStatus(true)">测试已登录状态</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试2：登录页面状态重置</h2>
+        <div class="input-group">
+            <label>邮箱:</label>
+            <input type="email" id="registerEmail" placeholder="输入邮箱地址">
+        </div>
+        <button id="sendVerificationBtn" class="btn">发送验证码</button>
+        <button id="sendResetCodeBtn" class="btn">发送重置码</button>
+        
+        <div>
+            <button onclick="resetAuthForm()">重置登录页面</button>
+            <button onclick="simulateSendCode('sendVerificationBtn')">模拟发送验证码</button>
+            <button onclick="simulateSendCode('sendResetCodeBtn')">模拟发送重置码</button>
+        </div>
+        
+        <div id="authMessage" class="message hidden"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试3：网络错误处理</h2>
+        <button onclick="testNetworkError('fetch')">测试网络连接错误</button>
+        <button onclick="testNetworkError('http')">测试HTTP错误</button>
+        <button onclick="testNetworkError('server')">测试服务器错误</button>
+        <button onclick="testNetworkError('success')">测试成功发送</button>
+    </div>
+
+    <div class="test-section">
+        <h2>测试4：60秒倒计时</h2>
+        <p>点击按钮后应该开始60秒倒计时，期间按钮被禁用</p>
+        <button id="testCountdownBtn" class="btn" onclick="testCountdown()">测试倒计时功能</button>
+        <div id="countdownStatus"></div>
+    </div>
+
+    <script>
+        // 模拟登录状态测试
+        function testLoginStatus(isLoggedIn) {
+            const buttons = [
+                'mistakesBtn', 'settingsBtn', 'ptaBtn', 
+                'newChatBtn', 'sendMessageBtn'
+            ];
+            
+            buttons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (isLoggedIn) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.pointerEvents = 'auto';
+                        btn.style.filter = 'none';
+                    } else {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.pointerEvents = 'none';
+                        btn.style.filter = 'grayscale(1)';
+                    }
+                }
+            });
+            
+            // userBtn特殊处理
+            const userBtn = document.getElementById('userBtn');
+            if (userBtn) {
+                userBtn.disabled = false;
+                userBtn.style.opacity = '1';
+                userBtn.style.pointerEvents = 'auto';
+                userBtn.style.filter = 'none';
+                userBtn.textContent = isLoggedIn ? '用户资料' : '用户登录';
+            }
+            
+            showMessage(`已${isLoggedIn ? '启用' : '禁用'}所有功能按钮`, 'success');
+        }
+
+        // 重置登录表单状态
+        function resetAuthForm() {
+            resetVerificationButtons();
+            hideMessage();
+            showMessage('登录页面状态已重置', 'success');
+        }
+
+        // 重置验证码按钮
+        function resetVerificationButtons() {
+            const buttons = [
+                { id: 'sendVerificationBtn', text: '发送验证码' },
+                { id: 'sendResetCodeBtn', text: '发送重置码' }
+            ];
+            
+            buttons.forEach(({ id, text }) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.textContent = text;
+                    btn.disabled = false;
+                    if (btn.countdownInterval) {
+                        clearInterval(btn.countdownInterval);
+                        btn.countdownInterval = null;
+                    }
+                }
+            });
+        }
+
+        // 模拟发送验证码
+        function simulateSendCode(btnId) {
+            const btn = document.getElementById(btnId);
+            const email = document.getElementById('registerEmail').value.trim();
+            
+            if (!email) {
+                showMessage('请输入邮箱地址', 'error');
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showMessage('请输入有效的邮箱地址', 'error');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+            
+            setTimeout(() => {
+                showMessage('验证码已发送到您的邮箱', 'success');
+                startCountdown(btn, 60);
+            }, 1000);
+        }
+
+        // 测试网络错误
+        function testNetworkError(type) {
+            switch(type) {
+                case 'fetch':
+                    showMessage('网络连接失败，请检查网络后重试', 'error');
+                    break;
+                case 'http':
+                    showMessage('服务器错误：HTTP 500: Internal Server Error', 'error');
+                    break;
+                case 'server':
+                    showMessage('发送失败，请稍后重试', 'error');
+                    break;
+                case 'success':
+                    showMessage('验证码已发送到您的邮箱', 'success');
+                    break;
+            }
+        }
+
+        // 测试倒计时功能
+        function testCountdown() {
+            const btn = document.getElementById('testCountdownBtn');
+            startCountdown(btn, 10); // 使用10秒便于测试
+        }
+
+        // 倒计时函数
+        function startCountdown(button, seconds) {
+            if (button.countdownInterval) {
+                clearInterval(button.countdownInterval);
+            }
+            
+            let remaining = seconds;
+            const originalText = button.dataset.originalText || button.textContent;
+            
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = originalText;
+            }
+            
+            button.disabled = true;
+            button.textContent = `${remaining}秒后重发`;
+            
+            const statusDiv = document.getElementById('countdownStatus');
+            if (statusDiv) {
+                statusDiv.textContent = `倒计时进行中：${remaining}秒`;
+            }
+            
+            button.countdownInterval = setInterval(() => {
+                remaining--;
+                
+                if (remaining > 0) {
+                    button.textContent = `${remaining}秒后重发`;
+                    if (statusDiv) {
+                        statusDiv.textContent = `倒计时进行中：${remaining}秒`;
+                    }
+                } else {
+                    clearInterval(button.countdownInterval);
+                    button.countdownInterval = null;
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    if (statusDiv) {
+                        statusDiv.textContent = '倒计时结束，按钮已恢复';
+                    }
+                }
+            }, 1000);
+        }
+
+        // 邮箱验证
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // 显示消息
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('authMessage');
+            if (!messageEl) return;
+            
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = message;
+            messageEl.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // 隐藏消息
+        function hideMessage() {
+            const messageEl = document.getElementById('authMessage');
+            if (messageEl) {
+                messageEl.classList.add('hidden');
+            }
+        }
+
+        // 初始化：设置未登录状态
+        document.addEventListener('DOMContentLoaded', () => {
+            testLoginStatus(false);
+        });
+    </script>
+</body>
+</html>
