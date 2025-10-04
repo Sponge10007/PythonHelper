@@ -4,6 +4,14 @@ import { UIManager } from './UIManager.js';
 import { MistakeHandler } from './MistakeHandler.js';
 import { PPTHandler } from './PPTHandler.js';
 
+// 获取后端URL函数
+function getBackendUrl() {
+    return 'http://localhost:5000';
+}
+
+// 将函数添加到全局作用域，供其他模块使用
+window.getBackendUrl = getBackendUrl;
+
 class PageManager {
     constructor() {
         this.ui = new UIManager();
@@ -12,19 +20,47 @@ class PageManager {
         
         this.currentMode = 'mistake'; // 默认是错题模式
 
-        this.bindEvents();
-        this.init();
+        // 等待DOM加载完成后再绑定事件和初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.bindEvents();
+                this.init();
+            });
+        } else {
+            this.bindEvents();
+            this.init();
+        }
     }
 
     async init() {
-        await this.mistakeHandler.init();
-        await this.pptHandler.init();
-        await this.loadAllTags();
-        // 初始化标签筛选功能
-        this.ui.initTagFilters();
+        console.log('=== PageManager 初始化开始 ===');
+        
+        try {
+            await this.mistakeHandler.init();
+            console.log('错题处理器初始化完成');
+            
+            await this.pptHandler.init();
+            console.log('PPT处理器初始化完成');
+            
+            await this.loadAllTags();
+            console.log('标签加载完成');
+            
+            // 初始化标签筛选功能
+            this.ui.initTagFilters();
+            
+            // 注意：PPT上传事件现在由 simple_upload.js 处理
+            console.log('PPT上传功能由独立模块处理');
+            
+        } catch (error) {
+            console.error('初始化失败:', error);
+        }
+        
+        console.log('=== PageManager 初始化完成 ===');
     }
 
     bindEvents() {
+        console.log('开始绑定事件...');
+        
         // --- 模式切换事件 ---
         document.getElementById('mistakeModeBtn').addEventListener('click', () => this.switchMode('mistake'));
         document.getElementById('pptModeBtn').addEventListener('click', () => this.switchMode('ppt'));
@@ -41,24 +77,12 @@ class PageManager {
         this.bindTagFilters();
         
         // --- 批量操作和编辑模式事件 ---
-        this.bindBatchOperations();
+        this.bindBatchOperations(); // 错题批量操作事件绑定
         
         // --- 分页事件 ---
         this.bindPaginationEvents();
         
         // ... 绑定错题的批量删除、分页等按钮事件到 this.mistakeHandler 的方法
-
-        // --- PPT 相关事件 ---
-        // 文件上传
-        const pptFileInput = document.getElementById('pptFileInput');
-        if (pptFileInput) {
-            pptFileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    this.pptHandler.uploadFiles(Array.from(e.target.files));
-                    e.target.value = ''; // 清空input，允许重复上传同一文件
-                }
-            });
-        }
 
         // PPT搜索功能
         const pptSearchInput = document.getElementById('pptSearchInput');
@@ -79,21 +103,30 @@ class PageManager {
         // PPT编辑模式
         const editModePPT = document.getElementById('editModePPT');
         const cancelEditPPT = document.getElementById('cancelEditPPT');
+        console.log('PPT编辑模式按钮:', { editModePPT, cancelEditPPT });
 
         if (editModePPT) {
+            console.log('绑定PPT编辑模式事件');
             editModePPT.addEventListener('click', () => {
+                console.log('进入PPT编辑模式');
                 this.pptHandler.enterEditMode();
                 document.getElementById('editModePPT').style.display = 'none';
                 document.getElementById('batchActionsPPT').style.display = 'flex';
             });
+        } else {
+            console.error('未找到PPT编辑模式按钮');
         }
 
         if (cancelEditPPT) {
+            console.log('绑定退出PPT编辑模式事件');
             cancelEditPPT.addEventListener('click', () => {
+                console.log('退出PPT编辑模式');
                 this.pptHandler.exitEditMode();
                 document.getElementById('editModePPT').style.display = 'inline-block';
                 document.getElementById('batchActionsPPT').style.display = 'none';
             });
+        } else {
+            console.error('未找到退出PPT编辑模式按钮');
         }
 
         // PPT批量操作
@@ -101,23 +134,36 @@ class PageManager {
         const deselectAllPPTs = document.getElementById('deselectAllPPTs');
         const batchDeletePPTs = document.getElementById('batchDeletePPTs');
         const clearAllPPTs = document.getElementById('clearAllPPTs');
+        console.log('PPT批量操作按钮:', { selectAllPPTs, deselectAllPPTs, batchDeletePPTs, clearAllPPTs });
 
         if (selectAllPPTs) {
+            console.log('绑定全选PPT事件');
             selectAllPPTs.addEventListener('click', () => {
+                console.log('PPT全选事件触发');
                 this.pptHandler.selectAllFiles();
             });
+        } else {
+            console.error('未找到全选PPT按钮');
         }
 
         if (deselectAllPPTs) {
+            console.log('绑定取消全选PPT事件');
             deselectAllPPTs.addEventListener('click', () => {
+                console.log('PPT取消全选事件触发');
                 this.pptHandler.deselectAllFiles();
             });
+        } else {
+            console.error('未找到取消全选PPT按钮');
         }
 
         if (batchDeletePPTs) {
+            console.log('绑定批量删除PPT事件');
             batchDeletePPTs.addEventListener('click', () => {
+                console.log('PPT批量删除事件触发');
                 this.pptHandler.batchDeleteSelected();
             });
+        } else {
+            console.error('未找到批量删除PPT按钮');
         }
 
         if (clearAllPPTs) {
@@ -193,43 +239,81 @@ class PageManager {
      */
     setupDragAndDrop() {
         const pptModeContent = document.getElementById('pptModeContent');
-        if (!pptModeContent) return;
+        const uploadArea = document.getElementById('uploadArea');
+        
+        if (!pptModeContent) {
+            console.error('未找到PPT模式内容区域');
+            return;
+        }
+
+        console.log('设置拖拽上传功能...');
 
         // 防止默认拖拽行为
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            pptModeContent.addEventListener(eventName, this.preventDefaults, false);
+            [pptModeContent, uploadArea].forEach(element => {
+                if (element) {
+                    element.addEventListener(eventName, this.preventDefaults, false);
+                }
+            });
         });
 
         // 拖拽进入和悬停效果
         ['dragenter', 'dragover'].forEach(eventName => {
-            pptModeContent.addEventListener(eventName, () => {
-                pptModeContent.classList.add('drag-over');
-            }, false);
+            [pptModeContent, uploadArea].forEach(element => {
+                if (element) {
+                    element.addEventListener(eventName, () => {
+                        console.log(`拖拽${eventName}事件触发`);
+                        pptModeContent.classList.add('drag-over');
+                        if (uploadArea) uploadArea.classList.add('drag-over');
+                    }, false);
+                }
+            });
         });
 
         // 拖拽离开效果
         ['dragleave', 'drop'].forEach(eventName => {
-            pptModeContent.addEventListener(eventName, () => {
-                pptModeContent.classList.remove('drag-over');
-            }, false);
+            [pptModeContent, uploadArea].forEach(element => {
+                if (element) {
+                    element.addEventListener(eventName, () => {
+                        console.log(`拖拽${eventName}事件触发`);
+                        pptModeContent.classList.remove('drag-over');
+                        if (uploadArea) uploadArea.classList.remove('drag-over');
+                    }, false);
+                }
+            });
         });
 
         // 处理文件放置
-        pptModeContent.addEventListener('drop', (e) => {
+        const handleDrop = (e) => {
+            console.log('=== 拖拽文件放置事件触发 ===');
+            console.log('拖拽的文件:', e.dataTransfer.files);
+            
             const files = Array.from(e.dataTransfer.files);
             const allowedTypes = ['ppt', 'pptx', 'doc', 'docx', 'pdf'];
             
             const validFiles = files.filter(file => {
                 const ext = file.name.split('.').pop().toLowerCase();
-                return allowedTypes.includes(ext);
+                const isValid = allowedTypes.includes(ext);
+                console.log(`文件 ${file.name} (${ext}): ${isValid ? '有效' : '无效'}`);
+                return isValid;
             });
 
+            console.log(`有效文件数量: ${validFiles.length}/${files.length}`);
+
             if (validFiles.length > 0) {
-                this.pptHandler.uploadFiles(validFiles);
+                console.log('拖拽上传功能暂时禁用，请使用文件选择按钮');
             } else {
-                alert('请拖拽有效的文件格式 (PPT, PPTX, DOC, DOCX, PDF)');
+                console.log('没有有效文件');
             }
-        }, false);
+        };
+
+        pptModeContent.addEventListener('drop', handleDrop, false);
+        if (uploadArea) {
+            uploadArea.addEventListener('drop', handleDrop, false);
+        }
+
+        // 添加拖拽样式
+        this.addDragDropStyles();
     }
 
     /**
@@ -238,6 +322,44 @@ class PageManager {
     preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
+    }
+
+    /**
+     * 添加拖拽相关样式
+     */
+    addDragDropStyles() {
+        if (document.getElementById('drag-drop-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'drag-drop-styles';
+        style.textContent = `
+            .drag-over {
+                background-color: rgba(0, 123, 255, 0.1) !important;
+                border: 2px dashed #007bff !important;
+                border-radius: 8px !important;
+            }
+            
+            #uploadArea.drag-over {
+                background-color: rgba(0, 123, 255, 0.2) !important;
+                transform: scale(1.02);
+                box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+            }
+            
+            #uploadArea {
+                transition: all 0.3s ease;
+                border: 2px dashed #ddd;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+                cursor: pointer;
+            }
+            
+            #uploadArea:hover {
+                border-color: #007bff;
+                background-color: rgba(0, 123, 255, 0.05);
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     /**
@@ -524,6 +646,75 @@ class PageManager {
         
         console.log('调试信息:', info);
         alert(`调试信息已输出到控制台\n\n当前模式: ${this.currentMode}\nPPT文件: ${this.pptHandler.allPptFiles.length}\n选中文件: ${this.pptHandler.selectedFiles.size}`);
+    }
+
+    /**
+     * 绑定错题批量操作事件
+     */
+    bindBatchOperations() {
+        console.log('绑定错题批量操作事件...');
+        
+        // 错题编辑模式
+        const editMode = document.getElementById('editMode');
+        const cancelEdit = document.getElementById('cancelEdit');
+        console.log('错题编辑模式按钮:', { editMode, cancelEdit });
+        
+        if (editMode) {
+            console.log('绑定错题编辑模式事件');
+            editMode.addEventListener('click', () => {
+                console.log('进入错题编辑模式');
+                this.mistakeHandler.enterEditMode();
+            });
+        } else {
+            console.error('未找到错题编辑模式按钮');
+        }
+        
+        if (cancelEdit) {
+            console.log('绑定退出错题编辑模式事件');
+            cancelEdit.addEventListener('click', () => {
+                console.log('退出错题编辑模式');
+                this.mistakeHandler.exitEditMode();
+            });
+        } else {
+            console.error('未找到退出错题编辑模式按钮');
+        }
+
+        // 错题批量操作
+        const selectAll = document.getElementById('selectAll');
+        const deselectAll = document.getElementById('deselectAll');
+        const batchDelete = document.getElementById('batchDelete');
+        
+        console.log('错题批量操作按钮:', { selectAll, deselectAll, batchDelete });
+
+        if (selectAll) {
+            console.log('绑定全选错题事件');
+            selectAll.addEventListener('click', () => {
+                console.log('错题全选事件触发');
+                this.mistakeHandler.selectAllMistakes();
+            });
+        } else {
+            console.error('未找到全选错题按钮');
+        }
+
+        if (deselectAll) {
+            console.log('绑定取消全选错题事件');
+            deselectAll.addEventListener('click', () => {
+                console.log('错题取消全选事件触发');
+                this.mistakeHandler.deselectAllMistakes();
+            });
+        } else {
+            console.error('未找到取消全选错题按钮');
+        }
+
+        if (batchDelete) {
+            console.log('绑定批量删除错题事件');
+            batchDelete.addEventListener('click', () => {
+                console.log('错题批量删除事件触发');
+                this.mistakeHandler.batchDeleteSelected();
+            });
+        } else {
+            console.error('未找到批量删除错题按钮');
+        }
     }
 }
 

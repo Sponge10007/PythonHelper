@@ -36,6 +36,8 @@ class SidebarManager {
         await this.chatManager.init();
         await this.settingsManager.init();
         this.setupMessageListener();
+        // 检查登录状态
+        await this.checkLoginStatus();
     }
 
     setupMessageListener() {
@@ -58,8 +60,9 @@ class SidebarManager {
     }
     
     async bindEvents() {
+        // 首先检查登录状态
         await this.checkLoginStatus();
-    }    bindEvents() {
+        
         // --- 聊天相关事件 ---
         this.ui.welcomeScreen.querySelector('#startFirstChat').addEventListener('click', () => this.chatManager.createNewChat());
         this.ui.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.chatManager.sendMessage(this.ui.chatInput.value.trim()); });
@@ -104,20 +107,41 @@ class SidebarManager {
         document.getElementById('newChatBtn').addEventListener('click', () => this.chatManager.createNewChat());
         document.getElementById('mistakesBtn').addEventListener('click', () => this.chatManager.showMistakeCollection());
         
+        // --- 报告按钮事件绑定 ---
+        const reportBtn = document.getElementById('ReportBtn');
+        if (reportBtn) {
+            reportBtn.addEventListener('click', () => {
+                // 这里可以添加报告功能的逻辑
+                console.log('套题报告功能待实现');
+            });
+        }
+        
         // --- 设置事件绑定 ---
-        document.getElementById('settingsBtn').addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
-        this.ui.settingsInterface.querySelector('#saveSettings').addEventListener('click', () => this.handleSaveSettings());
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
+        }
+        const saveSettingsBtn = this.ui.settingsInterface.querySelector('#saveSettings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.handleSaveSettings());
+        }
 
         // --- PTA题目分析事件绑定 ---
-        document.getElementById('ptaBtn').addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));
-        document.getElementById('startPtaAnalysisBtn').addEventListener('click', () => this.handlePtaAnalysis());
+        const ptaBtn = document.getElementById('ptaBtn');
+        if (ptaBtn) {
+            ptaBtn.addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));
+        }
+        const startPtaAnalysisBtn = document.getElementById('startPtaAnalysisBtn');
+        if (startPtaAnalysisBtn) {
+            startPtaAnalysisBtn.addEventListener('click', () => this.handlePtaAnalysis());
+        }
         
         // --- 登录按钮事件绑定 ---
-        const loginBtn = document.getElementById('loginBtn');
+        const userBtn = document.getElementById('userBtn');
         const loginFromSidebar = document.getElementById('loginFromSidebar');
         
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
+        if (userBtn) {
+            userBtn.addEventListener('click', () => {
                 this.handleLogin();
             });
         }
@@ -125,6 +149,22 @@ class SidebarManager {
         if (loginFromSidebar) {
             loginFromSidebar.addEventListener('click', () => {
                 this.handleLogin();
+            });
+        }
+        
+        // --- 跳转网页按钮事件绑定 ---
+        const jumpwebpageBtn = document.getElementById('jumpwebpageBtn');
+        if (jumpwebpageBtn) {
+            jumpwebpageBtn.addEventListener('click', () => {
+                try {
+                    // 尝试使用扩展内部页面
+                    const mistakeManagerUrl = chrome.runtime.getURL('html/mistake_manager.html');
+                    chrome.tabs.create({ url: mistakeManagerUrl });
+                } catch (error) {
+                    console.error('无法打开错题管理器:', error);
+                    // 备用方案：显示错误提示
+                    this.showAuthMessage('无法打开错题管理器，请检查扩展权限', 'error');
+                }
             });
         }
         
@@ -220,34 +260,58 @@ class SidebarManager {
 
     // 检查登录状态
     async checkLoginStatus() {
+        console.log('=== 开始检查登录状态 ===');
         try {
-            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail']);
-            this.updateUIBasedOnLoginStatus(result.isLoggedIn, result.userEmail);
+            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail', 'userToken']);
+            console.log('从存储获取的数据:', result);
+            
+            const isLoggedIn = result.isLoggedIn === true;
+            const userEmail = result.userEmail || null;
+            
+            console.log('解析的登录状态:', { isLoggedIn, userEmail });
+            
+            this.updateUIBasedOnLoginStatus(isLoggedIn, userEmail);
         } catch (error) {
             console.error('检查登录状态失败:', error);
             this.updateUIBasedOnLoginStatus(false, null);
         }
+        console.log('=== 登录状态检查完成 ===');
     }
 
     // 根据登录状态更新UI
     updateUIBasedOnLoginStatus(isLoggedIn, userEmail) {
+        console.log('=== 开始更新UI状态 ===');
+        console.log('更新UI状态:', { isLoggedIn, userEmail });
+        
+        // 获取所有相关元素
         const loginPrompt = document.getElementById('loginPrompt');
         const startFirstChat = document.getElementById('startFirstChat');
-        const loginBtn = document.getElementById('loginBtn');
+        const userBtn = document.getElementById('userBtn'); // 正确的按钮ID
+        const displayEmailElement = document.getElementById('displayUserEmail');
         
         // 需要登录后才能使用的按钮
         const requireLoginButtons = [
-            'mistakesBtn', 'settingsBtn', 'ptaBtn',
-            'openMistakeManagerBtn', 'toggleChatListBtn'
+            'mistakesBtn', 'settingsBtn', 'ptaBtn', 
+            'openMistakeManagerBtn', 'toggleChatListBtn',
+            'userBtn', 'ReportBtn'
         ];
         
         if (isLoggedIn && userEmail) {
-            // 用户已登录 - 启用所有功能
-            if (loginPrompt) loginPrompt.style.display = 'none';
+            console.log('用户已登录，启用所有功能');
+            
+            // 隐藏登录提示
+            if (loginPrompt) {
+                loginPrompt.style.display = 'none';
+                console.log('隐藏登录提示');
+            }
+            
+            // 启用开始对话按钮
             if (startFirstChat) {
                 startFirstChat.disabled = false;
                 startFirstChat.textContent = '开始对话';
                 startFirstChat.style.opacity = '1';
+                startFirstChat.style.pointerEvents = 'auto';
+                console.log('启用开始对话按钮');
             }
             
             // 启用所有功能按钮
@@ -257,42 +321,77 @@ class SidebarManager {
                     btn.disabled = false;
                     btn.style.opacity = '1';
                     btn.style.pointerEvents = 'auto';
+                    btn.style.filter = 'none'; // 清除可能的灰度滤镜
+                    console.log(`启用按钮: ${btnId}`);
+                } else {
+                    console.warn(`找不到按钮: ${btnId}`);
                 }
             });
             
             // 更新登录按钮显示
-            if (loginBtn) {
-                loginBtn.innerHTML = '<span class="material-symbols-outlined">account_circle</span>';
-                loginBtn.title = `已登录: ${userEmail}`;
-                loginBtn.style.background = 'rgba(76, 175, 80, 0.3)';
-                loginBtn.style.color = '#28a745';
-            }
-        } else {
-            // 用户未登录 - 显示登录提示
-            if (loginPrompt) loginPrompt.style.display = 'block';
-            if (startFirstChat) {
-                startFirstChat.disabled = true;
-                startFirstChat.textContent = '请先登录';
-                startFirstChat.style.opacity = '0.5';
+            if (userBtn) {
+                userBtn.innerHTML = '<span class="material-symbols-outlined">account_circle</span>';
+                userBtn.title = `已登录: ${userEmail}`;
+                userBtn.style.background = 'rgba(122, 55, 151, 0.2)';
+                userBtn.style.color = '#7A3797';
+                console.log('更新登录按钮为已登录状态');
             }
             
-            // 禁用功能按钮
+            // 更新用户邮箱显示
+            if (displayEmailElement) {
+                displayEmailElement.textContent = userEmail;
+                console.log(`更新用户邮箱显示: ${userEmail}`);
+            }
+            
+        } else {
+            console.log('用户未登录，禁用功能');
+            
+            // 显示登录提示
+            if (loginPrompt) {
+                loginPrompt.style.display = 'block';
+                console.log('显示登录提示');
+            }
+            
+            // 禁用开始对话按钮
+            if (startFirstChat) {
+                startFirstChat.disabled = true;
+                startFirstChat.textContent = '需要先登录';
+                startFirstChat.style.opacity = '0.5';
+                startFirstChat.style.pointerEvents = 'none';
+                console.log('禁用开始对话按钮');
+            }
+            
+            // 禁用所有功能按钮
             requireLoginButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = true;
                     btn.style.opacity = '0.5';
                     btn.style.pointerEvents = 'none';
+                    btn.style.filter = 'grayscale(1)'; // 添加灰度效果
+                    console.log(`禁用按钮: ${btnId}`);
+                } else {
+                    console.warn(`找不到按钮: ${btnId}`);
                 }
             });
             
             // 重置登录按钮显示
-            if (loginBtn) {
-                loginBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
-                loginBtn.title = '用户登录';
-                loginBtn.style.background = '';
+            if (userBtn) {
+                userBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
+                userBtn.title = '用户登录';
+                userBtn.style.background = '';
+                userBtn.style.color = '';
+                console.log('重置登录按钮为未登录状态');
+            }
+            
+            // 重置用户邮箱显示
+            if (displayEmailElement) {
+                displayEmailElement.textContent = '请登录';
+                console.log('重置用户邮箱显示');
             }
         }
+        
+        console.log('=== UI状态更新完成 ===');
     }
 
     // 处理登录按钮点击
@@ -314,25 +413,53 @@ class SidebarManager {
 
     // 显示用户信息页面
     showUserProfile(userEmail) {
+        console.log('=== 显示用户资料界面 ===');
+        console.log('用户邮箱:', userEmail);
+        
         // 更新用户邮箱显示
         const displayEmailElement = document.getElementById('displayUserEmail');
         if (displayEmailElement) {
             displayEmailElement.textContent = userEmail;
+            console.log(`已更新用户邮箱显示: ${userEmail}`);
+        } else {
+            console.warn('找不到用户邮箱显示元素');
         }
+        
+        // 确保UI状态是最新的
+        this.updateUIBasedOnLoginStatus(true, userEmail);
         
         // 显示用户信息界面
         this.ui.showView(this.ui.userProfileInterface);
+        console.log('已显示用户资料界面');
     }
 
     // 处理登出
     async handleLogout() {
+        console.log('=== 开始登出操作 ===');
         try {
+            // 清除所有登录相关的存储数据
             await chrome.storage.local.remove(['isLoggedIn', 'userEmail', 'userToken']);
+            console.log('已清除所有登录相关数据');
+            
+            // 立即更新UI状态为未登录
             this.updateUIBasedOnLoginStatus(false, null);
-            this.showMainView();
+            
+            // 显示登出成功消息
+            this.showAuthMessage('已成功登出', 'success');
+            
+            // 等待一下然后跳转到登录界面
+            setTimeout(() => {
+                this.ui.showView(this.ui.loginInterface);
+                console.log('已跳转到登录界面');
+            }, 1000);
+            
         } catch (error) {
             console.error('登出失败:', error);
+            // 即使登出失败，也要强制更新UI状态
+            this.updateUIBasedOnLoginStatus(false, null);
+            this.ui.showView(this.ui.loginInterface);
         }
+        console.log('=== 登出操作完成 ===');
     }
 
     // 绑定认证相关事件
@@ -467,16 +594,22 @@ class SidebarManager {
             const result = await response.json();
             
             if (result.success) {
+                // 立即保存登录状态
                 await chrome.storage.local.set({
                     isLoggedIn: true,
                     userEmail: email,
                     userToken: result.token || 'temp'
                 });
+                console.log('登录成功，已保存登录状态:', { email });
                 
                 this.showAuthMessage('登录成功！', 'success');
+                
+                // 立即更新UI状态
+                this.updateUIBasedOnLoginStatus(true, email);
+                
+                // 等待一下然后显示用户资料界面
                 setTimeout(() => {
-                    this.showMainView();
-                    this.checkLoginStatus();
+                    this.showUserProfile(email);
                 }, 1500);
             } else {
                 this.showAuthMessage(result.message || '登录失败', 'error');

@@ -267,4 +267,110 @@ export class MistakeHandler {
             this.filterAndRender();
         }
     }
+
+    /**
+     * 进入编辑模式
+     */
+    enterEditMode() {
+        console.log('错题管理进入编辑模式');
+        this.ui.enterMistakeEditMode();
+        this.filterAndRender(); // 重新渲染以显示复选框
+    }
+
+    /**
+     * 退出编辑模式
+     */
+    exitEditMode() {
+        console.log('错题管理退出编辑模式');
+        this.selectedMistakes.clear();
+        this.ui.exitMistakeEditMode();
+        this.filterAndRender(); // 重新渲染隐藏复选框
+    }
+
+    /**
+     * 全选错题
+     */
+    selectAllMistakes() {
+        const currentPageMistakes = this.getCurrentPageMistakes();
+        currentPageMistakes.forEach(mistake => {
+            this.selectedMistakes.add(mistake.id);
+        });
+        this.updateSelectionUI();
+        console.log(`已选择 ${this.selectedMistakes.size} 个错题`);
+    }
+
+    /**
+     * 取消全选错题
+     */
+    deselectAllMistakes() {
+        this.selectedMistakes.clear();
+        this.updateSelectionUI();
+        console.log('已取消选择所有错题');
+    }
+
+    /**
+     * 批量删除选中的错题
+     */
+    async batchDeleteSelected() {
+        if (this.selectedMistakes.size === 0) {
+            console.log('请先选择要删除的错题');
+            return;
+        }
+
+        const confirmMessage = `确定要删除选中的 ${this.selectedMistakes.size} 个错题吗？此操作不可恢复！`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const deletePromises = Array.from(this.selectedMistakes).map(id => 
+                api.deleteMistake(id)
+            );
+            
+            await Promise.all(deletePromises);
+            
+            console.log(`成功删除 ${this.selectedMistakes.size} 个错题`);
+            
+            // 从本地数据中移除已删除的错题
+            this.allMistakes = this.allMistakes.filter(mistake => 
+                !this.selectedMistakes.has(mistake.id)
+            );
+            
+            // 清空选择并重新渲染
+            this.selectedMistakes.clear();
+            this.filterAndRender();
+            
+        } catch (error) {
+            console.error('批量删除失败:', error);
+        }
+    }
+
+    /**
+     * 获取当前页的错题
+     */
+    getCurrentPageMistakes() {
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        return this.filteredMistakes.slice(startIndex, endIndex);
+    }
+
+    /**
+     * 更新选择状态的UI
+     */
+    updateSelectionUI() {
+        // 更新复选框状态
+        const currentPageMistakes = this.getCurrentPageMistakes();
+        currentPageMistakes.forEach(mistake => {
+            const checkbox = document.querySelector(`#mistake-${mistake.id} input[type="checkbox"]`);
+            if (checkbox) {
+                checkbox.checked = this.selectedMistakes.has(mistake.id);
+            }
+        });
+
+        // 更新批量删除按钮状态
+        const batchDeleteBtn = document.getElementById('batchDelete');
+        if (batchDeleteBtn) {
+            batchDeleteBtn.disabled = this.selectedMistakes.size === 0;
+        }
+    }
 }

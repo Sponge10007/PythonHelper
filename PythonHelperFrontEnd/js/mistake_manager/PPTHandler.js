@@ -103,49 +103,7 @@ export class PPTHandler {
         return `data:image/svg+xml;base64,${btoa(svg)}`;
     }
 
-    /**
-     * 上传文件
-     */
-    async uploadFiles(files) {
-        if (!files || files.length === 0) return;
-
-        this.ui.showUploadProgress();
-        let successCount = 0;
-        let failCount = 0;
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            try {
-                this.ui.updateUploadStatus(`正在上传 ${file.name} (${i + 1}/${files.length})`);
-                
-                const result = await api.uploadPPTFile(
-                    file,
-                    '', // description
-                    [], // tags
-                    (progress, loaded, total) => {
-                        this.uploadProgress.set(file.name, progress);
-                        this.ui.updateUploadProgress(progress, `${file.name}: ${progress}%`);
-                    }
-                );
-                
-                successCount++;
-                this.ui.showSuccessMessage(`${file.name} 上传成功`);
-                
-            } catch (error) {
-                failCount++;
-                console.error(`上传 ${file.name} 失败:`, error);
-                this.ui.showErrorMessage(`${file.name} 上传失败: ${error.message}`);
-            }
-        }
-
-        this.ui.hideUploadProgress();
-        this.ui.showUploadSummary(successCount, failCount);
-        
-        // 刷新文件列表
-        if (successCount > 0) {
-            await this.init();
-        }
-    }
+    // 上传功能已移动到 simple_upload.js 独立模块处理
 
     /**
      * 预览PPT文件 - 提供多种查看选项
@@ -346,7 +304,7 @@ export class PPTHandler {
             }
 
             await api.deletePPTFile(pptId);
-            this.ui.showSuccessMessage('文件删除成功');
+            console.log('文件删除成功');
             
             // 从缓存中移除
             this.thumbnailCache.delete(pptId);
@@ -357,7 +315,7 @@ export class PPTHandler {
 
         } catch (error) {
             console.error('删除失败:', error);
-            this.ui.showErrorMessage(`删除失败: ${error.message}`);
+            console.error(`删除失败: ${error.message}`);
         }
     }
 
@@ -478,7 +436,7 @@ export class PPTHandler {
      */
     async batchDeleteSelected() {
         if (this.selectedFiles.size === 0) {
-            alert('请先选择要删除的文件');
+            console.log('请先选择要删除的文件');
             return;
         }
 
@@ -498,7 +456,7 @@ export class PPTHandler {
             const result = await api.batchDeletePPTFiles(selectedIds);
             
             this.ui.hideLoading();
-            this.ui.showSuccessMessage(`成功删除 ${result.success || selectedIds.length} 个文件`);
+            console.log(`成功删除 ${result.success || selectedIds.length} 个文件`);
             
             // 清空选择状态
             this.selectedFiles.clear();
@@ -509,7 +467,7 @@ export class PPTHandler {
         } catch (error) {
             console.error('批量删除失败:', error);
             this.ui.hideLoading();
-            this.ui.showErrorMessage(`批量删除失败: ${error.message}`);
+            console.error(`批量删除失败: ${error.message}`);
         }
     }
 
@@ -604,7 +562,7 @@ export class PPTHandler {
      */
     async clearAllFiles() {
         if (this.allPptFiles.length === 0) {
-            alert('没有文件可以清空');
+            console.log('没有文件可以清空');
             return;
         }
 
@@ -616,7 +574,7 @@ export class PPTHandler {
             const allIds = this.allPptFiles.map(file => file.id);
             await api.batchDeletePPTFiles(allIds);
             
-            this.ui.showSuccessMessage('所有文件已清空');
+            console.log('所有文件已清空');
             
             // 清空缓存和状态
             this.thumbnailCache.clear();
@@ -627,7 +585,7 @@ export class PPTHandler {
 
         } catch (error) {
             console.error('清空文件失败:', error);
-            this.ui.showErrorMessage(`清空失败: ${error.message}`);
+            console.error(`清空失败: ${error.message}`);
         }
     }
 }

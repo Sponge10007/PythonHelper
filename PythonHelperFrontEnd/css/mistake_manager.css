@@ -378,7 +378,12 @@ body {
 }
 
 .file-input {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 0.1px;
+    height: 0.1px;
+    overflow: hidden;
+    z-index: -1;
 }
 
 .upload-label {

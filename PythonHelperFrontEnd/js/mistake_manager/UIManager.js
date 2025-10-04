@@ -291,13 +291,7 @@ export class UIManager {
     renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onToggleSelect) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
-            this.pptGrid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📁</div>
-                    <div class="empty-text">暂无PPT文件</div>
-                    <div class="empty-hint">点击上传按钮添加课程PPT</div>
-                </div>
-            `;
+            
             return;
         }
 
@@ -620,43 +614,11 @@ export class UIManager {
         }
     }
 
-    /**
-     * 显示上传进度
-     */
-    showUploadProgress() {
-        // 创建或显示上传进度条
-        let progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) {
-            progressModal = this.createUploadProgressModal();
-            document.body.appendChild(progressModal);
-        }
-        
-        progressModal.classList.add('active');
-    }
+    // 上传进度功能已移除
 
-    /**
-     * 更新上传进度
-     */
-    updateUploadProgress(progress, status) {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) return;
+    // 上传进度更新功能已移除
 
-        const progressBar = progressModal.querySelector('.upload-progress-bar');
-        const statusText = progressModal.querySelector('.upload-status-text');
-
-        if (progressBar) progressBar.style.width = `${progress}%`;
-        if (statusText) statusText.textContent = status;
-    }
-
-    /**
-     * 隐藏上传进度
-     */
-    hideUploadProgress() {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (progressModal) {
-            progressModal.classList.remove('active');
-        }
-    }
+    // 上传进度隐藏功能已移除
 
     /**
      * 工具方法
@@ -684,17 +646,118 @@ export class UIManager {
     }
 
     showError(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
+    }
+
+    showSuccess(message) {
+        console.log('成功:', message);
+        this.showTempMessage(message, 'success');
+    }
+
+    showWarning(message) {
+        console.warn('警告:', message);
+        this.showTempMessage(message, 'warning');
     }
 
     showSuccessMessage(message) {
         // 显示成功消息
         console.log(`成功: ${message}`);
+        // 添加临时的成功提示
+        this.showTempMessage(message, 'success');
     }
 
     showErrorMessage(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
     }
+
+    /**
+     * 显示临时消息
+     */
+    showTempMessage(message, type = 'info') {
+        // 移除已存在的临时消息
+        const existingMessages = document.querySelectorAll('.temp-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temp-message temp-message-${type}`;
+        messageDiv.textContent = message;
+        
+        // 根据类型设置不同的颜色
+        const colors = {
+            success: { bg: '#28a745', border: '#1e7e34' },
+            error: { bg: '#dc3545', border: '#bd2130' },
+            warning: { bg: '#ffc107', border: '#d39e00', text: '#212529' },
+            info: { bg: '#007bff', border: '#0056b3' }
+        };
+        
+        const color = colors[type] || colors.info;
+        
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${color.bg};
+            color: ${color.text || 'white'};
+            border: 2px solid ${color.border};
+            border-radius: 6px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        // 添加动画样式
+        if (!document.getElementById('temp-message-styles')) {
+            const style = document.createElement('style');
+            style.id = 'temp-message-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(messageDiv);
+        
+        // 3秒后移除消息
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+
+    // 上传状态更新功能已移除
+
+    // 上传总结功能已移除
 
     /**
      * 更新PPT统计信息
@@ -764,24 +827,7 @@ export class UIManager {
         });
     }
 
-    /**
-     * 显示上传摘要
-     */
-    showUploadSummary(successCount, failCount) {
-        const totalCount = successCount + failCount;
-        let message = `上传完成！\n`;
-        message += `成功: ${successCount}/${totalCount}\n`;
-        if (failCount > 0) {
-            message += `失败: ${failCount}/${totalCount}`;
-        }
-        
-        if (failCount > 0) {
-            alert(message);
-        } else {
-            // 可以显示更友好的成功提示
-            console.log(message);
-        }
-    }
+    // 上传摘要功能已移除
 
     /**
      * 更新上传状态
@@ -791,28 +837,7 @@ export class UIManager {
         console.log(`上传状态: ${status}`);
     }
 
-    /**
-     * 创建上传进度模态框
-     */
-    createUploadProgressModal() {
-        const modal = document.createElement('div');
-        modal.id = 'upload-progress-modal';
-        modal.className = 'upload-progress-modal';
-
-        modal.innerHTML = `
-            <div class="upload-progress-header">
-                <h3>上传文件</h3>
-            </div>
-            <div class="upload-progress-body">
-                <div class="upload-progress-bar-container">
-                    <div class="upload-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="upload-status-text">准备上传...</div>
-            </div>
-        `;
-
-        return modal;
-    }
+    // 上传进度模态框功能已移除
 
     /**
      * 在新窗口预览（由PPTHandler调用）
@@ -1079,5 +1104,31 @@ export class UIManager {
                 ${tagArray.map(tag => `<span class="ppt-tag">${this.escapeHtml(String(tag))}</span>`).join('')}
             </div>
         `;
+    }
+
+    /**
+     * 进入错题编辑模式
+     */
+    enterMistakeEditMode() {
+        const editModeBtn = document.getElementById('editMode');
+        const batchActions = document.getElementById('batchActions');
+        
+        if (editModeBtn) editModeBtn.style.display = 'none';
+        if (batchActions) batchActions.style.display = 'flex';
+        
+        console.log('UI进入错题编辑模式');
+    }
+
+    /**
+     * 退出错题编辑模式
+     */
+    exitMistakeEditMode() {
+        const editModeBtn = document.getElementById('editMode');
+        const batchActions = document.getElementById('batchActions');
+        
+        if (editModeBtn) editModeBtn.style.display = 'inline-block';
+        if (batchActions) batchActions.style.display = 'none';
+        
+        console.log('UI退出错题编辑模式');
     }
 }
