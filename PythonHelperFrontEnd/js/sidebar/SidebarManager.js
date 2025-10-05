@@ -105,8 +105,8 @@ class SidebarManager {
         document.getElementById('mistakesBtn').addEventListener('click', () => this.chatManager.showMistakeCollection());
         
         // --- 设置事件绑定 ---
-        document.getElementById('settingsBtn').addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
-        this.ui.settingsInterface.querySelector('#saveSettings').addEventListener('click', () => this.handleSaveSettings());
+        // document.getElementById('settingsBtn').addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
+        // this.ui.settingsInterface.querySelector('#saveSettings').addEventListener('click', () => this.handleSaveSettings());
 
         // --- PTA题目分析事件绑定 ---
         document.getElementById('ptaBtn').addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));

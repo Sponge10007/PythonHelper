@@ -149,6 +149,7 @@ html, body {
     align-items: center; 
     justify-content: center; 
     flex-shrink: 0;
+    position: relative;
 }
 
 /* 顶部按钮文字描述的悬停显示 */
@@ -453,7 +454,7 @@ html, body {
 .auth-tabs {
     display: flex;
     margin-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #7a3797;
 }
 
 .auth-tab {
@@ -544,13 +545,15 @@ html, body {
 }
 
 .auth-submit-btn {
-    width: 100%;
+    width: 30%;
+    display: block; 
+    margin: 0 auto;
     padding: 12px;
-    background-color: #007bff;
+    background-color: #7a3797;
     color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 16px;
+    border-radius: 4px;
+    font-size: 15px;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;

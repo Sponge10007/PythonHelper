@@ -26,13 +26,13 @@
                     </button>
                 </div>
                 <div class="icon-group bottom">
-                    <button id="userBtn" class="icon-group-top-btn" data-tip="用户页面">
+                    <button id="loginBtn" class="icon-group-top-btn" data-tip="用户页面">
                         <img src="../侧边栏icon/30.png" class="mistakeset-btn">
                     </button>
                     <button id="mistakesBtn" class="icon-group-top-btn" data-tip="错题集">
                         <img src="../侧边栏icon/31.png" class="mistakeset-btn">
                     </button>
-                    <button id="ReportBtn" class="icon-group-top-btn" data-tip="套题报告">
+                    <button id="ptaBtn" class="icon-group-top-btn" data-tip="套题报告">
                         <img src="../侧边栏icon/32.png" class="mistakeset-btn">
                     </button>
                     <!-- <button id="settingsBtn" class="icon-group-top-btn" data-tip="设置">
@@ -52,7 +52,7 @@
         <main id="mainContent" class="main-content">
             <div id="welcomeScreen" class="view">
                 <div class="welcome-content">
-                    <span class="welcome-icon material-symbols-outlined">auto_awesome</span>
+                    <img src="../侧边栏icon/26.png" style="width: 50px; height: 50px;" class="welcome-icon material-symbols-outlined">
                     <h2>一站式Python课程AI助教</h2>
                     
                     <!-- 登录提示区域 -->
@@ -74,10 +74,10 @@
                 <header class="sidebar-header">
                     <h1 id="currentChatTitle">新对话</h1>
                     <div class="header-actions-right">
-                        <button id="memoryManageBtn" class="header-action-btn" title="记忆管理">
+                        <button id="memoryManageBtn" class="header-action-btn" data-tip="记忆管理">
                             <img src="../侧边栏icon补充/35.png" class="mistakeset-btn">
                         </button>
-                        <button id="enterMistakeModeBtn" class="header-action-btn" title="保存错题记录">
+                        <button id="enterMistakeModeBtn" class="header-action-btn" data-tip="保存错题记录">
                             <img src="../侧边栏icon补充/36.png" class="mistakeset-btn">
                         </button>
                         <!-- <button id="clearChatBtn" class="header-action-btn" title="清空对话">
@@ -96,7 +96,7 @@
                     <form class="input-form">
                         <textarea id="chatInput" placeholder="输入你的问题...(选中文字会粘贴到这)" rows="1"></textarea>
                         <button id="sendMessage" type="submit" class="send-btn">
-                            <span class="material-symbols-outlined">arrow_upward</span>
+                            <img src="../侧边栏icon补充/43.png" style="width: 50px; height: 50px; background-color:#fcf9ff" class="material-symbols-outlined">
                         </button>
                     </form>
                 </footer>
@@ -104,21 +104,21 @@
             
             <div id="mistakeCollection" class="view hidden">
                 <header class="sidebar-header">
-                    <button id="backToMain" class="header-action-btn" title="返回">
-                        <span class="material-symbols-outlined">arrow_back</span>
+                    <button id="backToMain" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                     </button>
                     <h1>错题集</h1>
-                    <button id="openMistakeManagerBtn" class="header-action-btn header-action-right" title="管理错题集">
+                    <!-- <button id="openMistakeManagerBtn" class="header-action-btn header-action-right" title="管理错题集">
                         <span class="material-symbols-outlined">open_in_new</span>
-                    </button>
+                    </button> -->
                 </header>
                 <div id="mistakeListContainer" class="mistake-list-container"></div>
             </div>
 
             <div id="settingsInterface" class="view hidden">
                  <header class="sidebar-header">
-                    <button id="backToMainFromSettings" class="header-action-btn" title="返回">
-                        <span class="material-symbols-outlined">arrow_back</span>
+                    <button id="backToMainFromSettings" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                     </button>
                     <h1>设置</h1>
                 </header>
@@ -141,8 +141,8 @@
 
             <div id="ptaAnalysisInterface" class="view hidden">
                 <header class="sidebar-header">
-                   <button id="backToMainFromPta" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                   <button id="backToMainFromPta" class="header-action-btn" data-tip="返回">
+                       <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>PTA题目分析</h1>
                </header>
@@ -157,8 +157,8 @@
 
            <div id="loginInterface" class="view hidden">
                 <header class="sidebar-header">
-                   <button id="backToMainFromLogin" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                   <button id="backToMainFromLogin" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>用户登录</h1>
                </header>
@@ -182,7 +182,10 @@
                            </div>
                            <button id="loginSubmitBtn" class="auth-submit-btn">登录</button>
                            <div class="auth-links">
-                               <a href="#" id="forgotPasswordLink">忘记密码？</a>
+                               <a href="#" id="forgotPasswordLink" style="color: #7a3797;">忘记密码？</a>
+                           </div>
+                           <div style="text-align: center" >
+                                <img src="../侧边栏icon补充/jsongj_com_透明化图片.png" style="width: 100px; height: 100px; margin-top: 20px">
                            </div>
                        </div>
 
@@ -249,7 +252,7 @@
            <div id="userProfileInterface" class="view hidden">
                 <header class="sidebar-header">
                    <button id="backToMainFromProfile" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>用户信息</h1>
                </header>
@@ -257,7 +260,7 @@
                    <div class="user-profile-content">
                        <!-- 用户头像 -->
                        <div class="user-avatar">
-                           <span class="material-symbols-outlined">account_circle</span>
+                            <img src="../侧边栏icon/30.png" class="material-symbols-outlined">
                        </div>
                        
                        <!-- 登录状态 -->
