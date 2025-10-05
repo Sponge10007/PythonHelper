@@ -133,7 +133,7 @@ export class UIManager {
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
                 <div class="message-actions">
-                    <button class="action-btn retry-btn" title="重试"><span class="material-symbols-outlined">refresh</span></button>
+                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
                     <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
                     <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
                 </div>
