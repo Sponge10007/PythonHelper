@@ -836,6 +836,140 @@ body {
     font-weight: 500;
 }
 
+/* 课程标签样式 */
+.mistake-tag.tag-lesson {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+/* 知识点标签样式 */
+.mistake-tag.tag-category {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* 难度标签样式 */
+.mistake-tag.tag-difficulty {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+/* 标签筛选样式 */
+.filter-tags {
+    margin-top: 16px;
+}
+
+.filter-tags h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.filter-categories {
+    margin-bottom: 16px;
+}
+
+.filter-category {
+    margin-bottom: 16px;
+}
+
+.filter-category h5 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.filter-tag-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.filter-tag-item:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.filter-tag-item.selected {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    color: #1976d2;
+    font-weight: 500;
+}
+
+.filter-tag-item.selected:hover {
+    background: #bbdefb;
+}
+
+/* 课程标签筛选样式 */
+.filter-tag-item.course-tag.selected {
+    background: #e8f5e8;
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+
+.filter-tag-item.course-tag.selected:hover {
+    background: #c8e6c9;
+}
+
+/* 知识点标签筛选样式 */
+.filter-tag-item.knowledge-tag.selected {
+    background: #fff3e0;
+    border-color: #f57c00;
+    color: #f57c00;
+}
+
+.filter-tag-item.knowledge-tag.selected:hover {
+    background: #ffe0b2;
+}
+
+/* 难度标签筛选样式 */
+.filter-tag-item.difficulty-tag.selected {
+    background: #fce4ec;
+    border-color: #c2185b;
+    color: #c2185b;
+}
+
+.filter-tag-item.difficulty-tag.selected:hover {
+    background: #f8bbd9;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    flex: 1;
+}
+
 .mistake-actions {
     display: flex;
     gap: 8px;
@@ -1072,6 +1206,12 @@ body {
     color: #333;
 }
 
+/* 单选下拉框样式 */
+.form-select {
+    min-height: 40px;
+    padding: 8px 12px;
+}
+
 .form-input, .form-textarea, .form-select {
     width: 100%;
     padding: 10px 12px;
@@ -1092,45 +1232,172 @@ body {
     min-height: 80px;
 }
 
-/* 现有标签列表 */
-.existing-tags {
+/* 标签管理样式 */
+.tag-category-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.category-tab {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    background: white;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.category-tab:hover {
+    border-color: #1976d2;
+    color: #1976d2;
+    background: #f0f8ff;
+}
+
+.category-tab.active {
+    border-color: #1976d2;
+    background: #1976d2;
+    color: white;
+}
+
+.add-tag-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.add-tag-container .form-input {
+    flex: 1;
+}
+
+.add-tag-container .btn-primary {
+    padding: 10px 20px;
+    white-space: nowrap;
+}
+
+.tags-container {
     margin-top: 20px;
 }
 
-.existing-tags h4 {
+.tag-category-section {
+    display: none;
+    margin-bottom: 20px;
+}
+
+.tag-category-section.active {
+    display: block;
+}
+
+.tag-category-section h4 {
     margin-bottom: 12px;
     color: #333;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e1e5e9;
 }
 
-.existing-tags .tag-list {
-    max-height: 200px;
+.tag-category-section .tag-list {
+    max-height: 300px;
     overflow-y: auto;
     border: 1px solid #e1e5e9;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 12px;
     background: #f8f9fa;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
 }
 
-.existing-tags .tag-item {
+.tag-item {
     background: white;
-    border: 1px solid #d1d5e9;
-    padding: 8px 12px;
-    margin-bottom: 4px;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
 }
 
-.existing-tags .tag-item:hover {
-    background: #e3f2fd;
+.tag-item:hover {
     border-color: #1976d2;
+    background: #f0f8ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
 }
 
-.existing-tags .tag-item.selected {
+.tag-item.selected {
+    border-color: #1976d2;
     background: #1976d2;
-    border-color: #1976d2;
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.tag-item.selected::after {
+    content: '✓';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* 不同类别的标签颜色 */
+.tag-category-section[data-category="course"] .tag-item {
+    border-left: 4px solid #4caf50;
+}
+
+.tag-category-section[data-category="course"] .tag-item:hover {
+    border-color: #4caf50;
+    background: #e8f5e8;
+}
+
+.tag-category-section[data-category="course"] .tag-item.selected {
+    background: #4caf50;
+    border-color: #4caf50;
+}
+
+.tag-category-section[data-category="knowledge"] .tag-item {
+    border-left: 4px solid #ff9800;
+}
+
+.tag-category-section[data-category="knowledge"] .tag-item:hover {
+    border-color: #ff9800;
+    background: #fff3e0;
+}
+
+.tag-category-section[data-category="knowledge"] .tag-item.selected {
+    background: #ff9800;
+    border-color: #ff9800;
+}
+
+.tag-category-section[data-category="difficulty"] .tag-item {
+    border-left: 4px solid #f44336;
+}
+
+.tag-category-section[data-category="difficulty"] .tag-item:hover {
+    border-color: #f44336;
+    background: #ffebee;
+}
+
+.tag-category-section[data-category="difficulty"] .tag-item.selected {
+    background: #f44336;
+    border-color: #f44336;
 }
 
 /* AI模态框特殊样式 */

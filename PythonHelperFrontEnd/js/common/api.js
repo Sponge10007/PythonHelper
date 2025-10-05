@@ -1,76 +1,21 @@
 // js/common/api.js
 
-/**
- * 获取后端服务器URL
- */
-function getBackendUrl() {
-    // 检测是否为本地开发环境
-    const isLocalDev = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname === '';
-    
-    if (isLocalDev) {
-        // 本地开发环境
-        return 'http://localhost:5000';
-    } else {
-        // 生产环境服务器地址 (通过Nginx代理8888端口)
-        return 'http://47.98.249.0:8888';
-    }
-}
-
-const BACKEND_URL = getBackendUrl();
-const API_BASE_URL = BACKEND_URL; // 兼容认证模块
-
-// 调试信息
-console.log('PythonHelper API Base URL:', BACKEND_URL);
-
-// 网络请求包装函数，处理代理和网络问题
-async function fetchWithFallback(url, options = {}) {
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            ...options.headers
-        },
-        mode: 'cors',
-        ...options
-    };
-    
-    try {
-        const response = await fetch(url, defaultOptions);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        return response;
-    } catch (error) {
-        console.error('网络请求失败:', error.message);
-        console.error('请求URL:', url);
-        
-        // 如果是Chrome扩展环境，尝试使用chrome.runtime.sendMessage
-        if (typeof chrome !== 'undefined' && chrome.runtime) {
-            console.log('尝试使用Chrome扩展消息传递...');
-            // 这里可以实现Chrome扩展的消息传递机制作为备用方案
-        }
-        
-        throw error;
-    }
-}
+const BACKEND_URL = 'http://localhost:5000';
+// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--35427.ap-shanghai2.cloudstudio.club";
+// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--5000.ap-shanghai2.cloudstudio.club";
 
 /**
- * 与AI后端进行对话
- * @param {Array} messages - 对话消息数组
+ * 与AI后端进行对话 - 支持持久记忆
+ * @param {Array} messages - 完整对话消息数组
  * @param {string} apiKey - 用户的 API Key
  * @param {string} apiEndpoint - API 端点
  * @returns {Promise<Object>} - AI的响应数据
  */
 export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
-    const lastMessage = messages[messages.length - 1].content;
-    const response = await fetchWithFallback(`${BACKEND_URL}/ai/chat`, {
+    const response = await fetch(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
         body: JSON.stringify({
-            message: lastMessage,
+            messages: messages,  // 发送完整对话历史
             apiKey: apiKey,
             apiEndpoint: apiEndpoint
         })

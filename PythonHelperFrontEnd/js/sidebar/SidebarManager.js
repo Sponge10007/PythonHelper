@@ -35,6 +35,29 @@ class SidebarManager {
     async init() {
         await this.chatManager.init();
         await this.settingsManager.init();
+        this.setupMessageListener();
+    }
+
+    setupMessageListener() {
+        // 监听来自background script的消息
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            console.log('Sidebar收到消息:', message.type);
+            switch (message.type) {
+                case 'TEXT_SELECTED':
+                    // 处理选中文本，填充到输入框
+                    if (this.ui.chatInput) {
+                        this.ui.chatInput.value = message.text;
+                        this.ui.adjustTextareaHeight();
+                    }
+                    break;
+                default:
+                    console.log('未处理的消息类型:', message.type);
+            }
+            return true;
+        });
+    }
+    
+    async bindEvents() {
         await this.checkLoginStatus();
     }    bindEvents() {
         // --- 聊天相关事件 ---
@@ -47,7 +70,23 @@ class SidebarManager {
             }
         });
         this.ui.chatInput.addEventListener('input', () => this.ui.adjustTextareaHeight());
-        document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
+        // document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
+        
+        // --- 记忆管理事件绑定 ---
+        document.getElementById('memoryManageBtn').addEventListener('click', () => {
+            if (this.chatManager.currentChatId) {
+                const stats = this.chatManager.getChatStatistics(this.chatManager.currentChatId);
+                if (stats) {
+                    this.ui.showMemoryManageDialog(stats, (keepRecent) => {
+                        this.chatManager.clearChatHistory(this.chatManager.currentChatId, keepRecent);
+                        this.ui.showMemoryStatusMessage(
+                            keepRecent === 0 ? '已清空全部对话历史' : `已清理历史，保留最近${keepRecent}条消息`,
+                            'success'
+                        );
+                    });
+                }
+            }
+        });
 
         // --- 错题事件绑定 ---
         document.getElementById('enterMistakeModeBtn').addEventListener('click', () => this.chatManager.toggleMistakeSelectionMode());
