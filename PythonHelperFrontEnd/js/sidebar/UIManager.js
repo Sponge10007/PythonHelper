@@ -277,12 +277,12 @@ export class UIManager {
         dialog.innerHTML = `
             <div class="dialog-content">
                 <div class="dialog-header">
-                    <h3>🧠 记忆管理</h3>
+                    <h3>记忆管理</h3>
                     <button class="close-btn">&times;</button>
                 </div>
                 <div class="dialog-body">
                     <div class="memory-stats">
-                        <h4>📊 对话统计</h4>
+                        <h4>对话统计</h4>
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <span class="stat-label">总消息数:</span>
@@ -311,20 +311,18 @@ export class UIManager {
                         </div>
                     </div>
                     <div class="memory-actions">
-                        <h4>🔧 记忆操作</h4>
+                        <h4>记忆操作</h4>
                         <div class="action-buttons">
                             <button class="action-btn clear-history-btn">
-                                <span class="material-symbols-outlined">delete_sweep</span>
                                 清理历史 (保留最近5条)
                             </button>
                             <button class="action-btn clear-all-btn">
-                                <span class="material-symbols-outlined">clear_all</span>
                                 清空全部
                             </button>
                         </div>
                     </div>
                     <div class="memory-info">
-                        <h4>💡 记忆说明</h4>
+                        <h4>记忆说明</h4>
                         <p>• 当对话超过20条消息时，系统会自动压缩历史记忆</p>
                         <p>• 压缩会保留最近10条消息，并生成历史摘要</p>
                         <p>• 这样可以保持AI的记忆能力，同时控制token消耗</p>

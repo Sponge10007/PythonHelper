@@ -35,9 +35,9 @@
                     <button id="ptaBtn" class="icon-group-top-btn" data-tip="套题报告">
                         <img src="../侧边栏icon/32.png" class="mistakeset-btn">
                     </button>
-                    <!-- <button id="settingsBtn" class="icon-group-top-btn" data-tip="设置">
-                        <span class="material-symbols-outlined">settings</span>
-                    </button> -->
+                    <button id="settingsBtn" class="icon-group-top-btn" data-tip="设置">
+                        <img src="../icons/settings.png" class="mistakeset-btn">
+                    </button>
                 </div>
             </div>
 
@@ -55,18 +55,8 @@
                     <img src="../侧边栏icon/26.png" style="width: 50px; height: 50px;" class="welcome-icon material-symbols-outlined">
                     <h2>一站式Python课程AI助教</h2>
                     
-                    <!-- 登录提示区域 -->
-                    <div id="loginPrompt" style="background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;">
-                        <div style="color: #856404; font-weight: 600; margin-bottom: 10px;">
-                            ⚠️ 需要先登录才能使用所有功能
-                        </div>
-                        <button id="loginFromSidebar" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                            👤 立即登录
-                        </button>
-                    </div>
-                    
-                    <p>登录后即可开始对话，解决你的编程难题。</p>
-                    <button id="startFirstChat" class="start-chat-btn" disabled style="opacity: 0.5;">需要先登录</button>
+                    <p>开始对话，解决你的编程难题。</p>
+                    <button id="startFirstChat" class="start-chat-btn">开始新对话</button>
                 </div>
             </div>
 
@@ -125,6 +115,10 @@
                     <div class="form-group">
                         <label for="aiApiKey">API Key</label>
                         <input type="password" id="aiApiKey" placeholder="请输入你的API Key">
+                        <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                            💡 需要DeepSeek API Key？访问 <a href="https://platform.deepseek.com" target="_blank" style="color: #7a3898;">platform.deepseek.com</a> 注册并获取
+                        </small>
+                    </div>
                     </div>
                     <div class="form-group">
                         <label for="questionMode">问题模式</label>
@@ -133,7 +127,7 @@
                             <option value="function">函数编程助手</option>
                             <option value="programming">完整编程助手</option>
                         </select>
-                    </div>-->
+                    </div>
                     <button id="saveSettings" class="save-settings-btn">保存设置</button>
                 </div>
             </div>

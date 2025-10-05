@@ -144,7 +144,6 @@ class SidebarManager {
         // --- 登录按钮事件绑定 ---
         const loginBtn = document.getElementById('loginBtn');
         const userBtn = document.getElementById('userBtn');
-        const loginFromSidebar = document.getElementById('loginFromSidebar');
         
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
@@ -154,12 +153,6 @@ class SidebarManager {
         
         if (userBtn) {
             userBtn.addEventListener('click', () => {
-                this.handleLogin();
-            });
-        }
-        
-        if (loginFromSidebar) {
-            loginFromSidebar.addEventListener('click', () => {
                 this.handleLogin();
             });
         }
@@ -308,7 +301,6 @@ class SidebarManager {
         console.log('更新UI状态:', { isLoggedIn, userEmail });
         
         // 获取所有相关元素
-        const loginPrompt = document.getElementById('loginPrompt');
         const startFirstChat = document.getElementById('startFirstChat');
         const userBtn = document.getElementById('userBtn'); // 正确的按钮ID
         const displayEmailElement = document.getElementById('displayUserEmail');
@@ -327,12 +319,6 @@ class SidebarManager {
         
         if (isLoggedIn && userEmail) {
             console.log('用户已登录，启用所有功能');
-            
-            // 隐藏登录提示
-            if (loginPrompt) {
-                loginPrompt.style.display = 'none';
-                console.log('隐藏登录提示');
-            }
             
             // 启用开始对话按钮
             if (startFirstChat) {
@@ -373,69 +359,10 @@ class SidebarManager {
             }
             
         } else {
-            console.log('用户未登录，禁用功能');
+            console.log('用户未登录，直接跳转到登录页面');
             
-            // 显示登录提示
-            if (loginPrompt) {
-                loginPrompt.style.display = 'block';
-                console.log('显示登录提示');
-            }
-            
-            // 禁用开始对话按钮
-            if (startFirstChat) {
-                startFirstChat.disabled = true;
-                startFirstChat.textContent = '需要先登录';
-                startFirstChat.style.opacity = '0.5';
-                startFirstChat.style.pointerEvents = 'none';
-                console.log('禁用开始对话按钮');
-            }
-            
-            // 禁用所有功能按钮
-            allButtons.forEach(btnId => {
-                const btn = document.getElementById(btnId);
-                if (btn) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.3';
-                    btn.style.pointerEvents = 'none';
-                    btn.style.filter = 'grayscale(1)'; // 添加灰度效果
-                    console.log(`禁用按钮: ${btnId}`);
-                } else {
-                    console.warn(`找不到按钮: ${btnId}`);
-                }
-            });
-            
-            // 特别处理userBtn和loginBtn，未登录时仍可点击用于登录
-            const userBtn = document.getElementById('userBtn');
-            const loginBtn = document.getElementById('loginBtn');
-            
-            if (userBtn) {
-                userBtn.disabled = false;
-                userBtn.style.opacity = '1';
-                userBtn.style.pointerEvents = 'auto';
-                userBtn.style.filter = 'none';
-            }
-            
-            if (loginBtn) {
-                loginBtn.disabled = false;
-                loginBtn.style.opacity = '1';
-                loginBtn.style.pointerEvents = 'auto';
-                loginBtn.style.filter = 'none';
-            }
-            
-            // 重置登录按钮显示
-            if (userBtn) {
-                userBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
-                userBtn.title = '用户登录';
-                userBtn.style.background = '';
-                userBtn.style.color = '';
-                console.log('重置登录按钮为未登录状态');
-            }
-            
-            // 重置用户邮箱显示
-            if (displayEmailElement) {
-                displayEmailElement.textContent = '请登录';
-                console.log('重置用户邮箱显示');
-            }
+            // 未登录时直接显示登录界面
+            this.showView('loginInterface');
         }
         
         console.log('=== UI状态更新完成 ===');

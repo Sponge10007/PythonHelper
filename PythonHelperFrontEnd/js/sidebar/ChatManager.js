@@ -120,7 +120,24 @@ export class ChatManager {
 
         } catch (error) {
             console.error('AI request failed:', error);
-            const errorElement = this.ui.createMessageElement({ role: 'assistant', content: `抱歉，请求失败。错误: ${error.message}` });
+            let errorMessage = '抱歉，请求失败。';
+            
+            // 针对不同错误类型给出具体提示
+            if (error.message.includes('402') || error.message.includes('Payment Required')) {
+                errorMessage = '❌ API账户余额不足，请检查DeepSeek账户余额或更新API Key。点击左侧设置图标可以更新API Key。';
+            } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                errorMessage = '❌ API Key无效或已过期，请在设置中更新您的API Key。';
+            } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+                errorMessage = '❌ API访问被拒绝，请检查API Key权限。';
+            } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+                errorMessage = '❌ API调用频率超限，请稍后再试。';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = '❌ 网络连接失败，请检查网络连接或稍后重试。';
+            } else {
+                errorMessage = `❌ 请求失败: ${error.message}`;
+            }
+            
+            const errorElement = this.ui.createMessageElement({ role: 'assistant', content: errorMessage });
             placeholder.replaceWith(errorElement);
         } finally {
             this.isLoading = false;

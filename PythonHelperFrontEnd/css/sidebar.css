@@ -19,6 +19,8 @@ html, body {
     overflow: hidden;
     position: relative;
     background-color: #fdf9ff; /* 将背景色移到这里，确保整个区域有颜色 */
+    max-width: 100vw; /* 确保不超过视口宽度 */
+    max-height: 100vh; /* 确保不超过视口高度 */
 }
 
 /* 1. 左侧栏容器 */
@@ -112,10 +114,18 @@ html, body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* 关键：允许flex项目缩小 */
+    overflow: hidden; /* 防止内容超出 */
 }
 
 .view {
-    width: 100%; height: 100%; display: flex; flex-direction: column; background-color: #f0f0f0;
+    width: 100%; 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    background-color: #f0f0f0;
+    min-height: 0; /* 关键：允许flex项目缩小 */
+    overflow: hidden; /* 防止内容超出 */
 }
 
 /* --- Welcome Screen --- */
@@ -224,15 +234,52 @@ html, body {
 }
 
 
-.chat-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+.chat-container { 
+    flex-grow: 1; 
+    padding: 20px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    min-height: 0; /* 关键：允许flex项目缩小 */
+    max-height: 100%; /* 限制最大高度 */
+}
 
-.message { display: flex; gap: 10px; max-width: 90%; align-items: flex-start; }
-.message-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; flex-shrink: 0; margin-top: 5px;}
-.message-content { padding: 15px 20px; border-radius: 28px; font-size: 14px; line-height: 1.5; }
+.message { 
+    display: flex; 
+    gap: 10px; 
+    max-width: 100%; /* 改为100%以充分利用空间 */
+    align-items: flex-start; 
+    word-wrap: break-word; /* 强制换行 */
+    overflow-wrap: break-word; /* 强制换行 */
+}
+.message-avatar { 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-weight: bold; 
+    flex-shrink: 0; 
+    margin-top: 5px;
+}
+.message-content { 
+    padding: 15px 20px; 
+    border-radius: 28px; 
+    font-size: 14px; 
+    line-height: 1.5; 
+    max-width: calc(100% - 42px); /* 计算最大宽度，减去头像和间距 */
+    word-wrap: break-word; /* 强制换行 */
+    overflow-wrap: break-word; /* 强制换行 */
+    min-width: 0; /* 允许缩小 */
+}
 
 /* 改善消息内容中的段落间距 */
 .message-content p {
     margin: 0 0 12px 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .message-content p:last-child {
@@ -243,10 +290,14 @@ html, body {
 .message-content ul, .message-content ol {
     margin: 8px 0;
     padding-left: 20px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .message-content li {
     margin-bottom: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 标题样式 */
@@ -322,6 +373,9 @@ html, body {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
     font-size: 13px;
     line-height: 1.5;
+    max-width: 100%; /* 限制最大宽度 */
+    word-wrap: break-word; /* 强制换行 */
+    white-space: pre-wrap; /* 保持格式的同时允许换行 */
     /* border: 1px solid #4a5568; */
 }
 
@@ -339,6 +393,9 @@ html, body {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
     font-size: 13px;
     border: 1px solid #e2e8f0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .message-content pre code {
@@ -779,173 +836,248 @@ html, body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .memory-manage-dialog .dialog-content {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    max-width: 500px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(122, 56, 152, 0.2), 0 0 0 1px rgba(122, 56, 152, 0.1);
+    max-width: 550px;
     width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .memory-manage-dialog .dialog-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #7a3898 0%, #8b4aa3 100%);
+    color: white;
+    border-radius: 16px 16px 0 0;
 }
 
 .memory-manage-dialog .dialog-header h3 {
     margin: 0;
-    color: #333;
-    font-size: 18px;
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .memory-manage-dialog .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #666;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    font-size: 20px;
+    color: white;
     cursor: pointer;
     padding: 0;
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
 }
 
 .memory-manage-dialog .close-btn:hover {
-    color: #333;
-    background-color: #f5f5f5;
-    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }
 
 .memory-manage-dialog .dialog-body {
-    padding: 24px;
+    padding: 28px;
+    max-height: calc(90vh - 100px);
+    overflow-y: auto;
 }
 
 .memory-manage-dialog .memory-stats h4,
 .memory-manage-dialog .memory-actions h4,
 .memory-manage-dialog .memory-info h4 {
-    margin: 0 0 16px 0;
-    color: #333;
-    font-size: 16px;
+    margin: 0 0 18px 0;
+    color: #7a3898;
+    font-size: 18px;
+    font-weight: 600;
+    border-bottom: 2px solid #7a3898;
+    padding-bottom: 8px;
 }
 
 .memory-manage-dialog .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 14px;
+    margin-bottom: 28px;
 }
 
 .memory-manage-dialog .stat-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
-    background-color: #f8f9fa;
-    border-radius: 6px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(122, 56, 152, 0.2);
+    transition: all 0.2s ease;
+}
+
+.memory-manage-dialog .stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(122, 56, 152, 0.15);
+    border-color: rgba(122, 56, 152, 0.2);
 }
 
 .memory-manage-dialog .stat-label {
     color: #666;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .memory-manage-dialog .stat-value {
-    color: #333;
-    font-weight: 600;
-    font-size: 14px;
+    color: #7a3898;
+    font-weight: 700;
+    font-size: 16px;
 }
 
 .memory-manage-dialog .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 14px;
+    margin-bottom: 28px;
 }
 
 .memory-manage-dialog .action-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: white;
-    color: #333;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border: 2px solid white;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #000000;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 14px;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.memory-manage-dialog .action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transition: left 0.6s;
+}
+
+.memory-manage-dialog .action-btn:hover::before {
+    left: 100%;
 }
 
 .memory-manage-dialog .action-btn:hover {
-    background-color: #f8f9fa;
-    border-color: #007bff;
+    background: linear-gradient(135deg, #7a3898 0%, #8b4aa3 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(122, 56, 152, 0.3);
 }
 
-.memory-manage-dialog .action-btn.clear-history-btn:hover {
-    border-color: #ffc107;
-    background-color: #fff8e1;
+
+
+.memory-manage-dialog .clear-history-btn:hover {
+    border-color: white;
+    background: linear-gradient(135deg, #7a3898 0%, #7a3797 100%);
 }
 
-.memory-manage-dialog .action-btn.clear-all-btn:hover {
-    border-color: #dc3545;
-    background-color: #ffeaea;
+.memory-manage-dialog .clear-all-btn:hover {
+    border-color: white;
+    background: linear-gradient(135deg, #7a3898 0%, #7a3797 100%);
 }
 
 .memory-manage-dialog .memory-info {
-    background-color: #f8f9fa;
-    padding: 16px;
-    border-radius: 8px;
-    border-left: 4px solid #007bff;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid #7a3898;
+    border: 1px solid rgba(122, 56, 152, 0.2);
+    position: relative;
 }
 
 .memory-manage-dialog .memory-info p {
-    margin: 8px 0;
-    color: #666;
+    margin: 10px 0;
+    color: #555;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding-left: 0;
+    position: relative;
 }
 
 /* 记忆状态提示消息 */
 .memory-status-message {
     position: absolute;
-    top: 60px;
+    top: 70px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px 20px;
-    border-radius: 6px;
+    padding: 16px 24px;
+    border-radius: 12px;
     color: white;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     z-index: 100;
-    animation: slideDown 0.3s ease-out;
+    animation: slideDown 0.4s ease-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .memory-status-message.info {
-    background-color: #007bff;
+    background: linear-gradient(135deg, #7a3898 0%, #8b4aa3 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .memory-status-message.success {
-    background-color: #28a745;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .memory-status-message.warning {
-    background-color: #ffc107;
-    color: #333;
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 @keyframes slideDown {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
+        transform: translateX(-50%) translateY(-30px);
     }
     to {
         opacity: 1;
