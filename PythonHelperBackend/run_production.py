@@ -21,7 +21,7 @@ app = create_app(config_class)
 if __name__ == '__main__':
     # 从配置获取主机和端口
     host = getattr(config_class, 'HOST', '0.0.0.0')
-    port = getattr(config_class, 'PORT', 8000)
+    port = getattr(config_class, 'PORT', 5000)
     debug = getattr(config_class, 'DEBUG', False)
     
     print(f"启动服务器: http://{host}:{port}")

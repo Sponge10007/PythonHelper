@@ -179,6 +179,9 @@ class SidebarManager {
         // --- 登录界面事件绑定 ---
         this.bindAuthEvents();
         
+        // --- 添加禁用按钮点击提示 ---
+        this.bindDisabledButtonWarnings();
+        
         // 打开错题管理器页面的按钮
         const openMistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
         if(openMistakeManagerBtn) {
@@ -335,12 +338,31 @@ class SidebarManager {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = false;
+                    btn.classList.remove('disabled');
                     btn.style.opacity = '1';
                     btn.style.pointerEvents = 'auto';
                     btn.style.filter = 'none'; // 清除可能的灰度滤镜
                     console.log(`启用按钮: ${btnId}`);
                 } else {
                     console.warn(`找不到按钮: ${btnId}`);
+                }
+            });
+            
+            // 启用侧边栏所有按钮
+            const sidebarButtons = [
+                'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
+                'mistakesBtn', 'ptaBtn', 'settingsBtn', 'loginBtn'
+            ];
+            
+            sidebarButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.filter = 'none';
+                    console.log(`启用侧边栏按钮: ${btnId}`);
                 }
             });
             
@@ -360,9 +382,71 @@ class SidebarManager {
             }
             
         } else {
-            console.log('用户未登录，直接跳转到登录页面');
+            console.log('用户未登录，禁用所有按钮并显示登录界面');
             
-            // 未登录时直接显示登录界面
+            // 禁用开始对话按钮
+            if (startFirstChat) {
+                startFirstChat.disabled = true;
+                startFirstChat.textContent = '请先登录';
+                startFirstChat.style.opacity = '0.5';
+                console.log('禁用开始对话按钮');
+            }
+            
+            // 禁用所有功能按钮（除了登录按钮）
+            allButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    btn.style.opacity = '0.4';
+                    btn.style.filter = 'grayscale(100%)';
+                    console.log(`禁用按钮: ${btnId}`);
+                }
+            });
+            
+            // 禁用侧边栏所有按钮（除了登录按钮）
+            const sidebarButtons = [
+                'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
+                'mistakesBtn', 'ptaBtn', 'settingsBtn'
+            ];
+            
+            sidebarButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    btn.style.opacity = '0.4';
+                    btn.style.filter = 'grayscale(100%)';
+                    console.log(`禁用侧边栏按钮: ${btnId}`);
+                }
+            });
+            
+            // 确保登录按钮可用
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('disabled');
+                loginBtn.style.opacity = '1';
+                loginBtn.style.filter = 'none';
+                console.log('确保登录按钮可用');
+            }
+            
+            // 更新登录按钮显示
+            if (userBtn) {
+                userBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
+                userBtn.title = '点击登录';
+                userBtn.style.background = 'none';
+                userBtn.style.color = '#555';
+                console.log('更新登录按钮为未登录状态');
+            }
+            
+            // 更新用户邮箱显示
+            if (displayEmailElement) {
+                displayEmailElement.textContent = '请登录';
+                console.log('更新用户邮箱显示为未登录状态');
+            }
+            
+            // 显示登录界面
             this.ui.showView(this.ui.loginInterface);
         }
         
@@ -480,6 +564,38 @@ class SidebarManager {
         });
         document.getElementById('confirmNewPassword').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleResetPasswordSubmit();
+        });
+    }
+
+    // 绑定禁用按钮的点击提示
+    bindDisabledButtonWarnings() {
+        // 需要登录的按钮列表
+        const buttonsNeedLogin = [
+            'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn',
+            'mistakesBtn', 'ptaBtn', 'settingsBtn'
+        ];
+        
+        buttonsNeedLogin.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    // 如果按钮被禁用，阻止默认行为并显示提示
+                    if (btn.disabled || btn.classList.contains('disabled')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // 显示提示消息
+                        this.showAuthMessage('请先登录后再使用此功能', 'info');
+                        
+                        // 短暂延迟后跳转到登录页面
+                        setTimeout(() => {
+                            this.ui.showView(this.ui.loginInterface);
+                        }, 1500);
+                        
+                        return false;
+                    }
+                });
+            }
         });
     }
 
