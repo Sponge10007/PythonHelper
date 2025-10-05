@@ -263,7 +263,7 @@ class SidebarManager {
         document.getElementById('backToMainFromProfile').addEventListener('click', backToMain);
     }
 
-    // 检查登录状态
+    // 检查登录状态, 如果没登录, 自动跳转到登录页面
     async checkLoginStatus() {
         console.log('=== 开始检查登录状态 ===');
         try {
@@ -281,6 +281,7 @@ class SidebarManager {
             if (!isLoggedIn) {
                 console.log('用户未登录，自动跳转到登录页面');
                 setTimeout(() => {
+                    console.log(this.ui.loginInterface)
                     this.ui.showView(this.ui.loginInterface);
                 }, 500); // 延迟500ms以确保UI初始化完成
             }
@@ -362,7 +363,7 @@ class SidebarManager {
             console.log('用户未登录，直接跳转到登录页面');
             
             // 未登录时直接显示登录界面
-            this.showView('loginInterface');
+            this.ui.showView(this.ui.loginInterface);
         }
         
         console.log('=== UI状态更新完成 ===');

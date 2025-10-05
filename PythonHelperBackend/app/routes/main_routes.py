@@ -110,6 +110,7 @@ def search_questions_route():
 @main_bp.route('/questions', methods=['GET'])
 def get_all_questions():
     try:
+        print('获取题目接口被调用')
         question_service = current_app.question_service
         formatted_questions = [question_service.format_question_for_display(q) for q in question_service.questions_db]
         return jsonify({'questions': formatted_questions, 'count': len(formatted_questions), 'status': 'success'})

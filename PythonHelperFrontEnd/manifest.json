@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "一个帮助学习Python的Chrome插件，支持题目检索和大模型解析",
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'"
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; object-src 'self'"
   },
   "permissions": [
     "activeTab",

@@ -4,7 +4,7 @@ class ProductionConfig:
     """生产环境配置"""
     DEBUG = False
     HOST = '0.0.0.0'
-    PORT = 8888
+    PORT = 8000
 
     # 数据库文件
     MISTAKES_DB_FILE = 'mistakes.db'
@@ -59,8 +59,8 @@ class DevelopmentConfig:
     ALLOWED_EXTENSIONS = {'ppt', 'pptx', 'doc', 'docx', 'pdf'}
     QUESTIONS_DB_PATH_NEW = 'database.json'
 
-    SERVER_DOMAIN = 'localhost:5000'
-    SERVER_URL = 'http://localhost:5000'
+    SERVER_DOMAIN = 'localhost:8000'
+    SERVER_URL = 'http://localhost:8000'
 
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
     LOG_LEVEL = 'DEBUG'

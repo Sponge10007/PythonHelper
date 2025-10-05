@@ -28,6 +28,7 @@ export class DataManager {
     async loadQuestions() {
         try {
             const response = await fetch(`${BACKEND_URL}/questions`);
+            console.log('后端题目接口返回:', response);
             if (!response.ok) throw new Error('Backend request failed');
             const data = await response.json();
             this.questions = data.questions || [];
