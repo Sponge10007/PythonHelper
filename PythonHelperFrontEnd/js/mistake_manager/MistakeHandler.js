@@ -195,8 +195,7 @@ export class MistakeHandler {
         this.ui.renderMistakeList(
             pageMistakes,
             (id) => this.editMistake(id),
-            (id) => this.deleteMistake(id),
-            (id, isChecked) => this.toggleSelection(id, isChecked)
+            (id) => this.deleteMistake(id)
         );
         this.ui.updatePagination(this.currentPage, totalPages);
         
@@ -269,32 +268,99 @@ export class MistakeHandler {
     }
 
     /**
-     * 进入编辑模式
+     * 切换单个错题的选中状态
      */
-    enterEditMode() {
-        console.log('错题管理进入编辑模式');
-        this.ui.enterMistakeEditMode();
-        this.filterAndRender(); // 重新渲染以显示复选框
+    toggleMistakeSelection(mistakeId, isSelected) {
+        console.log(`切换错题 ${mistakeId} 选中状态:`, isSelected);
+        
+        if (isSelected) {
+            this.selectedMistakes.add(mistakeId);
+        } else {
+            this.selectedMistakes.delete(mistakeId);
+        }
+        
+        // 更新卡片视觉效果
+        const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistakeId}"]`);
+        if (checkbox) {
+            const card = checkbox.closest('.mistake-item');
+            if (card) {
+                if (isSelected) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            }
+        }
+        
+        this.updateSelectionUI();
+        console.log(`错题 ${mistakeId} ${isSelected ? '已选中' : '取消选中'}，当前选中数量: ${this.selectedMistakes.size}`);
     }
 
     /**
-     * 退出编辑模式
+     * 根据ID数组批量删除错题
      */
-    exitEditMode() {
-        console.log('错题管理退出编辑模式');
-        this.selectedMistakes.clear();
-        this.ui.exitMistakeEditMode();
-        this.filterAndRender(); // 重新渲染隐藏复选框
+    async batchDeleteByIds(selectedIds) {
+        try {
+            const deletePromises = selectedIds.map(id => api.deleteMistake(id));
+            await Promise.all(deletePromises);
+            
+            console.log(`成功删除 ${selectedIds.length} 个错题`);
+            
+            // 从本地数据中移除已删除的错题
+            this.allMistakes = this.allMistakes.filter(mistake => 
+                !selectedIds.includes(String(mistake.id))
+            );
+            
+            // 重新渲染
+            this.filterAndRender();
+            
+        } catch (error) {
+            console.error('批量删除失败:', error);
+            throw error;
+        }
     }
 
     /**
-     * 全选错题
+     * 初始化编辑管理器相关的回调
+     */
+    initEditCallbacks(editManager) {
+        editManager.registerCallbacks('mistake', {
+            selectAll: () => this.selectAllMistakes(),
+            deselectAll: () => this.deselectAllMistakes(),
+            batchDelete: () => this.batchDeleteSelected(),
+            render: () => this.filterAndRender()
+        });
+    }
+
+    /**
+     * 检查是否处于编辑模式
+     */
+    isInEditMode(editManager) {
+        const state = editManager.getState();
+        return state.isEditMode && state.currentType === 'mistake';
+    }
+
+    /**
+     * 全选当前页错题
      */
     selectAllMistakes() {
         const currentPageMistakes = this.getCurrentPageMistakes();
+        console.log('当前页错题:', currentPageMistakes);
+        
         currentPageMistakes.forEach(mistake => {
             this.selectedMistakes.add(mistake.id);
+            
+            // 更新视觉效果
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistake.id}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    card.classList.add('selected');
+                }
+            }
         });
+        
         this.updateSelectionUI();
         console.log(`已选择 ${this.selectedMistakes.size} 个错题`);
     }
@@ -303,6 +369,20 @@ export class MistakeHandler {
      * 取消全选错题
      */
     deselectAllMistakes() {
+        console.log('取消全选，当前选中:', this.selectedMistakes);
+        
+        // 先更新视觉效果
+        this.selectedMistakes.forEach(mistakeId => {
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistakeId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    card.classList.remove('selected');
+                }
+            }
+        });
+        
         this.selectedMistakes.clear();
         this.updateSelectionUI();
         console.log('已取消选择所有错题');
@@ -313,7 +393,7 @@ export class MistakeHandler {
      */
     async batchDeleteSelected() {
         if (this.selectedMistakes.size === 0) {
-            console.log('请先选择要删除的错题');
+            alert('请先选择要删除的错题');
             return;
         }
 
@@ -361,16 +441,25 @@ export class MistakeHandler {
         // 更新复选框状态
         const currentPageMistakes = this.getCurrentPageMistakes();
         currentPageMistakes.forEach(mistake => {
-            const checkbox = document.querySelector(`#mistake-${mistake.id} input[type="checkbox"]`);
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistake.id}"]`);
             if (checkbox) {
                 checkbox.checked = this.selectedMistakes.has(mistake.id);
+                
+                // 更新卡片视觉效果
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    if (this.selectedMistakes.has(mistake.id)) {
+                        card.classList.add('selected');
+                    } else {
+                        card.classList.remove('selected');
+                    }
+                }
             }
         });
 
-        // 更新批量删除按钮状态
-        const batchDeleteBtn = document.getElementById('batchDelete');
-        if (batchDeleteBtn) {
-            batchDeleteBtn.disabled = this.selectedMistakes.size === 0;
+        // 通知编辑管理器更新按钮状态
+        if (window.editManager) {
+            window.editManager.updateSelectedItems(Array.from(this.selectedMistakes));
         }
     }
 }

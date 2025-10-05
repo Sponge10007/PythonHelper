@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Python课程AI教学助手",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "一个帮助学习Python的Chrome插件，支持题目检索和大模型解析",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'"

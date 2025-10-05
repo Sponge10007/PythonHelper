@@ -3,6 +3,7 @@
 import { UIManager } from './UIManager.js';
 import { MistakeHandler } from './MistakeHandler.js';
 import { PPTHandler } from './PPTHandler.js';
+import { EditManager } from './EditManager.js';
 
 // 获取后端URL函数
 function getBackendUrl() {
@@ -17,6 +18,10 @@ class PageManager {
         this.ui = new UIManager();
         this.mistakeHandler = new MistakeHandler(this.ui);
         this.pptHandler = new PPTHandler(this.ui);
+        this.editManager = new EditManager();
+        
+        // 将EditManager暴露到全局，供其他模块使用
+        window.editManager = this.editManager;
         
         this.currentMode = 'mistake'; // 默认是错题模式
 
@@ -41,6 +46,17 @@ class PageManager {
             
             await this.pptHandler.init();
             console.log('PPT处理器初始化完成');
+            
+            // 初始化编辑管理器
+            this.editManager.registerHandler('mistake', {
+                batchDelete: (selectedIds) => this.mistakeHandler.batchDeleteByIds(selectedIds)
+            });
+            
+            this.editManager.registerHandler('ppt', {
+                batchDelete: (selectedIds) => this.pptHandler.batchDeleteByIds(selectedIds)
+            });
+            
+            console.log('编辑管理器初始化完成');
             
             await this.loadAllTags();
             console.log('标签加载完成');
@@ -73,17 +89,12 @@ class PageManager {
             this.mistakeHandler.sort(e.target.value);
         });
         
-        // 标签筛选事件
+        // --- 标签筛选事件 ---
         this.bindTagFilters();
-        
-        // --- 批量操作和编辑模式事件 ---
-        this.bindBatchOperations(); // 错题批量操作事件绑定
         
         // --- 分页事件 ---
         this.bindPaginationEvents();
         
-        // ... 绑定错题的批量删除、分页等按钮事件到 this.mistakeHandler 的方法
-
         // PPT搜索功能
         const pptSearchInput = document.getElementById('pptSearchInput');
         if (pptSearchInput) {
@@ -648,74 +659,6 @@ class PageManager {
         alert(`调试信息已输出到控制台\n\n当前模式: ${this.currentMode}\nPPT文件: ${this.pptHandler.allPptFiles.length}\n选中文件: ${this.pptHandler.selectedFiles.size}`);
     }
 
-    /**
-     * 绑定错题批量操作事件
-     */
-    bindBatchOperations() {
-        console.log('绑定错题批量操作事件...');
-        
-        // 错题编辑模式
-        const editMode = document.getElementById('editMode');
-        const cancelEdit = document.getElementById('cancelEdit');
-        console.log('错题编辑模式按钮:', { editMode, cancelEdit });
-        
-        if (editMode) {
-            console.log('绑定错题编辑模式事件');
-            editMode.addEventListener('click', () => {
-                console.log('进入错题编辑模式');
-                this.mistakeHandler.enterEditMode();
-            });
-        } else {
-            console.error('未找到错题编辑模式按钮');
-        }
-        
-        if (cancelEdit) {
-            console.log('绑定退出错题编辑模式事件');
-            cancelEdit.addEventListener('click', () => {
-                console.log('退出错题编辑模式');
-                this.mistakeHandler.exitEditMode();
-            });
-        } else {
-            console.error('未找到退出错题编辑模式按钮');
-        }
-
-        // 错题批量操作
-        const selectAll = document.getElementById('selectAll');
-        const deselectAll = document.getElementById('deselectAll');
-        const batchDelete = document.getElementById('batchDelete');
-        
-        console.log('错题批量操作按钮:', { selectAll, deselectAll, batchDelete });
-
-        if (selectAll) {
-            console.log('绑定全选错题事件');
-            selectAll.addEventListener('click', () => {
-                console.log('错题全选事件触发');
-                this.mistakeHandler.selectAllMistakes();
-            });
-        } else {
-            console.error('未找到全选错题按钮');
-        }
-
-        if (deselectAll) {
-            console.log('绑定取消全选错题事件');
-            deselectAll.addEventListener('click', () => {
-                console.log('错题取消全选事件触发');
-                this.mistakeHandler.deselectAllMistakes();
-            });
-        } else {
-            console.error('未找到取消全选错题按钮');
-        }
-
-        if (batchDelete) {
-            console.log('绑定批量删除错题事件');
-            batchDelete.addEventListener('click', () => {
-                console.log('错题批量删除事件触发');
-                this.mistakeHandler.batchDeleteSelected();
-            });
-        } else {
-            console.error('未找到批量删除错题按钮');
-        }
-    }
 }
 
 // 启动页面
@@ -727,10 +670,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.pptHandler = pageManager.pptHandler;
     window.mistakeHandler = pageManager.mistakeHandler;
     window.uiManager = pageManager.ui;
+    window.editManager = pageManager.editManager; // 暴露编辑管理器
     
     console.log('PPT预览功能已启用 - 调试命令:');
     console.log('- pageManager: 主页面管理器');
     console.log('- pptHandler: PPT处理器');  
     console.log('- uiManager: UI管理器');
+    console.log('- editManager: 编辑管理器');
     console.log('- 示例: await pptHandler.previewPPT(1) // 预览ID为1的PPT');
 });

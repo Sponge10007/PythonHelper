@@ -47,8 +47,7 @@ export class PPTHandler {
             this.filteredPptFiles,
             (id) => this.previewPPT(id),
             (id) => this.downloadPPT(id),
-            (id) => this.deletePPT(id),
-            (id) => this.toggleSelectPPT(id)
+            (id) => this.deletePPT(id)
         );
         this.updateStatistics();
         this.renderSelectedActions();
@@ -141,52 +140,264 @@ export class PPTHandler {
 
         // 创建预览选项窗口
         const modalHTML = `
-            <div id="previewOptionsModal" class="ppt-viewer-modal active">
-                <div class="viewer-backdrop" id="previewBackdrop"></div>
-                <div class="viewer-content" style="max-width: 500px; margin: auto; padding: 20px;">
-                    <div class="viewer-header">
-                        <div class="viewer-info">
-                            <h2 class="viewer-title">${file.original_name}</h2>
-                            <div class="viewer-subtitle">选择预览方式</div>
-                        </div>
-                        <div class="viewer-controls">
-                            <button class="btn-viewer-close" id="btnPreviewClose">×</button>
-                        </div>
+            <div id="previewOptionsModal" class="preview-modal-overlay">
+                <div class="preview-modal-container">
+                    <div class="preview-modal-header">
+                        <h3 class="preview-modal-title">选择预览方式</h3>
+                        <button class="preview-modal-close" id="btnPreviewClose">×</button>
                     </div>
-                    <div class="preview-options" style="padding: 20px;">
-                        <button id="btnDownload" 
-                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer;">
-                            📄 直接下载文件
+                    <div class="preview-modal-content">
+                        <button class="preview-option-btn" id="btnDownload">
+                            <img src="../icons/download-preview.png" alt="下载" class="preview-icon">
+                            <span class="preview-text">直接下载文件</span>
                         </button>
                         
                         ${fileType === 'pdf' ? `
-                        <button id="btnPdfViewer" 
-                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">
-                            📋 浏览器内置PDF查看器
+                        <button class="preview-option-btn" id="btnPdfViewer">
+                            <img src="../icons/preview.png" alt="预览" class="preview-icon">
+                            <span class="preview-text">浏览器内置PDF查看器</span>
                         </button>
-                        <button id="btnGoogleDocsPdf" 
-                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #28a745; color: white; border-radius: 4px; cursor: pointer;">
-                            🌐 Google Docs 在线查看
+                        <button class="preview-option-btn" id="btnGoogleDocsPdf">
+                            <img src="../icons/google-docs-preview.png" alt="Google" class="preview-icon">
+                            <span class="preview-text">Google Docs 在线查看</span>
                         </button>
                         ` : ''}
                         
                         ${(fileType === 'ppt' || fileType === 'pptx') ? `
-                        <button id="btnOfficeOnline" 
-                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #fd7e14; color: white; border-radius: 4px; cursor: pointer;">
-                            📊 Office Online 查看器
+                        <button class="preview-option-btn" id="btnOfficeOnline">
+                            <img src="../icons/office-online-preview.png" alt="Office" class="preview-icon">
+                            <span class="preview-text">Office Online 查看器</span>
                         </button>
-                        <button id="btnGoogleDocsPpt" 
-                                style="width: 100%; padding: 12px; margin: 8px 0; border: none; background: #28a745; color: white; border-radius: 4px; cursor: pointer;">
-                            🌐 Google Docs 在线查看
+                        <button class="preview-option-btn" id="btnGoogleDocsPpt">
+                            <img src="../icons/google-docs-preview.png" alt="Google" class="preview-icon">
+                            <span class="preview-text">Google Docs 在线查看</span>
                         </button>
                         ` : ''}
 
-                        <div style="margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 4px; font-size: 14px; color: #6c757d;">
-                            💡 提示：如果在线查看器无法使用，请直接下载文件用本地软件打开
+                        <div class="preview-tip">
+                            <span>提示：如果在线查看器无法使用，请直接下载文件用本地软件打开</span>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <style>
+                .preview-modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    backdrop-filter: blur(4px);
+                }
+                
+                .preview-modal-container {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                    border-radius: 12px;
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+                    width: 420px;
+                    max-width: 90vw;
+                    max-height: 85vh;
+                    overflow: hidden;
+                    animation: modalSlideIn 0.3s ease-out;
+                }
+                
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.9) translateY(-15px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                }
+                
+                @keyframes modalSlideOut {
+                    from {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: scale(0.9) translateY(-15px);
+                    }
+                }
+                
+                .preview-modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 18px 22px 15px;
+                    background: white;
+                    color: black;
+                    position: relative;
+                }
+                
+                .preview-modal-header::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: rgba(255, 255, 255, 0.2);
+                }
+                
+                .preview-modal-title {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    letter-spacing: 0.3px;
+                }
+                
+                .preview-modal-close {
+                    background: rgba(255, 255, 255, 0.2);
+                    border: none;
+                    color: white;
+                    font-size: 20px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
+                }
+                
+                .preview-modal-close:hover {
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: scale(1.1);
+                }
+                
+                .preview-modal-content {
+                    padding: 18px 22px 20px;
+                }
+                
+                .preview-option-btn {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    padding: 12px 16px;
+                    margin: 6px 0;
+                    border: 1px solid #e9ecef;
+                    background: #ffffff;
+                    color: #333;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-align: left;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .preview-option-btn::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(122, 55, 151, 0.08), transparent);
+                    transition: left 0.4s;
+                }
+                
+                .preview-option-btn:hover {
+                    border-color: #7A3797;
+                    background: #f8f9ff;
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(122, 55, 151, 0.12);
+                }
+                
+                .preview-option-btn:hover::before {
+                    left: 100%;
+                }
+                
+                .preview-option-btn:active {
+                    transform: translateY(0);
+                    box-shadow: 0 3px 12px rgba(122, 55, 151, 0.15);
+                }
+                
+                .preview-icon {
+                    width: 20px;
+                    height: 20px;
+                    margin-right: 12px;
+                    flex-shrink: 0;
+                    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
+                }
+                
+                .preview-text {
+                    font-size: 15px;
+                    font-weight: 500;
+                    color: #333;
+                    flex: 1;
+                }
+                
+                .preview-tip {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    padding: 12px 16px;
+                    margin: 12px 0 0;
+                    border: 1px solid #e9ecef;
+                    background: #7a3898;
+                    color: #ffffffff;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    text-align: center;
+                    line-height: 1.4;
+                }
+                
+                .tip-icon {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 8px;
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+                
+                /* 响应式设计 */
+                @media (max-width: 768px) {
+                    .preview-modal-container {
+                        width: 95vw;
+                        margin: 8px;
+                        border-radius: 10px;
+                    }
+                    
+                    .preview-modal-header {
+                        padding: 16px 18px 12px;
+                    }
+                    
+                    .preview-modal-title {
+                        font-size: 16px;
+                    }
+                    
+                    .preview-modal-content {
+                        padding: 16px 18px 18px;
+                    }
+                    
+                    .preview-option-btn {
+                        padding: 10px 14px;
+                        margin: 5px 0;
+                    }
+                    
+                    .preview-text {
+                        font-size: 14px;
+                    }
+                    
+                    .preview-icon {
+                        width: 18px;
+                        height: 18px;
+                        margin-right: 10px;
+                    }
+                }
+            </style>
         `;
 
         // 添加到页面
@@ -202,12 +413,19 @@ export class PPTHandler {
     bindPreviewEvents(file, fileUrl, fileType) {
         const closeModal = () => {
             const modal = document.getElementById('previewOptionsModal');
-            if (modal) modal.remove();
+            if (modal) {
+                modal.style.animation = 'modalSlideOut 0.2s ease-in';
+                setTimeout(() => modal.remove(), 200);
+            }
         };
 
         // 关闭按钮和背景点击
         document.getElementById('btnPreviewClose')?.addEventListener('click', closeModal);
-        document.getElementById('previewBackdrop')?.addEventListener('click', closeModal);
+        document.querySelector('.preview-modal-overlay')?.addEventListener('click', (e) => {
+            if (e.target.classList.contains('preview-modal-overlay')) {
+                closeModal();
+            }
+        });
 
         // 下载按钮
         document.getElementById('btnDownload')?.addEventListener('click', () => {
@@ -370,65 +588,150 @@ export class PPTHandler {
     }
 
     /**
-     * 更新所有复选框状态
+     * 更新复选框状态
      */
     updateCheckboxes() {
-        const checkboxes = document.querySelectorAll('.ppt-checkbox');
-        checkboxes.forEach(checkbox => {
-            const pptId = String(checkbox.getAttribute('data-ppt-id'));
-            const isSelected = this.selectedFiles.has(pptId);
-            checkbox.checked = isSelected;
-            
-            // 更新PPT卡片的选中状态样式
-            const pptCard = checkbox.closest('.ppt-card');
-            if (pptCard) {
-                if (isSelected) {
-                    pptCard.classList.add('selected');
-                } else {
-                    pptCard.classList.remove('selected');
+        // 更新复选框
+        this.filteredPptFiles.forEach(file => {
+            const checkbox = document.querySelector(`input[data-ppt-id="${file.id}"]`);
+            if (checkbox) {
+                const isSelected = this.selectedFiles.has(String(file.id));
+                checkbox.checked = isSelected;
+                
+                // 更新PPT卡片的选中状态样式
+                const pptCard = checkbox.closest('.ppt-card');
+                if (pptCard) {
+                    if (isSelected) {
+                        pptCard.classList.add('selected');
+                    } else {
+                        pptCard.classList.remove('selected');
+                    }
                 }
             }
+        });
+
+        // 通知编辑管理器更新按钮状态
+        if (window.editManager) {
+            window.editManager.updateSelectedItems(Array.from(this.selectedFiles));
+        }
+    }
+
+    /**
+     * 切换单个PPT的选中状态
+     */
+    togglePPTSelection(pptId, isSelected) {
+        const idStr = String(pptId);
+        console.log(`切换PPT ${pptId} 选中状态:`, isSelected);
+        
+        if (isSelected) {
+            this.selectedFiles.add(idStr);
+        } else {
+            this.selectedFiles.delete(idStr);
+        }
+        
+        // 更新卡片视觉效果
+        const pptCard = document.querySelector(`[data-ppt-id="${pptId}"]`);
+        if (pptCard) {
+            if (isSelected) {
+                pptCard.classList.add('selected');
+            } else {
+                pptCard.classList.remove('selected');
+            }
+        }
+        
+        this.updateCheckboxes();
+        console.log(`PPT ${pptId} ${isSelected ? '已选中' : '取消选中'}，当前选中数量: ${this.selectedFiles.size}`);
+    }
+
+    /**
+     * 根据ID数组批量删除PPT文件
+     */
+    async batchDeleteByIds(selectedIds) {
+        try {
+            this.ui.showLoading('正在删除文件...');
+            
+            const result = await api.batchDeletePPTFiles(selectedIds);
+            
+            this.ui.hideLoading();
+            console.log(`成功删除 ${result.success || selectedIds.length} 个文件`);
+            
+            // 刷新列表
+            await this.init();
+            
+        } catch (error) {
+            console.error('批量删除失败:', error);
+            this.ui.hideLoading();
+            throw error;
+        }
+    }
+
+    /**
+     * 初始化编辑管理器相关的回调
+     */
+    initEditCallbacks(editManager) {
+        editManager.registerCallbacks('ppt', {
+            selectAll: () => this.selectAllFiles(),
+            deselectAll: () => this.deselectAllFiles(),
+            batchDelete: () => this.batchDeleteSelected(),
+            render: () => this.renderPPTFiles()
         });
     }
 
     /**
-     * 进入编辑模式
+     * 检查是否处于编辑模式
      */
-    enterEditMode() {
-        this.selectedFiles.clear();
-        document.querySelector('.ppt-grid').classList.add('edit-mode');
-        this.updateCheckboxes();
-        this.renderSelectedActions();
-    }
-
-    /**
-     * 退出编辑模式
-     */
-    exitEditMode() {
-        this.selectedFiles.clear();
-        document.querySelector('.ppt-grid').classList.remove('edit-mode');
-        this.updateCheckboxes();
-        this.renderSelectedActions();
+    isInEditMode(editManager) {
+        const state = editManager.getState();
+        return state.isEditMode && state.currentType === 'ppt';
     }
 
     /**
      * 选择所有当前页的文件
      */
     selectAllFiles() {
+        console.log('当前页PPT文件:', this.filteredPptFiles);
+        
         this.filteredPptFiles.forEach(file => {
             this.selectedFiles.add(String(file.id));
+            
+            // 更新视觉效果
+            const checkbox = document.querySelector(`input[data-ppt-id="${file.id}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+            
+            const pptCard = document.querySelector(`[data-ppt-id="${file.id}"]`);
+            if (pptCard) {
+                pptCard.classList.add('selected');
+            }
         });
+        
         this.updateCheckboxes();
-        this.renderSelectedActions();
+        console.log(`已选择 ${this.selectedFiles.size} 个PPT文件`);
     }
 
     /**
      * 取消选择所有文件
      */
     deselectAllFiles() {
+        console.log('取消全选PPT，当前选中:', this.selectedFiles);
+        
+        // 先更新视觉效果
+        this.selectedFiles.forEach(fileId => {
+            const checkbox = document.querySelector(`input[data-ppt-id="${fileId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            const pptCard = document.querySelector(`[data-ppt-id="${fileId}"]`);
+            if (pptCard) {
+                pptCard.classList.remove('selected');
+            }
+        });
+        
         this.selectedFiles.clear();
         this.updateCheckboxes();
-        this.renderSelectedActions();
+        console.log('已取消选择所有PPT文件');
     }
 
     /**
@@ -436,7 +739,7 @@ export class PPTHandler {
      */
     async batchDeleteSelected() {
         if (this.selectedFiles.size === 0) {
-            console.log('请先选择要删除的文件');
+            alert('请先选择要删除的文件');
             return;
         }
 

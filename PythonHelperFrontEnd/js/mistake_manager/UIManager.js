@@ -59,7 +59,7 @@ export class UIManager {
         }
     }
 
-    renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
+    renderMistakeList(mistakes, onEdit, onDelete) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
             this.mistakeList.innerHTML = `<div class="no-mistakes">暂无错题记录</div>`;
@@ -69,14 +69,20 @@ export class UIManager {
             const mistakeElement = this.createMistakeElement(mistake);
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
-            mistakeElement.querySelector('.mistake-checkbox').addEventListener('change', (e) => onToggleSelect(mistake.id, e.target.checked));
+            
             this.mistakeList.appendChild(mistakeElement);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('mistake'), 0);
+        }
     }
 
     createMistakeElement(mistake) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
+        div.id = `mistake-${mistake.id}`; // 添加ID以便选择
         
         // 处理标签显示 - 只使用新的标签数组格式
         const tagsToShow = [];
@@ -288,7 +294,7 @@ export class UIManager {
     // PPT 预览相关 UI 方法
     // ================================
 
-    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onToggleSelect) {
+    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
             
@@ -302,15 +308,18 @@ export class UIManager {
             const previewBtn = pptCard.querySelector('.btn-preview');
             const downloadBtn = pptCard.querySelector('.btn-download');
             const deleteBtn = pptCard.querySelector('.btn-delete');
-            const selectCheckbox = pptCard.querySelector('.ppt-checkbox');
 
             if (previewBtn) previewBtn.addEventListener('click', () => onPreview(ppt.id));
             if (downloadBtn) downloadBtn.addEventListener('click', () => onDownload(ppt.id));
             if (deleteBtn) deleteBtn.addEventListener('click', () => onDelete(ppt.id));
-            if (selectCheckbox) selectCheckbox.addEventListener('change', (e) => onToggleSelect(ppt.id));
 
             this.pptGrid.appendChild(pptCard);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('ppt'), 0);
+        }
     }
     
     createPPTCardElement(ppt) {
@@ -1107,28 +1116,16 @@ export class UIManager {
     }
 
     /**
-     * 进入错题编辑模式
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
      */
     enterMistakeEditMode() {
-        const editModeBtn = document.getElementById('editMode');
-        const batchActions = document.getElementById('batchActions');
-        
-        if (editModeBtn) editModeBtn.style.display = 'none';
-        if (batchActions) batchActions.style.display = 'flex';
-        
-        console.log('UI进入错题编辑模式');
+        console.log('UIManager: enterMistakeEditMode 已被 EditManager 替代');
     }
 
     /**
-     * 退出错题编辑模式
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
      */
     exitMistakeEditMode() {
-        const editModeBtn = document.getElementById('editMode');
-        const batchActions = document.getElementById('batchActions');
-        
-        if (editModeBtn) editModeBtn.style.display = 'inline-block';
-        if (batchActions) batchActions.style.display = 'none';
-        
-        console.log('UI退出错题编辑模式');
+        console.log('UIManager: exitMistakeEditMode 已被 EditManager 替代');
     }
 }
