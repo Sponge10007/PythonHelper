@@ -180,6 +180,16 @@ html, body {
   position: relative;
   cursor: pointer;
 }
+
+/* 禁用状态样式 */
+.icon-group-top-btn:disabled,
+.icon-group-top-btn[style*="opacity: 0.3"] {
+  opacity: 0.3 !important;
+  filter: grayscale(100%);
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
 .icon-group-top-btn::after {
   content: attr(data-tip);
   position: absolute;
@@ -252,13 +262,13 @@ html, body {
 
 .user-message { align-self: flex-end; flex-direction: row-reverse; }
 .user-message .message-avatar { background-color: #cce5ff; color: #004085; }
-.user-message .message-content { background-color: #ffffff; border: 1px solid #e0e0e0; }
+.user-message .message-content { background-color: #7a3898; color: white; border: 1px solid #7a3898; }
 
 .assistant-message { align-self: flex-start; }
 .assistant-message .message-avatar {
     background-image: url('../icons/logo.png'); background-size: cover; background-position: center; 
     background-color: #e0d8ff; color: #6a0dad; }
-.assistant-message .message-content { background-color: #6a0dad; color: white; }
+.assistant-message .message-content { background-color: #ffffff; color: #333; border: 1px solid #e0e0e0; }
 
 .assistant-message .message-bubble-container {
     position: relative;
@@ -396,9 +406,50 @@ html, body {
 .input-form { display: flex; align-items: center; gap: 10px; }
 .input-form textarea { flex-grow: 1; border: 1px solid #e0e0e0; background-color: white; padding: 15px 20px; border-radius: 28px; font-size: 14px; color: #545454; resize: none; max-height: 120px; font-family: inherit; }
 .input-form textarea:focus { outline: none; border-color: #8a2be2; box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2); }
-.send-btn { border: none; background-color: #6a0dad; color: white; width: 52px; height: 52px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; transition: background-color 0.2s; }
-.send-btn:hover { background-color: #580b8e; }
-.send-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+.send-btn { 
+    border: none; 
+    background-color: transparent; 
+    color: white; 
+    width: 30px; 
+    height: 30px; 
+    border-radius: 50%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+    flex-shrink: 0; 
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    /* 默认背景图片 */
+    background-image: url('../icons/send.png');
+    background-size: 30px 30px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* 就绪状态 - 显示发送图标 */
+.send-btn.ready {
+    background-image: url('../icons/send.png');
+}
+
+/* 加载状态 - 显示暂停图标 */
+.send-btn.loading {
+    background-image: url('../icons/pause.png');
+    opacity: 0.7;
+}
+
+/* 悬浮效果 */
+.send-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+/* 禁用状态 */
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
 
 /* --- Settings & Mistakes View --- */
 .settings-container { padding: 20px; overflow-y: auto; }
@@ -469,8 +520,8 @@ html, body {
 }
 
 .auth-tab.active {
-    color: #007bff;
-    border-bottom-color: #007bff;
+    color: #7a3898;
+    border-bottom-color: #7a3898;
 }
 
 .auth-tab:hover {
@@ -510,8 +561,8 @@ html, body {
 
 .form-group input:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    border-color: #7a3898;
+    box-shadow: 0 0 0 2px rgba(122, 56, 152, 0.1);
 }
 
 .verification-group .verification-input {
@@ -561,7 +612,7 @@ html, body {
 }
 
 .auth-submit-btn:hover {
-    background-color: #0056b3;
+    background-color: #5d2a75;
 }
 
 .auth-submit-btn:disabled {
@@ -627,6 +678,15 @@ html, body {
 
 .user-avatar {
     margin-bottom: 20px;
+    text-align: center;
+}
+
+.user-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #667eea;
 }
 
 .user-avatar .material-symbols-outlined {

@@ -38,6 +38,11 @@ class SidebarManager {
         this.setupMessageListener();
         // 检查登录状态
         await this.checkLoginStatus();
+        
+        // 初始化发送按钮状态
+        if (this.ui.sendMessageBtn) {
+            this.ui.sendMessageBtn.classList.add('ready');
+        }
     }
 
     setupMessageListener() {
@@ -137,8 +142,15 @@ class SidebarManager {
         }
         
         // --- 登录按钮事件绑定 ---
+        const loginBtn = document.getElementById('loginBtn');
         const userBtn = document.getElementById('userBtn');
         const loginFromSidebar = document.getElementById('loginFromSidebar');
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.handleLogin();
+            });
+        }
         
         if (userBtn) {
             userBtn.addEventListener('click', () => {
@@ -271,9 +283,21 @@ class SidebarManager {
             console.log('解析的登录状态:', { isLoggedIn, userEmail });
             
             this.updateUIBasedOnLoginStatus(isLoggedIn, userEmail);
+            
+            // 新增：如果用户未登录，自动跳转到登录页面
+            if (!isLoggedIn) {
+                console.log('用户未登录，自动跳转到登录页面');
+                setTimeout(() => {
+                    this.ui.showView(this.ui.loginInterface);
+                }, 500); // 延迟500ms以确保UI初始化完成
+            }
         } catch (error) {
             console.error('检查登录状态失败:', error);
             this.updateUIBasedOnLoginStatus(false, null);
+            // 出错时也跳转到登录页面
+            setTimeout(() => {
+                this.ui.showView(this.ui.loginInterface);
+            }, 500);
         }
         console.log('=== 登录状态检查完成 ===');
     }
@@ -294,7 +318,7 @@ class SidebarManager {
             'mistakesBtn', 'settingsBtn', 'ptaBtn', 
             'openMistakeManagerBtn', 'toggleChatListBtn',
             'ReportBtn', 'newChatBtn', 'memoryManageBtn',
-            'enterMistakeModeBtn', 'saveSelectionBtn'
+            'enterMistakeModeBtn', 'saveSelectionBtn', 'jumpwebpageBtn'
         ];
         
         // 聊天相关按钮（单独处理）
@@ -371,7 +395,7 @@ class SidebarManager {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = true;
-                    btn.style.opacity = '0.5';
+                    btn.style.opacity = '0.3';
                     btn.style.pointerEvents = 'none';
                     btn.style.filter = 'grayscale(1)'; // 添加灰度效果
                     console.log(`禁用按钮: ${btnId}`);
@@ -380,13 +404,22 @@ class SidebarManager {
                 }
             });
             
-            // 特别处理userBtn，未登录时仍可点击用于登录
+            // 特别处理userBtn和loginBtn，未登录时仍可点击用于登录
             const userBtn = document.getElementById('userBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            
             if (userBtn) {
                 userBtn.disabled = false;
                 userBtn.style.opacity = '1';
                 userBtn.style.pointerEvents = 'auto';
                 userBtn.style.filter = 'none';
+            }
+            
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.style.opacity = '1';
+                loginBtn.style.pointerEvents = 'auto';
+                loginBtn.style.filter = 'none';
             }
             
             // 重置登录按钮显示
@@ -624,9 +657,9 @@ class SidebarManager {
                 // 立即更新UI状态
                 this.updateUIBasedOnLoginStatus(true, email);
                 
-                // 等待一下然后显示用户资料界面
+                // 登录成功后跳转到主聊天界面
                 setTimeout(() => {
-                    this.showUserProfile(email);
+                    this.ui.showView(this.ui.chatInterface);
                 }, 1500);
             } else {
                 this.showAuthMessage(result.message || '登录失败', 'error');

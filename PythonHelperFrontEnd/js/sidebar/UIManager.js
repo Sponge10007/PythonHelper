@@ -254,7 +254,16 @@ export class UIManager {
     
     setLoadingState(isLoading) {
         this.sendMessageBtn.disabled = isLoading;
-        this.sendMessageBtn.innerHTML = isLoading ? `<div class="loader"></div>` : `<span class="material-symbols-outlined">arrow_upward</span>`;
+        // 使用CSS类来控制背景图片，不再使用Material Icons
+        if (isLoading) {
+            this.sendMessageBtn.classList.add('loading');
+            this.sendMessageBtn.classList.remove('ready');
+        } else {
+            this.sendMessageBtn.classList.remove('loading');
+            this.sendMessageBtn.classList.add('ready');
+        }
+        // 清空按钮内容，依靠CSS背景图片
+        this.sendMessageBtn.innerHTML = '';
     }
     
     /**
