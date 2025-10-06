@@ -10,6 +10,12 @@ export class PPTHandler {
         this.uploadProgress = new Map(); // 存储上传进度
         this.thumbnailCache = new Map(); // 缩略图缓存
         this.selectedFiles = new Set(); // 选中的文件
+        
+        // 监听简单的刷新事件
+        document.addEventListener('refreshPPTList', () => {
+            console.log('PPTHandler收到刷新事件');
+            this.init();
+        });
     }
 
     async init() {
@@ -47,7 +53,8 @@ export class PPTHandler {
             this.filteredPptFiles,
             (id) => this.previewPPT(id),
             (id) => this.downloadPPT(id),
-            (id) => this.deletePPT(id)
+            (id) => this.deletePPT(id),
+            (id) => this.toggleSelectPPT(id)
         );
         this.updateStatistics();
         this.renderSelectedActions();

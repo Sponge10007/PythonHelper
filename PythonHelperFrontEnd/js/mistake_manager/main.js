@@ -47,15 +47,6 @@ class PageManager {
             await this.pptHandler.init();
             console.log('PPT处理器初始化完成');
             
-            // 初始化编辑管理器
-            this.editManager.registerHandler('mistake', {
-                batchDelete: (selectedIds) => this.mistakeHandler.batchDeleteByIds(selectedIds)
-            });
-            
-            this.editManager.registerHandler('ppt', {
-                batchDelete: (selectedIds) => this.pptHandler.batchDeleteByIds(selectedIds)
-            });
-            
             console.log('编辑管理器初始化完成');
             
             await this.loadAllTags();
@@ -665,17 +656,16 @@ class PageManager {
 document.addEventListener('DOMContentLoaded', () => {
     const pageManager = new PageManager();
     
-    // 将实例暴露到全局以便调试
+    // 将实例暴露到全局以便调试和模块间通信
     window.pageManager = pageManager;
     window.pptHandler = pageManager.pptHandler;
     window.mistakeHandler = pageManager.mistakeHandler;
     window.uiManager = pageManager.ui;
-    window.editManager = pageManager.editManager; // 暴露编辑管理器
+    window.editManager = pageManager.editManager;
     
-    console.log('PPT预览功能已启用 - 调试命令:');
+    console.log('所有管理器初始化完成');
     console.log('- pageManager: 主页面管理器');
     console.log('- pptHandler: PPT处理器');  
     console.log('- uiManager: UI管理器');
     console.log('- editManager: 编辑管理器');
-    console.log('- 示例: await pptHandler.previewPPT(1) // 预览ID为1的PPT');
 });
