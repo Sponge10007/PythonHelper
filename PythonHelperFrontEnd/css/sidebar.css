@@ -287,10 +287,12 @@ html, body {
 .message { 
     display: flex; 
     gap: 10px; 
+    width: 100%; /* 确保消息容器占满宽度 */
     max-width: 100%; /* 改为100%以充分利用空间 */
     align-items: flex-start; 
     word-wrap: break-word; /* 强制换行 */
     overflow-wrap: break-word; /* 强制换行 */
+    box-sizing: border-box; /* 确保padding和border包含在宽度内 */
 }
 .message-avatar { 
     width: 32px; 
@@ -308,10 +310,11 @@ html, body {
     border-radius: 28px; 
     font-size: 14px; 
     line-height: 1.5; 
-    max-width: calc(100% - 42px); /* 计算最大宽度，减去头像和间距 */
+    flex: 1; /* 使用flex: 1让内容区域自动填充剩余空间 */
+    min-width: 0; /* 允许缩小 */
     word-wrap: break-word; /* 强制换行 */
     overflow-wrap: break-word; /* 强制换行 */
-    min-width: 0; /* 允许缩小 */
+    box-sizing: border-box; /* 确保padding包含在宽度内 */
 }
 
 /* 改善消息内容中的段落间距 */
@@ -350,15 +353,45 @@ html, body {
 .message-content h3 { font-size: 1.1em; }
 .message-content h4 { font-size: 1.05em; }
 
-.user-message { align-self: flex-end; flex-direction: row-reverse; }
-.user-message .message-avatar { background-color: #cce5ff; color: #004085; }
-.user-message .message-content { background-color: #7a3898; color: white; border: 1px solid #7a3898; }
+.user-message { 
+    align-self: flex-end; 
+    flex-direction: row-reverse; 
+    width: 100%; /* 确保用户消息也占满宽度 */
+    max-width: 100%; /* 确保不超过容器宽度 */
+}
+.user-message .message-avatar { 
+    background-color: #cce5ff; 
+    color: #004085; 
+    flex-shrink: 0; /* 防止头像被压缩 */
+}
+.user-message .message-content { 
+    background-color: #7a3898; 
+    color: white; 
+    border: 1px solid #7a3898; 
+    flex: 1; /* 确保内容区域填充剩余空间 */
+    min-width: 0; /* 允许内容缩小 */
+}
 
-.assistant-message { align-self: flex-start; }
+.assistant-message { 
+    align-self: flex-start; 
+    width: 100%; /* 确保助手消息也占满宽度 */
+    max-width: 100%; /* 确保不超过容器宽度 */
+}
 .assistant-message .message-avatar {
-    background-image: url('../icons/logo.png'); background-size: cover; background-position: center; 
-    background-color: #e0d8ff; color: #6a0dad; }
-.assistant-message .message-content { background-color: #ffffff; color: #333; border: 1px solid #e0e0e0; }
+    background-image: url('../icons/logo.png'); 
+    background-size: cover; 
+    background-position: center; 
+    background-color: #e0d8ff; 
+    color: #6a0dad; 
+    flex-shrink: 0; /* 防止头像被压缩 */
+}
+.assistant-message .message-content { 
+    background-color: #ffffff; 
+    color: #333; 
+    border: 1px solid #e0e0e0; 
+    flex: 1; /* 确保内容区域填充剩余空间 */
+    min-width: 0; /* 允许内容缩小 */
+}
 
 .assistant-message .message-bubble-container {
     position: relative;
