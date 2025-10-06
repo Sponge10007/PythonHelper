@@ -4,11 +4,7 @@ import { UIManager } from './UIManager.js';
 import { MistakeHandler } from './MistakeHandler.js';
 import { PPTHandler } from './PPTHandler.js';
 import { EditManager } from './EditManager.js';
-
-// 获取后端URL函数
-function getBackendUrl() {
-    return 'http://localhost:5000';
-}
+import { getBackendUrl } from './backend_config.js';
 
 // 将函数添加到全局作用域，供其他模块使用
 window.getBackendUrl = getBackendUrl;
@@ -657,6 +653,40 @@ class PageManager {
         
         console.log('调试信息:', info);
         alert(`调试信息已输出到控制台\n\n当前模式: ${this.currentMode}\nPPT文件: ${this.pptHandler.allPptFiles.length}\n选中文件: ${this.pptHandler.selectedFiles.size}`);
+    }
+
+    /**
+     * 绑定标签筛选事件
+     */
+    bindTagFilters() {
+        // 标签筛选功能由UIManager.initTagFilters()处理
+        // 这里只需要确保UIManager已经初始化了标签筛选器
+        if (this.ui && this.ui.initTagFilters) {
+            // UIManager.initTagFilters() 已经在 init() 方法中调用
+            console.log('标签筛选事件已绑定');
+        }
+    }
+
+    /**
+     * 绑定分页事件
+     */
+    bindPaginationEvents() {
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', () => {
+                this.mistakeHandler.previousPage();
+            });
+        }
+
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', () => {
+                this.mistakeHandler.nextPage();
+            });
+        }
+
+        console.log('分页事件已绑定');
     }
 
 }

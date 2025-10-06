@@ -1,6 +1,8 @@
 // js/mistake_manager/PPTViewer.js
 // 高级PPT查看器，支持左滑右滑、缩放等操作
 
+import { getBackendUrl } from './backend_config.js';
+
 export class PPTViewer {
     constructor() {
         this.currentFile = null;

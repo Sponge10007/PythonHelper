@@ -1,6 +1,7 @@
 // js/mistake_manager/PPTHandler.js
 
 import * as api from '../common/api.js';
+import { getBackendUrl } from './backend_config.js';
 
 export class PPTHandler {
     constructor(uiManager) {

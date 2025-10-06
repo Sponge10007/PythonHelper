@@ -1,5 +1,7 @@
 // js/mistake_manager/UIManager.js
 
+import { getBackendUrl } from './backend_config.js';
+
 export class UIManager {
     constructor() {
         this.mistakeList = document.getElementById('mistakeList');
