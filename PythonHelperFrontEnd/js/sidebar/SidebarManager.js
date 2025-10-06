@@ -830,6 +830,7 @@ class SidebarManager {
                 body: JSON.stringify({ email, type: 'register' })
             });
             
+            console.log('发送验证码接口返回:', response);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }

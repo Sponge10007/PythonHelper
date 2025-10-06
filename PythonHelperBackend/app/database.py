@@ -2,6 +2,9 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import List, Dict, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 全局数据库实例
 _db_instance = None
@@ -30,6 +33,7 @@ class Database:
 
     def init_database(self):
         """初始化数据库表结构"""
+        logger.info("初始化数据库表结构")
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -152,6 +156,17 @@ class Database:
                            DATETIME
                        )
                        ''')
+
+        # 待验证用户表（用于存储验证码）
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS pending_verifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                verification_code TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
         conn.commit()
         conn.close()
