@@ -1079,6 +1079,8 @@ body {
     overflow-y: auto;
 }
 
+/* 其他样式... */
+
 .mistake-message {
     margin-bottom: 8px;
 }

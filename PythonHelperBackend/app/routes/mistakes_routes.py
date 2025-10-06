@@ -14,13 +14,13 @@ def get_mistakes():
     # ... (此路由内容与原代码相同)
     try:
         rows = get_db().execute(
-            'SELECT id, title, messages, tags, category, difficulty, date, ai_summary FROM mistakes ORDER BY date DESC').fetchall()
+            'SELECT id, title, messages, tags, category, difficulty, date FROM mistakes ORDER BY date DESC').fetchall()
         mistakes = [{
             'id': row['id'], 'title': row['title'],
             'messages': parse_json_field(row['messages'], []),
             'tags': parse_json_field(row['tags'], []),
             'category': row['category'], 'difficulty': row['difficulty'],
-            'date': row['date'], 'aiSummary': row['ai_summary'] or ''
+            'date': row['date']
         } for row in rows]
         return jsonify({'mistakes': mistakes})
     except Exception as e:
@@ -38,13 +38,12 @@ def save_mistakes():
         cursor.execute('DELETE FROM mistakes')
         for m in mistakes:
             cursor.execute('''
-                           INSERT INTO mistakes (id, title, messages, tags, category, difficulty, date, ai_summary)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                           INSERT INTO mistakes (id, title, messages, tags, category, difficulty, date)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)
                            ''', (
                                m.get('id'), m.get('title', ''), json.dumps(m.get('messages', []), ensure_ascii=False),
                                json.dumps(m.get('tags', []), ensure_ascii=False), m.get('category', ''),
-                               m.get('difficulty', ''), m.get('date', datetime.now().isoformat()),
-                               m.get('aiSummary', '')
+                               m.get('difficulty', ''), m.get('date', datetime.now().isoformat())
                            ))
         db.commit()
         logger.info(f"成功保存 {len(mistakes)} 个错题")
@@ -68,13 +67,12 @@ def update_mistake(mistake_id):
                        messages   = ?,
                        tags       = ?,
                        category   = ?,
-                       difficulty = ?,
-                       ai_summary = ?
+                       difficulty = ?
                    WHERE id = ?
                    ''', (
                        data.get('title', ''), json.dumps(data.get('messages', []), ensure_ascii=False),
                        json.dumps(data.get('tags', []), ensure_ascii=False), data.get('category', ''),
-                       data.get('difficulty', ''), data.get('aiSummary', ''), mistake_id
+                       data.get('difficulty', ''), mistake_id
                    ))
         db.commit()
         logger.info(f"成功更新错题 ID: {mistake_id}")

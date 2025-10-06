@@ -72,6 +72,14 @@ export class UIManager {
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
             
+            // 添加折叠功能的事件绑定
+            const toggleButton = mistakeElement.querySelector('.analysis-toggle');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    this.toggleAnalysis(e.target);
+                });
+            }
+            
             this.mistakeList.appendChild(mistakeElement);
         });
         
@@ -151,6 +159,35 @@ export class UIManager {
             </div>
         `;
         return div;
+    }
+
+    /**
+     * 切换解析内容的展开/收起状态
+     * @param {HTMLElement} button - 点击的按钮元素
+     */
+    toggleAnalysis(button) {
+        const targetId = button.getAttribute('data-target');
+        const content = document.getElementById(targetId);
+        const isExpanded = button.getAttribute('data-expanded') === 'true';
+        
+        if (!content) {
+            console.error('找不到目标内容元素:', targetId);
+            return;
+        }
+        
+        if (isExpanded) {
+            // 收起内容
+            content.style.display = 'none';
+            button.setAttribute('data-expanded', 'false');
+            button.querySelector('.analysis-toggle-text').textContent = '展开解析';
+            button.querySelector('.analysis-toggle-icon').textContent = '▼';
+        } else {
+            // 展开内容
+            content.style.display = 'block';
+            button.setAttribute('data-expanded', 'true');
+            button.querySelector('.analysis-toggle-text').textContent = '收起解析';
+            button.querySelector('.analysis-toggle-icon').textContent = '▲';
+        }
     }
 
     // isLessonTag(tag) {
