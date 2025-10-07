@@ -156,23 +156,27 @@ export class UIManager {
      * @param {HTMLElement} element - The element to render math in.
      */
     renderMathInElement(element) {
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise([element]).catch((err) =>
-                console.log('MathJax typesetting error:', err)
-            );
-        } else if (window.MathJax && window.MathJax.Hub) {
-            // 兼容MathJax v2
-            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
-        } else {
-            console.warn('MathJax not loaded or typesetPromise method not available');
-        }
+        // 使用setTimeout确保DOM更新完成后再渲染
+        setTimeout(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // 使用MathJax v3的typesetPromise方法
+                window.MathJax.typesetPromise([element]).catch((err) =>
+                    console.log('MathJax typesetting error:', err)
+                );
+            } else if (window.MathJax && window.MathJax.Hub) {
+                // 兼容MathJax v2
+                window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
+            } else {
+                console.warn('MathJax not loaded, waiting for it to be available...');
+                // 如果MathJax还没加载完成，等待一段时间后重试
+                setTimeout(() => {
+                    this.renderMathInElement(element);
+                }, 100);
+            }
+        }, 10);
     }
 
-    /**
-     * 格式化消息内容，处理markdown代码块
-     * @param {string} content - 原始消息内容
-     * @returns {string} - 格式化后的HTML内容
-     */
+
  /**
      * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
      * @param {string} content - 原始消息内容
@@ -204,23 +208,25 @@ export class UIManager {
         // 处理行内代码 (`code`)
         formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
         
-        // 改进的换行处理：
-        // 1. 先将3个或更多连续换行替换为2个换行（限制最大空行）
-        formattedContent = formattedContent.replace(/\n{3,}/g, '\n\n');
-        // 2. 将2个连续换行替换为段落分隔
-        formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
-        // 3. 将单个换行替换为<br>
+        // 全新的换行处理策略：最小化空行
+        // 1. 将所有连续换行（2个或更多）替换为单个换行
+        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
+        // 2. 将单个换行替换为<br>，但只在非空行之间
         formattedContent = formattedContent.replace(/\n/g, '<br>');
-        // 4. 包装在段落标签中
-        formattedContent = '<p>' + formattedContent + '</p>';
-        // 5. 清理空段落
-        formattedContent = formattedContent.replace(/<p><\/p>/g, '').replace(/<p><br><\/p>/g, '');
+        // 3. 包装整个内容在一个段落中，避免段落间距问题
+        formattedContent = `<p>${formattedContent}</p>`;
+        // 4. 清理多余的空格和换行
+        formattedContent = formattedContent
+            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
+            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
+            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
+            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
 
-        // 3. 恢复LaTeX公式
+        // 3. 恢复LaTeX公式，让MathJax处理渲染
         formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
             return latexPlaceholders[parseInt(index, 10)];
         });
-        console.log(formattedContent)
+        
         return formattedContent;
     }
     /**

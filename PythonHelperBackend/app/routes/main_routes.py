@@ -86,7 +86,7 @@ def ai_chat():
         
         # 使用新的持久记忆API调用
         response = call_ai_api_with_memory(messages, api_key, api_endpoint, system)
-        print(response)
+        # print(response)
         return jsonify({'response': response, 'status': 'success'})
     except Exception as e:
         logger.error(f"AI聊天接口错误: {e}")

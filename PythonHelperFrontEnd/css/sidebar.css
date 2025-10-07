@@ -317,15 +317,49 @@ html, body {
     box-sizing: border-box; /* 确保padding包含在宽度内 */
 }
 
-/* 改善消息内容中的段落间距 */
+/* 最小化消息内容中的段落间距 */
 .message-content p {
-    margin: 0 0 12px 0;
+    margin: 0; /* 完全消除段落间距 */
     word-wrap: break-word;
     overflow-wrap: break-word;
+    line-height: 1.4; /* 稍微减少行高 */
 }
 
 .message-content p:last-child {
     margin-bottom: 0;
+}
+
+/* 处理空段落，完全消除间距 */
+.message-content p:empty {
+    margin: 0;
+    height: 0;
+    line-height: 0;
+    padding: 0;
+    display: none; /* 完全隐藏空段落 */
+}
+
+/* 处理只包含空白字符的段落 */
+.message-content p:only-child:empty {
+    display: none;
+}
+
+/* 处理包含换行符的段落 */
+.message-content p:has(br:only-child) {
+    margin: 0;
+    height: 0;
+    line-height: 0;
+}
+
+/* 更严格的空段落处理 */
+.message-content p:empty,
+.message-content p:has(br:only-child),
+.message-content p:has(br:first-child:last-child) {
+    display: none;
+}
+
+/* 优化br标签的间距 */
+.message-content br {
+    line-height: 1.2;
 }
 
 /* 列表样式改善 */
