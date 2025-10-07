@@ -436,7 +436,7 @@ class PageManager {
         defaultKnowledgeTags.forEach(tag => this.tagCategories.knowledge.add(tag));
 
         // 默认难度标签
-        const defaultDifficultyTags = ['简单', '中等', '困难', '基础', '进阶', '高级'];
+        const defaultDifficultyTags = ['简单', '中等', '困难'];
         defaultDifficultyTags.forEach(tag => this.tagCategories.difficulty.add(tag));
         
         // 设置为全局变量，供UIManager使用
@@ -448,7 +448,7 @@ class PageManager {
      */
     categorizeTag(tag) {
         const courseKeywords = ['数据类型', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
-        const difficultyKeywords = ['简单', '中等', '困难', '基础', '进阶', '高级'];
+        const difficultyKeywords = ['简单', '中等', '困难'];
         
         if (courseKeywords.some(keyword => tag.includes(keyword))) {
             return 'course';

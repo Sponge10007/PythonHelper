@@ -156,7 +156,7 @@ export class PPTHandler {
                     </div>
                     <div class="preview-modal-content">
                         <button class="preview-option-btn" id="btnDownload">
-                            <img src="../icons/download-preview.png" alt="下载" class="preview-icon">
+                            <img src="../../icons/download.png" alt="下载" class="preview-icon">
                             <span class="preview-text">直接下载文件</span>
                         </button>
                         

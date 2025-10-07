@@ -393,13 +393,13 @@ export class UIManager {
             
             <div class="ppt-actions">
                 <button class="ppt-card-btn btn-preview" title="查看">
-                    <img src="../icons/preview.png" alt="查看" class="btn-icon"> 查看
+                    <img src="../../icons/preview.png" alt="查看" class="btn-icon"> 查看
                 </button>
                 <button class="ppt-card-btn btn-download" title="下载">
-                    <img src="../icons/download.png" alt="下载" class="btn-icon"> 下载
+                    <img src="../../icons/download.png" alt="下载" class="btn-icon"> 下载
                 </button>
                 <button class="ppt-card-btn btn-delete" title="删除">
-                    <img src="../icons/delete.png" alt="删除" class="btn-icon"> 删除
+                    <img src="../../icons/delete.png" alt="删除" class="btn-icon"> 删除
                 </button>
             </div>
         `;
@@ -967,7 +967,7 @@ export class UIManager {
         }
         
         // 备用：使用硬编码的难度标签
-        const difficultyTags = ['简单', '中等', '困难', '基础', '进阶', '高级'];
+        const difficultyTags = ['简单', '中等', '困难'];
         return difficultyTags.includes(tagName);
     }
 
