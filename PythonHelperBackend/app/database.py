@@ -200,10 +200,7 @@ class Database:
             # 难度标签
             ('简单', 'difficulty'),
             ('中等', 'difficulty'),
-            ('困难', 'difficulty'),
-            ('基础', 'difficulty'),
-            ('进阶', 'difficulty'),
-            ('高级', 'difficulty')
+            ('困难', 'difficulty')
         ]
         
         conn = sqlite3.connect(self.db_path)

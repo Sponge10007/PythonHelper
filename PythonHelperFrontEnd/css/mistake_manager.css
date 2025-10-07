@@ -1498,7 +1498,7 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 150px;
+    height: 220px; /* 固定高度，确保所有卡片高度一致 */
     box-sizing: border-box;
     overflow: hidden; /* 防止内容溢出 */
 }
@@ -1581,15 +1581,17 @@ body {
     box-sizing: border-box;
     width: 100%;
     min-height: 0; /* 允许flex子项收缩 */
+    overflow: hidden; /* 防止内容溢出卡片 */
 }
 
 /* PPT卡片标题样式 */
 .ppt-title {
-    font-size: 18px;
+    font-size: 16px; /* 稍微减小字体 */
     font-weight: 700;
     color: #333;
     margin-bottom: 12px;
     line-height: 1.3;
+    max-height: 42px; /* 限制标题最大高度（约2行） */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -1604,6 +1606,8 @@ body {
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 12px;
+    max-height: 50px; /* 限制标签区域最大高度 */
+    overflow: hidden; /* 隐藏超出部分 */
 }
 
 /* PPT单个标签样式 */
@@ -1673,6 +1677,13 @@ body {
     border-radius: 4px;
     border-left: 3px solid #7A3797;
     line-height: 1.4;
+    max-height: 60px; /* 限制描述区域最大高度 */
+    overflow: hidden; /* 隐藏超出部分 */
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* 最多显示3行 */
+    line-clamp: 3; /* 标准属性 */
+    -webkit-box-orient: vertical;
 }
 
 /* 按钮图标样式 */
@@ -1683,7 +1694,7 @@ body {
     vertical-align: middle;
     opacity: 0.8;
     transition: opacity 0.2s ease;
-    filter: invert(1); /* 黑白反转：背景透明，主体黑色 */
+    
     flex-shrink: 0; /* 防止图标被压缩 */
 }
 
