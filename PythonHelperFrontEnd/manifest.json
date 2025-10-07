@@ -1,6 +1,10 @@
 {
   "manifest_version": 3,
+<<<<<<< HEAD
   "name": "一站式Python课程AI教学助手",
+=======
+  "name": "一站式Python课程AI助教",
+>>>>>>> 35f7b3775f0a14b9d69702e72787ad043227eb88
   "version": "1.0.0",
   "description": "一个帮助学习Python的Chrome插件，支持题目检索和大模型解析",
   "content_security_policy": {

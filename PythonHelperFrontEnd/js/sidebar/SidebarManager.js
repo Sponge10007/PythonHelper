@@ -635,6 +635,16 @@ class SidebarManager {
         }
     }
 
+    // 显示发送信息
+    showSendMessage(message) {
+        const sendMessageEl = document.getElementById('isSendmessage');
+        if (!sendMessageEl) return;
+
+        sendMessageEl.textContent = message; 
+        sendMessageEl.classList.remove('hidden');
+    }
+
+
     // 显示认证消息
     showAuthMessage(message, type = 'info') {
         const messageEl = document.getElementById('authMessage');
@@ -840,6 +850,7 @@ class SidebarManager {
             if (result.success) {
                 this.showAuthMessage('验证码已发送到您的邮箱', 'success');
                 this.startVerificationCountdown(btn, 60);
+                this.showSendMessage('验证码已通过邮件发送，有效期10分钟');
             } else {
                 this.showAuthMessage(result.message || '发送失败，请检查邮箱地址', 'error');
                 btn.textContent = originalText;
