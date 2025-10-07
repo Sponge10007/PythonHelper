@@ -121,6 +121,70 @@ export class UIManager {
         
         return messageElement;
     }
+
+    /**
+     * 创建流式消息元素 - 用于实时更新内容
+     * @param {string} messageId - 消息ID
+     * @returns {HTMLElement} - 消息元素
+     */
+    createStreamingMessage(messageId) {
+        const element = document.createElement('div');
+        element.className = 'message assistant-message';
+        element.dataset.messageId = messageId;
+
+        element.innerHTML = `
+            <input type="checkbox" class="message-selector" title="选择此消息">
+            <div class="message-avatar"></div>
+            <div class="message-bubble-container">
+                <div class="message-content"><div class="streaming-content"></div></div>
+                <div class="message-actions" style="display: none;">
+                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
+                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                </div>
+            </div>
+        `;
+        
+        this.chatMessages.appendChild(element);
+        this.scrollToBottom();
+        return element;
+    }
+
+    /**
+     * 更新流式消息内容
+     * @param {string} messageId - 消息ID
+     * @param {string} content - 新的内容
+     */
+    updateStreamingMessage(messageId, content) {
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const contentElement = messageElement.querySelector('.streaming-content');
+        if (!contentElement) return;
+
+        // 更新内容
+        contentElement.innerHTML = this.formatMessageContent(content);
+        
+        // 重新渲染数学公式
+        this.renderMathInElement(messageElement);
+        
+        // 滚动到底部
+        this.scrollToBottom();
+    }
+
+    /**
+     * 完成流式消息 - 显示操作按钮
+     * @param {string} messageId - 消息ID
+     */
+    finishStreamingMessage(messageId) {
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const actionsElement = messageElement.querySelector('.message-actions');
+        if (actionsElement) {
+            actionsElement.style.display = 'block';
+        }
+    }
     
     createMessageElement(message) {
         const element = document.createElement('div');

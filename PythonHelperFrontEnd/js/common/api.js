@@ -5,6 +5,65 @@ const BACKEND_URL = 'http://localhost:5000';
 // const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--5000.ap-shanghai2.cloudstudio.club";
 
 /**
+ * 与AI后端进行对话 - 支持流式传输
+ * @param {Array} messages - 完整对话消息数组
+ * @param {string} apiKey - 用户的 API Key
+ * @param {string} apiEndpoint - API 端点
+ * @param {Function} onChunk - 接收流式数据的回调函数
+ * @returns {Promise<void>}
+ */
+export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChunk) {
+    const response = await fetch(`${BACKEND_URL}/ai/chat/stream`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            messages: messages,  // 发送完整对话历史
+            apiKey: apiKey,
+            apiEndpoint: apiEndpoint
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    // 处理Server-Sent Events
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        onChunk(data);
+                        
+                        // 如果传输完成，退出循环
+                        if (data.done) {
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('解析流式数据失败:', e, line);
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+}
+
+/**
  * 与AI后端进行对话 - 支持持久记忆
  * @param {Array} messages - 完整对话消息数组
  * @param {string} apiKey - 用户的 API Key

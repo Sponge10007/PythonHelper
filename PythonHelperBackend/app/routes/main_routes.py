@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify, request, current_app, send_from_directory
-# 移除: from app.services.question_service import question_service
-from app.services.ai_service import call_ai_api, call_ai_api_with_memory
+from flask import Blueprint, jsonify, request, current_app, send_from_directory, Response
+from app.services.ai_service import call_ai_api, call_ai_api_with_memory, call_ai_api_stream
 from app.database import get_db
 import logging
 import os
+import json
 
 main_bp = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
@@ -47,6 +47,9 @@ def ai_chat():
         if not messages or len(messages) == 0:
             return jsonify({'error': '消息不能为空'}), 400
             
+        # ---------测试用的API密钥!!!---------
+        api_key = 'sk-65a21105314a45a68418478323940774'
+        # ---------测试用的API密钥!!!---------
         if not api_key:
             logger.warning("未提供API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
@@ -90,6 +93,82 @@ def ai_chat():
         return jsonify({'response': response, 'status': 'success'})
     except Exception as e:
         logger.error(f"AI聊天接口错误: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@main_bp.route('/ai/chat/stream', methods=['POST'])
+def ai_chat_stream():
+    """AI聊天接口 - 支持流式传输（Server-Sent Events）"""
+    try:
+        data = request.get_json()
+        messages = data.get('messages', [])  # 接收完整对话历史
+        api_key = data.get('apiKey', '')
+        
+        if not messages or len(messages) == 0:
+            return jsonify({'error': '消息不能为空'}), 400
+            
+        if not api_key:
+            logger.warning("未提供API密钥，使用模拟回复")
+            last_message = messages[-1].get('content', '') if messages else ''
+            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
+            
+            # 模拟流式传输
+            def generate_mock_stream():
+                words = mock_response.split()
+                for i, word in enumerate(words):
+                    yield f"data: {json.dumps({'content': word + ' ', 'done': False})}\n\n"
+                    import time
+                    time.sleep(0.1)  # 模拟延迟
+                yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
+            
+            return Response(generate_mock_stream(), mimetype='text/event-stream',
+                          headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
+
+        system = data.get('system', 
+                            """
+                            #浙大python助手
+                            你是一个教导学生们学习Python的人工智能
+                            ##目标 
+                            你的目标是在不告知学生题目答案的前提下，帮助学生们梳理思路，掌握知识，来引导他们更好地学习python
+                            ##技能和流程说明
+                            1. 你需要有python相关的语法、特色知识，对python无比熟悉
+                            2. 你需要能够用精简、巧妙的方式完成代码撰写
+                            3. 第一步，你需要分析用户发来的信息是题目还是询问。
+                            4. 如果是题目，请你分析其中包含的知识点、难点。然后你需要识别用户发出的是编程题、函数题还是客观题，如果是编程题，需要给出思维导图和整体架构；如果是函数题，需要给出几个样例输入输出，实现函数变量可视化；如果是客观题，请你详细地讲一下考察知识。
+                            5. 如果是询问，请你正常的与用户进行谈话。
+                            ## 输出格式 
+                            如果对角色的输出格式有特定要求，可以在这里强调并举例说明想要的输出格式
+                            1. 请你按照以下格式输出：
+                                知识点：，
+                                难点：，
+                                整体架构：，
+                                伪代码：，
+                                样例输入输出：，
+                                考察知识解释：
+                            2. 请你给你的输出加上LaTeX数学公式,并且在公式前后加上"$$"，遵循严格的markdown格式
+                                比如，当你的输出里存在"\\(x^2 + y^2 = z^2\\)"，请你将其转换为"$$x^2 + y^2 = z^2$$"
+                            ##限制 
+                            在与用户交互的过程中涉及代码的时候，请你不要给出直接给出代码，而是给出伪代码；
+                            当用户问你选择题的题目时，请你不要将答案告诉用户，这样会让用户失去思考空间，所以在你的回答中不能出现诸如"正确答案是..."等提及题目答案的字眼。
+                            当用户询问你某道题目时，请你分析后不要告诉用户题目答案是什么（非常重要，不要给出答案）。
+                            """
+                        )
+        api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
+        
+        # 使用流式AI API调用
+        def generate_stream():
+            try:
+                for chunk in call_ai_api_stream(messages, api_key, api_endpoint, system):
+                    yield f"data: {json.dumps(chunk)}\n\n"
+            except Exception as e:
+                logger.error(f"流式AI调用错误: {e}")
+                error_chunk = {'content': f'错误: {str(e)}', 'done': True, 'error': True}
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+        
+        return Response(generate_stream(), mimetype='text/event-stream',
+                      headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
+    except Exception as e:
+        logger.error(f"AI流式聊天接口错误: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 

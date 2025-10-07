@@ -261,6 +261,11 @@ html, body {
   visibility: visible;
 }
 
+/* 隐藏设置按钮 */
+#settingsBtn {
+  display: none !important;
+}
+
 /* 按钮悬停选中效果（背景变浅） */
 .header-action-btn:hover { background-color: #e9e9e9; border-radius: 50%;}
 
@@ -466,6 +471,10 @@ html, body {
 }
 .assistant-message .action-btn .material-symbols-outlined {
     font-size: 20px;
+}
+.assistant-message .action-btn .material-symbols-outlined-settings {
+    font-size: 20px;
+    display: none;
 }
 
 /* 代码块样式 */

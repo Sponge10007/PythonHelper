@@ -104,22 +104,47 @@ export class ChatManager {
     async fetchAndDisplayAiResponse(chat) {
         this.isLoading = true;
         this.ui.setLoadingState(true);
-        const placeholder = this.ui.appendMessage({ role: 'assistant', content: '思考中...' });
+        
+        // 创建流式消息元素
+        const messageId = `msg-${Date.now()}`;
+        const streamingElement = this.ui.createStreamingMessage(messageId);
+        let accumulatedContent = '';
 
         try {
             // 在发送给AI之前，先进行记忆管理
             const managedMessages = this.manageConversationMemory(chat.messages);
             
-            const data = await api.fetchAiResponse(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint);
-            const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: data.response };
-            chat.messages.push(aiMessage);
-            
-            const finalElement = this.ui.createMessageElement(aiMessage);
-            placeholder.replaceWith(finalElement);
-            await storage.saveChats(this.chats);
+            // 使用流式API调用
+            await api.fetchAiResponseStream(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint, (chunk) => {
+                if (chunk.error) {
+                    // 处理错误
+                    accumulatedContent = chunk.content;
+                    this.ui.updateStreamingMessage(messageId, accumulatedContent);
+                    return;
+                }
+                
+                if (chunk.content) {
+                    accumulatedContent += chunk.content;
+                    this.ui.updateStreamingMessage(messageId, accumulatedContent);
+                }
+                
+                if (chunk.done) {
+                    // 流式传输完成
+                    this.ui.finishStreamingMessage(messageId);
+                    
+                    // 保存完整的AI消息到聊天记录
+                    const aiMessage = { 
+                        id: messageId, 
+                        role: 'assistant', 
+                        content: accumulatedContent 
+                    };
+                    chat.messages.push(aiMessage);
+                    storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
+                }
+            });
 
         } catch (error) {
-            console.error('AI request failed:', error);
+            console.error('AI流式请求失败:', error);
             let errorMessage = '抱歉，请求失败。';
             
             // 针对不同错误类型给出具体提示
@@ -137,8 +162,18 @@ export class ChatManager {
                 errorMessage = `❌ 请求失败: ${error.message}`;
             }
             
-            const errorElement = this.ui.createMessageElement({ role: 'assistant', content: errorMessage });
-            placeholder.replaceWith(errorElement);
+            // 更新流式消息显示错误
+            this.ui.updateStreamingMessage(messageId, errorMessage);
+            this.ui.finishStreamingMessage(messageId);
+            
+            // 保存错误消息到聊天记录
+            const errorMsg = { 
+                id: messageId, 
+                role: 'assistant', 
+                content: errorMessage 
+            };
+            chat.messages.push(errorMsg);
+            storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
         } finally {
             this.isLoading = false;
             this.ui.setLoadingState(false);
