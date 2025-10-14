@@ -475,6 +475,7 @@ assistant回答多选框样式
 .assistant-message .action-icon {
     width: 18px;
     height: 18px;
+    display: flex;
 }
 .assistant-message .action-btn .material-symbols-outlined {
     font-size: 20px;
