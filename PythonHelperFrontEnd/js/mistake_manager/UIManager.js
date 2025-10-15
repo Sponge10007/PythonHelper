@@ -116,12 +116,37 @@ export class UIManager {
             });
         }
         
-        const messagesHtml = (mistake.messages || []).map(msg => `
-            <div class="mistake-message message-${msg.role}">
-                <span class="message-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
-                <div class="message-content">${this.escapeHtml(msg.content)}</div>
-            </div>
-        `).join('');
+
+        const messagesHtml = (mistake.messages || []).map((msg, index) => {
+            // 第一条消息（用户的初始提问）不显示
+            if (index === 0 && msg.role === 'user') {
+                return '';
+            }
+            
+            // 第一条AI回答（index=1）不显示角色标签
+            if (index === 1 && msg.role === 'assistant') {
+                return `
+                    <div class="mistake-message message-${msg.role}">
+                        <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                    </div>
+                `;
+            }
+            
+            // 之后的消息显示角色标签
+            let roleText = '';
+            if (msg.role === 'user') {
+                roleText = '追问';
+            } else if (msg.role === 'assistant') {
+                roleText = '回答';
+            }
+            
+            return `
+                <div class="mistake-message message-${msg.role}">
+                    <span class="message-role">${roleText}</span>
+                    <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                </div>
+            `;
+        }).filter(html => html !== '').join(''); // 过滤掉空字符串
 
         // 使用处理后的标签数组生成HTML
         const tagsHtml = tagsToShow.length > 0 ? `
@@ -144,14 +169,14 @@ export class UIManager {
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
             ${tagsHtml}
-            <div class="analysis-collapse">
-                <button class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
+            <div class="analysis-box" id="${collapseId}">
+                <div class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
                     <span class="analysis-toggle-text">展开解析</span>
                     <span class="analysis-toggle-icon">▼</span>
-                </button>
-            </div>
-            <div class="analysis-content" id="${collapseId}" style="display: none;">
-                <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
+                <div class="analysis-content" style="display: none;">
+                    <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
             </div>
             <div class="mistake-actions">
                 <button class="edit-mistake-btn btn-secondary" data-mistake-id="${mistake.id}">编辑</button>
@@ -163,30 +188,36 @@ export class UIManager {
 
     /**
      * 切换解析内容的展开/收起状态
-     * @param {HTMLElement} button - 点击的按钮元素
+     * @param {HTMLElement} toggleElement - 点击的切换元素
      */
-    toggleAnalysis(button) {
-        const targetId = button.getAttribute('data-target');
-        const content = document.getElementById(targetId);
-        const isExpanded = button.getAttribute('data-expanded') === 'true';
+    toggleAnalysis(toggleElement) {
+        const targetId = toggleElement.getAttribute('data-target');
+        const analysisBox = document.getElementById(targetId);
+        const isExpanded = toggleElement.getAttribute('data-expanded') === 'true';
         
-        if (!content) {
+        if (!analysisBox) {
             console.error('找不到目标内容元素:', targetId);
+            return;
+        }
+        
+        const content = analysisBox.querySelector('.analysis-content');
+        if (!content) {
+            console.error('找不到解析内容元素');
             return;
         }
         
         if (isExpanded) {
             // 收起内容
             content.style.display = 'none';
-            button.setAttribute('data-expanded', 'false');
-            button.querySelector('.analysis-toggle-text').textContent = '展开解析';
-            button.querySelector('.analysis-toggle-icon').textContent = '▼';
+            toggleElement.setAttribute('data-expanded', 'false');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '展开解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▼';
         } else {
             // 展开内容
             content.style.display = 'block';
-            button.setAttribute('data-expanded', 'true');
-            button.querySelector('.analysis-toggle-text').textContent = '收起解析';
-            button.querySelector('.analysis-toggle-icon').textContent = '▲';
+            toggleElement.setAttribute('data-expanded', 'true');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '收起解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▲';
         }
     }
 
