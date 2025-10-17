@@ -692,6 +692,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
             
@@ -763,6 +764,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     password,
@@ -806,6 +808,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email })
             });
             
@@ -837,6 +840,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'register' })
             });
             
@@ -889,6 +893,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'reset' })
             });
             
@@ -954,6 +959,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     verification_code: verificationCode,

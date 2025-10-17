@@ -127,7 +127,7 @@ export class UIManager {
             if (index === 1 && msg.role === 'assistant') {
                 return `
                     <div class="mistake-message message-${msg.role}">
-                        <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                        <div class="message-content">${this.formatMessageContent(msg.content)}</div>
                     </div>
                 `;
             }
@@ -184,6 +184,59 @@ export class UIManager {
             </div>
         `;
         return div;
+    }
+
+    /**
+     * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
+
+        const latexPlaceholders = [];
+        const placeholder = "LATEX_PLACEHOLDER_";
+
+        // 1. 保护LaTeX公式块，用占位符替换
+        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+
+        // 2. 现在可以安全地处理Markdown格式了
+        // 处理代码块 (```language or ```)
+        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            const lang = language ? ` class="language-${language}"` : '';
+            return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // 处理行内代码 (`code`)
+        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 全新的换行处理策略：最小化空行
+        // 1. 将所有连续换行（2个或更多）替换为单个换行
+        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
+        // 2. 将单个换行替换为<br>，但只在非空行之间
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        // 3. 包装整个内容在一个段落中，避免段落间距问题
+        formattedContent = `<p>${formattedContent}</p>`;
+        // 4. 清理多余的空格和换行
+        formattedContent = formattedContent
+            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
+            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
+            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
+            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
+
+        // 3. 恢复LaTeX公式，让MathJax处理渲染
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        return formattedContent;
     }
 
     /**

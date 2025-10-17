@@ -61,6 +61,7 @@ export class MessageHandler {
             const response = await fetch(`${getBackendUrl()}/pta/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     rawData: capturedRawData,
                     apiKey: settings.aiApiKey,

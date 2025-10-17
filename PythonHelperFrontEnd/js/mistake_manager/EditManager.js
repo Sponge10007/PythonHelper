@@ -104,6 +104,12 @@ export class EditManager {
         if (elements.editBtn) elements.editBtn.style.display = 'none';
         if (elements.batchActions) elements.batchActions.style.display = 'flex';
         
+        // 给容器添加 edit-mode 类，显示复选框
+        const container = type === 'mistake' ? document.getElementById('mistakeList') : document.getElementById('pptGrid');
+        if (container) {
+            container.classList.add('edit-mode');
+        }
+        
         this.updateBatchDeleteButton();
         this.bindCheckboxEvents(type);
     }
@@ -122,6 +128,12 @@ export class EditManager {
         if (elements.editBtn) elements.editBtn.style.display = 'inline-block';
         if (elements.batchActions) elements.batchActions.style.display = 'none';
         
+        // 移除 edit-mode 类，隐藏复选框
+        const container = type === 'mistake' ? document.getElementById('mistakeList') : document.getElementById('pptGrid');
+        if (container) {
+            container.classList.remove('edit-mode');
+        }
+        
         this.clearAllSelections(type);
     }
     
@@ -129,11 +141,23 @@ export class EditManager {
      * 全选
      */
     selectAll(type) {
-        const checkboxes = document.querySelectorAll(`[data-${type === 'mistake' ? 'mistake' : 'ppt'}-id]`);
+        console.log(`全选 ${type}，开始查找复选框`);
+        const selector = type === 'mistake' 
+            ? 'input.mistake-checkbox[data-mistake-id]' 
+            : 'input.ppt-checkbox[data-ppt-id]';
+        const checkboxes = document.querySelectorAll(selector);
+        console.log(`找到 ${checkboxes.length} 个复选框`);
+        
         checkboxes.forEach(checkbox => {
             const itemId = checkbox.getAttribute(`data-${type === 'mistake' ? 'mistake' : 'ppt'}-id`);
             checkbox.checked = true;
             this.selectedItems.add(itemId);
+            
+            // 添加选中状态的视觉效果（给卡片添加 selected 类）
+            const card = checkbox.closest(type === 'mistake' ? '.mistake-item' : '.ppt-card');
+            if (card) {
+                card.classList.add('selected');
+            }
         });
         this.updateBatchDeleteButton();
     }
@@ -142,10 +166,22 @@ export class EditManager {
      * 取消全选
      */
     deselectAll(type) {
-        const checkboxes = document.querySelectorAll(`[data-${type === 'mistake' ? 'mistake' : 'ppt'}-id]`);
+        console.log(`取消全选 ${type}`);
+        const selector = type === 'mistake' 
+            ? 'input.mistake-checkbox[data-mistake-id]' 
+            : 'input.ppt-checkbox[data-ppt-id]';
+        const checkboxes = document.querySelectorAll(selector);
+        
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
+            
+            // 移除选中状态的视觉效果（移除卡片的 selected 类）
+            const card = checkbox.closest(type === 'mistake' ? '.mistake-item' : '.ppt-card');
+            if (card) {
+                card.classList.remove('selected');
+            }
         });
+        
         this.selectedItems.clear();
         this.updateBatchDeleteButton();
     }
@@ -200,13 +236,25 @@ export class EditManager {
     /**
      * 处理单个项目的选中状态变化
      */
-    toggleItemSelection(type, itemId, isSelected) {
+    toggleItemSelection(type, itemId, isSelected, checkbox) {
         console.log(`${type} ${itemId} 选中状态变化: ${isSelected}`);
         
         if (isSelected) {
             this.selectedItems.add(itemId);
         } else {
             this.selectedItems.delete(itemId);
+        }
+        
+        // 切换卡片的 selected 类
+        if (checkbox) {
+            const card = checkbox.closest(type === 'mistake' ? '.mistake-item' : '.ppt-card');
+            if (card) {
+                if (isSelected) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            }
         }
         
         this.updateBatchDeleteButton();
@@ -233,11 +281,21 @@ export class EditManager {
      * 绑定复选框事件
      */
     bindCheckboxEvents(type) {
-        const checkboxes = document.querySelectorAll(`[data-${type === 'mistake' ? 'mistake' : 'ppt'}-id]`);
+        const selector = type === 'mistake' 
+            ? 'input.mistake-checkbox[data-mistake-id]' 
+            : 'input.ppt-checkbox[data-ppt-id]';
+        const checkboxes = document.querySelectorAll(selector);
+        console.log(`绑定 ${type} 复选框事件，找到 ${checkboxes.length} 个复选框`);
+        
         checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
+            // 移除旧的事件监听器（如果有）
+            const newCheckbox = checkbox.cloneNode(true);
+            checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+            
+            // 添加新的事件监听器
+            newCheckbox.addEventListener('change', (e) => {
                 const itemId = e.target.getAttribute(`data-${type === 'mistake' ? 'mistake' : 'ppt'}-id`);
-                this.toggleItemSelection(type, itemId, e.target.checked);
+                this.toggleItemSelection(type, itemId, e.target.checked, e.target);
             });
         });
     }
@@ -246,9 +304,19 @@ export class EditManager {
      * 清除所有选择状态
      */
     clearAllSelections(type) {
-        const checkboxes = document.querySelectorAll(`[data-${type === 'mistake' ? 'mistake' : 'ppt'}-id]`);
+        const selector = type === 'mistake' 
+            ? 'input.mistake-checkbox[data-mistake-id]' 
+            : 'input.ppt-checkbox[data-ppt-id]';
+        const checkboxes = document.querySelectorAll(selector);
+        
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
+            
+            // 移除卡片的 selected 类
+            const card = checkbox.closest(type === 'mistake' ? '.mistake-item' : '.ppt-card');
+            if (card) {
+                card.classList.remove('selected');
+            }
         });
     }
     

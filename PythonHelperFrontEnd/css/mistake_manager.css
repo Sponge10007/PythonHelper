@@ -1031,9 +1031,9 @@ body {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #e5e5e7;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d0d0d0;
     border-radius: 4px;
     background: white;
     cursor: pointer;
@@ -1043,16 +1043,17 @@ body {
     margin-left: 8px;
     flex-shrink: 0;
     display: none; /* 默认隐藏 */
+    z-index: 10; /* 确保在最上层 */
 }
 
 /* 编辑模式下显示复选框 */
 .edit-mode .mistake-checkbox {
-    display: block;
+    display: block !important; /* 强制显示 */
 }
 
 .mistake-checkbox:hover {
     border-color: #7A3797;
-    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.15);
 }
 
 .mistake-checkbox:checked {
@@ -1067,7 +1068,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     line-height: 1;
 }
@@ -1529,29 +1530,30 @@ body {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #e5e5e7;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d0d0d0;
     border-radius: 4px;
     background: white;
     cursor: pointer;
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
     transition: all 0.2s ease;
     margin: 0;
     flex-shrink: 0;
     display: none; /* 默认隐藏 */
+    z-index: 10; /* 确保在最上层 */
 }
 
 /* 编辑模式下显示PPT复选框 */
 .edit-mode .ppt-checkbox {
-    display: block;
+    display: block !important; /* 强制显示 */
 }
 
 .ppt-checkbox:hover {
     border-color: #7A3797;
-    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.15);
 }
 
 .ppt-checkbox:checked {
@@ -1566,7 +1568,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     line-height: 1;
 }

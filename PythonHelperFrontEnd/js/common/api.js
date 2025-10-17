@@ -149,12 +149,14 @@ export async function updateMistake(mistakeId, updatedMistake) {
 // PPT 文件管理相关 API 函数
 
 /**
- * 获取所有PPT文件列表
+ * 获取所有PPT文件列表（携带session）
  * @returns {Promise<Array>} - PPT文件列表
  */
 export async function fetchPPTFiles() {
     try {
-        const response = await fetch(`${BACKEND_URL}/ppt/files`);
+        const response = await fetch(`${BACKEND_URL}/ppt/files`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             throw new Error(`获取PPT文件列表失败: ${response.status}`);
         }
@@ -235,6 +237,7 @@ export async function uploadPPTFile(file, description = '', tags = [], onProgres
 
             xhr.timeout = 300000; // 5分钟超时
             xhr.open('POST', `${BACKEND_URL}/ppt/upload`);
+            xhr.withCredentials = true;  // 携带cookie/session
             xhr.send(formData);
         });
 
@@ -256,7 +259,9 @@ export async function downloadPPTFile(pptId, filename = null) {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/download`);
+        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/download`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `下载失败: ${response.status}`);
@@ -336,6 +341,7 @@ export async function batchDeletePPTFiles(pptIds) {
         const response = await fetch(`${BACKEND_URL}/ppt/files/batch-delete`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',  // 携带cookie/session
             body: JSON.stringify({ ids: pptIds })
         });
 
