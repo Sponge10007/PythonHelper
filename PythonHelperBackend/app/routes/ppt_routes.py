@@ -14,9 +14,16 @@ logger = logging.getLogger(__name__)
 
 @ppt_bp.route('/upload', methods=['POST'])
 def upload_ppt():
-    # ... (此路由内容与原代码相同)
+    """上传PPT文件（记录用户ID）"""
+    from flask import session
     try:
-        if 'file' not in request.files: return jsonify({'error': '没有文件'}), 400
+        # 获取当前登录用户ID
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': '未登录'}), 401
+
+        if 'file' not in request.files:
+            return jsonify({'error': '没有文件'}), 400
         file = request.files['file']
         if file.filename == '' or not allowed_file(file.filename):
             return jsonify({'error': '没有选择文件或文件类型不支持'}), 400
@@ -26,26 +33,28 @@ def upload_ppt():
         file_path = os.path.join(current_app.config['PPT_UPLOAD_FOLDER'], unique_filename)
         file.save(file_path)
 
-        if not os.path.exists(file_path): raise Exception(f"文件保存失败: {file_path}")
+        if not os.path.exists(file_path):
+            raise Exception(f"文件保存失败: {file_path}")
 
         info = get_file_info(file_path)
         slides = estimate_slides_count(file_path, ext)
 
         db = get_db()
         cursor = db.execute('''
-                            INSERT INTO ppt_files (filename, original_name, file_path, file_size, file_type,
-                                                   upload_date, slides_count, description, tags)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ''', (
-                                unique_filename, file.filename, file_path, info['size'], ext,
-                                datetime.now().isoformat(),
-                                slides, request.form.get('description', ''),
-                                json.dumps(request.form.get('tags', []), ensure_ascii=False)
-                            ))
+            INSERT INTO ppt_files (filename, original_name, file_path, file_size, file_type,
+                                   upload_date, slides_count, description, tags, user_id, is_default)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        ''', (
+            unique_filename, file.filename, file_path, info['size'], ext,
+            datetime.now().isoformat(),
+            slides, request.form.get('description', ''),
+            json.dumps(request.form.get('tags', []), ensure_ascii=False),
+            user_id  # 记录用户ID
+        ))
         ppt_id = cursor.lastrowid
         db.commit()
 
-        logger.info(f"成功上传PPT文件: {file.filename}")
+        logger.info(f"用户 {user_id} 成功上传PPT文件: {file.filename}")
         return jsonify({
             'status': 'success', 'message': '文件上传成功', 'ppt_id': ppt_id,
             'filename': unique_filename, 'original_name': file.filename,
@@ -58,15 +67,36 @@ def upload_ppt():
 
 @ppt_bp.route('/files', methods=['GET'])
 def get_ppt_files():
-    # ... (此路由内容与原代码相同)
+    """获取当前用户的PPT文件列表（包括默认PPT）"""
+    from flask import session
     try:
-        rows = get_db().execute('SELECT * FROM ppt_files ORDER BY upload_date DESC').fetchall()
+        # 获取当前登录用户ID
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': '未登录'}), 401
+
+        # 查询该用户的所有PPT（包括默认的和上传的）
+        rows = get_db().execute('''
+            SELECT * FROM ppt_files
+            WHERE user_id = ?
+            ORDER BY is_default DESC, upload_date DESC
+        ''', (user_id,)).fetchall()
+
         ppt_files = [{
-            'id': r['id'], 'filename': r['filename'], 'original_name': r['original_name'],
-            'file_path': r['file_path'], 'file_size': r['file_size'], 'file_type': r['file_type'],
-            'upload_date': r['upload_date'], 'slides_count': r['slides_count'],
-            'description': r['description'] or '', 'tags': json.loads(r['tags']) if r['tags'] else []
+            'id': r['id'],
+            'filename': r['filename'],
+            'original_name': r['original_name'],
+            'file_path': r['file_path'],
+            'file_size': r['file_size'],
+            'file_type': r['file_type'],
+            'upload_date': r['upload_date'],
+            'slides_count': r['slides_count'],
+            'description': r['description'] or '',
+            'tags': json.loads(r['tags']) if r['tags'] else [],
+            'is_default': bool(r['is_default'])
         } for r in rows]
+
+        logger.info(f"用户 {user_id} 获取PPT列表，共 {len(ppt_files)} 个文件")
         return jsonify({'ppt_files': ppt_files})
     except Exception as e:
         logger.error(f"获取PPT文件失败: {e}")
@@ -217,8 +247,14 @@ def delete_ppt(ppt_id):
 
 @ppt_bp.route('/files/batch-delete', methods=['DELETE'])
 def batch_delete_ppts():
-    """批量删除PPT文件"""
+    """批量删除PPT文件（验证用户权限）"""
+    from flask import session
     try:
+        # 获取当前登录用户ID
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': '未登录'}), 401
+
         data = request.get_json()
         if not data or 'ids' not in data:
             return jsonify({'error': '请提供要删除的文件ID列表'}), 400
@@ -233,17 +269,25 @@ def batch_delete_ppts():
 
         for ppt_id in ids:
             try:
-                row = db.execute('SELECT * FROM ppt_files WHERE id = ?', (ppt_id,)).fetchone()
+                row = db.execute(
+                    'SELECT * FROM ppt_files WHERE id = ?',
+                    (ppt_id,)
+                ).fetchone()
                 if row:
+                    # 验证权限：只能删除自己的文件
+                    if row['user_id'] != user_id:
+                        error_files.append(f"无权删除文件ID {ppt_id}")
+                        continue
+
                     # 删除物理文件
                     file_path = row['file_path']
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    
+
                     # 删除数据库记录
                     db.execute('DELETE FROM ppt_files WHERE id = ?', (ppt_id,))
                     success_count += 1
-                    logger.info(f"批量删除成功: {row['original_name']}")
+                    logger.info(f"用户 {user_id} 批量删除: {row['original_name']}")
                 else:
                     error_files.append(f"文件ID {ppt_id} 不存在")
             except Exception as e:
