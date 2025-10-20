@@ -68,6 +68,19 @@ class SidebarManager {
         // 首先检查登录状态
         await this.checkLoginStatus();
         
+        /*点击空白处收回侧边栏列表的功能*/
+        this.ui.mainContent.addEventListener('click', (e) => {
+            // 只有当侧边栏展开时才执行收回操作
+            if (this.ui.isChatListExpanded()) {
+                // 检查点击的元素是否在侧边栏内部
+                const sidebarNav = this.ui.sidebarNav;
+                if (!sidebarNav.contains(e.target)) {
+                    // 点击的是侧边栏外部，收回侧边栏
+                    this.ui.hideChatList();
+                }
+            }
+        });
+        
         // --- 聊天相关事件 ---
         this.ui.welcomeScreen.querySelector('#startFirstChat').addEventListener('click', () => this.chatManager.createNewChat());
         this.ui.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.chatManager.sendMessage(this.ui.chatInput.value.trim()); });
@@ -312,13 +325,13 @@ class SidebarManager {
         // 需要登录后才能使用的按钮
         const requireLoginButtons = [
             'mistakesBtn', 'settingsBtn', 'ptaBtn', 
-            'openMistakeManagerBtn', 'toggleChatListBtn',
-            'ReportBtn', 'newChatBtn', 'memoryManageBtn',
+            /*'openMistakeManagerBtn'*/, 'toggleChatListBtn',
+            /*'ReportBtn'*/, 'newChatBtn', 'memoryManageBtn',
             'enterMistakeModeBtn', 'saveSelectionBtn', 'jumpwebpageBtn'
         ];
         
         // 聊天相关按钮（单独处理）
-        const chatButtons = ['sendMessageBtn'];
+        const chatButtons = ['sendMessage'];
         const allButtons = [...requireLoginButtons, ...chatButtons];
         
         if (isLoggedIn && userEmail) {

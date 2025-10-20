@@ -82,7 +82,7 @@ export class ChatManager {
 
     async sendMessage(messageText) {
         if (!messageText || this.isLoading || !this.currentChatId) return;
-
+        
         const chat = this.chats.find(c => c.id === this.currentChatId);
         if (!chat) return;
 
@@ -105,17 +105,31 @@ export class ChatManager {
         this.isLoading = true;
         this.ui.setLoadingState(true);
         
-        // 创建流式消息元素
         const messageId = `msg-${Date.now()}`;
+        console.log('fetchAndDisplayAiResponse', chat);
         const streamingElement = this.ui.createStreamingMessage(messageId);
+        // 创建流式消息元素
+        
         let accumulatedContent = '';
 
+        // try{
+        //     const response = await api.generateAiResponse(chat.messages);
+        //     const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: response };
+        //     chat.messages.push(aiMessage);
+        //     this.ui.appendMessage(aiMessage);
+        //     storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
+        // } catch (error) {
+        //     console.error('AI请求失败:', error);
+        //     let errorMessage = '抱歉，请求失败。';
+        //     this.ui.updateStreamingMessage(messageId, errorMessage);
+        // }
         try {
             // 在发送给AI之前，先进行记忆管理
             const managedMessages = this.manageConversationMemory(chat.messages);
-            
+            console.log('managedMessages', managedMessages);
             // 使用流式API调用
             await api.fetchAiResponseStream(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint, (chunk) => {
+                
                 if (chunk.error) {
                     // 处理错误
                     accumulatedContent = chunk.content;
@@ -125,6 +139,7 @@ export class ChatManager {
                 
                 if (chunk.content) {
                     accumulatedContent += chunk.content;
+                    // console.log('accumulatedContent', accumulatedContent);
                     this.ui.updateStreamingMessage(messageId, accumulatedContent);
                 }
                 
@@ -139,6 +154,7 @@ export class ChatManager {
                         content: accumulatedContent 
                     };
                     chat.messages.push(aiMessage);
+                    console.log('AI响应完成:', aiMessage);
                     storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
                 }
             });

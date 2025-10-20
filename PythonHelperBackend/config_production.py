@@ -4,7 +4,7 @@ class ProductionConfig:
     """生产环境配置"""
     DEBUG = False
     HOST = '0.0.0.0'
-    PORT = 8000
+    PORT = 5000
 
     # 数据库文件
     MISTAKES_DB_FILE = 'mistakes.db'

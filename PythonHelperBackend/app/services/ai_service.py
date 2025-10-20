@@ -167,6 +167,7 @@ def call_ai_api_stream(messages: List[Dict], api_key: str, api_endpoint: str, sy
         response = requests.post(api_endpoint, headers=headers, json=data, timeout=600, stream=True)
         response.raise_for_status()
         
+        logger.info("AI API流式调用成功")
         # 处理流式响应
         for line in response.iter_lines():
             if line:

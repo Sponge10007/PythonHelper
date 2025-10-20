@@ -48,10 +48,10 @@ def ai_chat():
             return jsonify({'error': '消息不能为空'}), 400
             
         # ---------测试用的API密钥!!!---------
-        api_key = 'sk-65a21105314a45a68418478323940774'
+        api_key = 'sk-5967010b633c410d8bd333ea9f01b55c'
         # ---------测试用的API密钥!!!---------
         if not api_key:
-            logger.warning("未提供API密钥，使用模拟回复")
+            logger.warning(f"API为{api_key}未提供API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
             return jsonify({'response': mock_response, 'status': 'success', 'note': '使用模拟回复，请配置API密钥'})
@@ -104,11 +104,13 @@ def ai_chat_stream():
         messages = data.get('messages', [])  # 接收完整对话历史
         api_key = data.get('apiKey', '')
         
+        api_key = 'sk-5967010b633c410d8bd333ea9f01b55c'
+
         if not messages or len(messages) == 0:
             return jsonify({'error': '消息不能为空'}), 400
             
         if not api_key:
-            logger.warning("未提供API密钥，使用模拟回复")
+            logger.warning(f"API为{api_key}未提供API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
             

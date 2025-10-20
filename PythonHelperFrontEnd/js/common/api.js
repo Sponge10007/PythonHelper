@@ -13,6 +13,7 @@ const BACKEND_URL = 'http://localhost:5000';
  * @returns {Promise<void>}
  */
 export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChunk) {
+
     const response = await fetch(`${BACKEND_URL}/ai/chat/stream`, {
         method: 'POST',
         headers: {
@@ -30,6 +31,7 @@ export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChu
         throw new Error(errData.error || `HTTP error! status: ${response.status}`);
     }
 
+    console.log('response', response);
     // 处理Server-Sent Events
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -41,17 +43,18 @@ export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChu
             
             const chunk = decoder.decode(value);
             const lines = chunk.split('\n');
-            
+            // console.log('chunk', chunk);
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     try {
                         const data = JSON.parse(line.slice(6));
                         onChunk(data);
-                        
+
                         // 如果传输完成，退出循环
                         if (data.done) {
                             return;
                         }
+                        
                     } catch (e) {
                         console.warn('解析流式数据失败:', e, line);
                     }

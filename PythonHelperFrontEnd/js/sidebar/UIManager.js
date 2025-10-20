@@ -21,8 +21,8 @@ export class UIManager {
         this.chatInput = document.getElementById('chatInput');
         this.sendMessageBtn = document.getElementById('sendMessage');
         this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
-        this.mistakeListContainer = document.getElementById('mistakeListContainer');
-        this.memoryManageBtn = document.getElementById('memoryManageBtn');
+        this.mistakeListContainer = document.getElementById('mistakeListContainer'); //侧边栏的错题列表
+        this.memoryManageBtn = document.getElementById('memoryManageBtn'); //记忆管理
     }
     
     showView(viewToShow) {
@@ -66,7 +66,15 @@ export class UIManager {
     // --- 原有的聊天UI方法保持不变 ---
     toggleChatList() {
         this.sidebarNav.classList.toggle('expanded');
-    }
+    } // 切换聊天列表展开状态
+    
+    isChatListExpanded() {
+        return this.sidebarNav.classList.contains('expanded');
+    } // 判断聊天列表是否展开
+    
+    hideChatList() {
+        this.sidebarNav.classList.remove('expanded');
+    } // 隐藏聊天列表
     
     renderChatList(chats, currentChatId, onChatSelect, onChatDelete) {
         this.chatList.innerHTML = '';
@@ -243,7 +251,7 @@ export class UIManager {
     }
 
 
- /**
+    /**
      * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
      * @param {string} content - 原始消息内容
      * @returns {string} - 格式化后的HTML内容
@@ -251,22 +259,67 @@ export class UIManager {
     formatMessageContent(content) {
         if (!content) return '';
 
+        // 保护LaTeX公式块，用占位符替换
         const latexPlaceholders = [];
         const placeholder = "LATEX_PLACEHOLDER_";
-
-        // 1. 保护LaTeX公式块，用占位符替换
-        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+        
+        // 保护块级公式 $$...$$（独占一行的公式）
+        // 修改正则表达式，确保只匹配真正的块级公式
+        let tempContent = content.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => {
+            // 过滤掉空公式
+            if (formula.trim() === '') return match;
             latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
+            return `${placeholder}${latexPlaceholders.length - 1}$$`;
         });
-        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+        console.log('块级公式'+latexPlaceholders);
+        // 保护行内公式 $...$（不独占一行的公式）
+        // 修改正则表达式，避免匹配到块级公式
+        tempContent = tempContent.replace(/\$(?!\$)([^$]*?)\$(?!\$)/g, (match) => {
             latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
+            return `$${placeholder}${latexPlaceholders.length - 1}`;
         });
+        console.log('行内公式'+latexPlaceholders);
+        
+        // 使用 marked.js 渲染 Markdown
+        let formattedContent;
+        if (window.marked) {
+            // 配置 marked 选项
+            marked.setOptions({
+                breaks: true, // 转换 \n 为 <br>
+                gfm: true,    // 启用 GitHub 风格的 Markdown
+                smartypants: true // 启用智能标点符号
+            });
+            
+            // 渲染 Markdown
+            formattedContent = marked.parse(tempContent);
+        } else {
+            // 如果 marked.js 未加载，使用简单的替换
+            console.warn('Marked.js not loaded, using fallback formatting');
+            formattedContent = this.fallbackFormat(tempContent);
+        }
 
-        // 2. 现在可以安全地处理Markdown格式了
+        // 恢复LaTeX公式，让MathJax处理渲染
+        // 行内公式恢复
+        formattedContent = formattedContent.replace(new RegExp(`\\$${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        // 块级公式恢复
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)\\$\\$`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        return formattedContent;
+    }
+
+    /**
+     * 备用格式化方法，当 marked.js 未加载时使用
+     * @param {string} content - 内容
+     * @returns {string} - 格式化后的内容
+     */
+    fallbackFormat(content) {
         // 处理代码块 (```language or ```)
-        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+        let formattedContent = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
             const lang = language ? ` class="language-${language}"` : '';
             return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
         });
@@ -274,27 +327,30 @@ export class UIManager {
         // 处理行内代码 (`code`)
         formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
         
-        // 全新的换行处理策略：最小化空行
-        // 1. 将所有连续换行（2个或更多）替换为单个换行
-        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
-        // 2. 将单个换行替换为<br>，但只在非空行之间
-        formattedContent = formattedContent.replace(/\n/g, '<br>');
-        // 3. 包装整个内容在一个段落中，避免段落间距问题
+        // 处理粗体 (**text** or __text__)
+        formattedContent = formattedContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formattedContent = formattedContent.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        
+        // 处理斜体 (*text* or _text_)
+        formattedContent = formattedContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        formattedContent = formattedContent.replace(/_(.*?)_/g, '<em>$1</em>');
+        
+        // 处理删除线 (~~text~~)
+        formattedContent = formattedContent.replace(/~~(.*?)~~/g, '<del>$1</del>');
+        
+        // 处理链接 [text](url)
+        formattedContent = formattedContent.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // 处理段落
+        formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
         formattedContent = `<p>${formattedContent}</p>`;
-        // 4. 清理多余的空格和换行
-        formattedContent = formattedContent
-            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
-            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
-            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
-            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
-
-        // 3. 恢复LaTeX公式，让MathJax处理渲染
-        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
-            return latexPlaceholders[parseInt(index, 10)];
-        });
+        
+        // 处理换行
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
         
         return formattedContent;
     }
+
     /**
      * 转义HTML特殊字符
      * @param {string} text - 需要转义的文本
