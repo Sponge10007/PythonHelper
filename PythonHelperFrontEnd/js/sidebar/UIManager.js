@@ -268,17 +268,17 @@ export class UIManager {
         let tempContent = content.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => {
             // 过滤掉空公式
             if (formula.trim() === '') return match;
+            console.log('块级公式'+match);
             latexPlaceholders.push(match);
             return `${placeholder}${latexPlaceholders.length - 1}$$`;
         });
-        console.log('块级公式'+latexPlaceholders);
         // 保护行内公式 $...$（不独占一行的公式）
         // 修改正则表达式，避免匹配到块级公式
         tempContent = tempContent.replace(/\$(?!\$)([^$]*?)\$(?!\$)/g, (match) => {
+            console.log('行内公式'+match);
             latexPlaceholders.push(match);
             return `$${placeholder}${latexPlaceholders.length - 1}`;
         });
-        console.log('行内公式'+latexPlaceholders);
         
         // 使用 marked.js 渲染 Markdown
         let formattedContent;

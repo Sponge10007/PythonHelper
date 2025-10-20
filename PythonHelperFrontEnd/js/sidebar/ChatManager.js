@@ -126,7 +126,7 @@ export class ChatManager {
         try {
             // 在发送给AI之前，先进行记忆管理
             const managedMessages = this.manageConversationMemory(chat.messages);
-            console.log('managedMessages', managedMessages);
+            // console.log('managedMessages', managedMessages);
             // 使用流式API调用
             await api.fetchAiResponseStream(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint, (chunk) => {
                 
@@ -139,7 +139,7 @@ export class ChatManager {
                 
                 if (chunk.content) {
                     accumulatedContent += chunk.content;
-                    // console.log('accumulatedContent', accumulatedContent);
+                    console.log('accumulatedContent', accumulatedContent);
                     this.ui.updateStreamingMessage(messageId, accumulatedContent);
                 }
                 
