@@ -32,8 +32,8 @@ python app.py
 ### 3. 访问服务
 
 服务启动后，可以通过以下地址访问：
-- 健康检查：http://localhost:5000/health
-- API文档：http://localhost:5000/
+- 健康检查：http://localhost:8000/health
+- API文档：http://localhost:8000/
 
 ## API接口
 

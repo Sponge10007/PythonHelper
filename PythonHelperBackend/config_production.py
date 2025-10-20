@@ -52,7 +52,7 @@ class DevelopmentConfig:
     """开发环境配置"""
     DEBUG = True
     HOST = 'localhost'
-    PORT = 5000
+    PORT = 8000
 
     MISTAKES_DB_FILE = 'mistakes.db'
     PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')

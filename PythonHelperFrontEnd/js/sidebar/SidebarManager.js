@@ -9,13 +9,13 @@ import { SettingsManager } from './SettingsManager.js';
 function getBackendUrl() {
     // 在Chrome扩展中检测环境
     if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return 'http://localhost:5000';
+        return 'http://localhost:8000';
     }
     // 备用检测
     const isLocalDev = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
                        window.location.hostname === '';
-    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
+    return isLocalDev ? 'http://localhost:8000' : 'http://47.98.249.0:8888';
 }
 
 class SidebarManager {
@@ -381,45 +381,45 @@ class SidebarManager {
                 console.log(`更新用户邮箱显示: ${userEmail}`);
             }
             
-        } else {
-            console.log('用户未登录，禁用所有按钮并显示登录界面');
+        // } else {
+        //     console.log('用户未登录，禁用所有按钮并显示登录界面');
             
-            // 禁用开始对话按钮
-            if (startFirstChat) {
-                startFirstChat.disabled = true;
-                startFirstChat.textContent = '请先登录';
-                startFirstChat.style.opacity = '0.5';
-                console.log('禁用开始对话按钮');
-            }
+        //     // 禁用开始对话按钮
+        //     if (startFirstChat) {
+        //         startFirstChat.disabled = true;
+        //         startFirstChat.textContent = '请先登录';
+        //         startFirstChat.style.opacity = '0.5';
+        //         console.log('禁用开始对话按钮');
+        //     }
             
-            // 禁用所有功能按钮（除了登录按钮）
-            allButtons.forEach(btnId => {
-                const btn = document.getElementById(btnId);
-                if (btn) {
-                    btn.disabled = true;
-                    btn.classList.add('disabled');
-                    btn.style.opacity = '0.4';
-                    btn.style.filter = 'grayscale(100%)';
-                    console.log(`禁用按钮: ${btnId}`);
-                }
-            });
+        //     // 禁用所有功能按钮（除了登录按钮）
+        //     allButtons.forEach(btnId => {
+        //         const btn = document.getElementById(btnId);
+        //         if (btn) {
+        //             btn.disabled = true;
+        //             btn.classList.add('disabled');
+        //             btn.style.opacity = '0.4';
+        //             btn.style.filter = 'grayscale(100%)';
+        //             console.log(`禁用按钮: ${btnId}`);
+        //         }
+        //     });
             
-            // 禁用侧边栏所有按钮（除了登录按钮）
-            const sidebarButtons = [
-                'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
-                'mistakesBtn', 'ptaBtn', 'settingsBtn'
-            ];
+        //     // 禁用侧边栏所有按钮（除了登录按钮）
+        //     const sidebarButtons = [
+        //         'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
+        //         'mistakesBtn', 'ptaBtn', 'settingsBtn'
+        //     ];
             
-            sidebarButtons.forEach(btnId => {
-                const btn = document.getElementById(btnId);
-                if (btn) {
-                    btn.disabled = true;
-                    btn.classList.add('disabled');
-                    btn.style.opacity = '0.4';
-                    btn.style.filter = 'grayscale(100%)';
-                    console.log(`禁用侧边栏按钮: ${btnId}`);
-                }
-            });
+        //     sidebarButtons.forEach(btnId => {
+        //         const btn = document.getElementById(btnId);
+        //         if (btn) {
+        //             btn.disabled = true;
+        //             btn.classList.add('disabled');
+        //             btn.style.opacity = '0.4';
+        //             btn.style.filter = 'grayscale(100%)';
+        //             console.log(`禁用侧边栏按钮: ${btnId}`);
+        //         }
+        //     });
             
             // 确保登录按钮可用
             const loginBtn = document.getElementById('loginBtn');

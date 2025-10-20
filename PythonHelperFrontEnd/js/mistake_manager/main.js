@@ -392,7 +392,7 @@ class PageManager {
      */
     async loadAllTags() {
         try {
-            const response = await fetch('http://localhost:5000/api/tags/categories');
+            const response = await fetch('http://localhost:8000/api/tags/categories');
             const result = await response.json();
             
             if (result.success) {
@@ -514,7 +514,7 @@ class PageManager {
 
         try {
             // 调用API添加标签
-            const response = await fetch('http://localhost:5000/api/tags', {
+            const response = await fetch('http://localhost:8000/api/tags', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -579,7 +579,7 @@ class PageManager {
 
         try {
             // 获取所有标签信息以获取ID
-            const response = await fetch('http://localhost:5000/api/tags');
+            const response = await fetch('http://localhost:8000/api/tags');
             const result = await response.json();
             
             if (result.success) {
@@ -593,7 +593,7 @@ class PageManager {
                 const deletePromises = tagNames.map(tagName => {
                     const tagId = tagNameToId[tagName];
                     if (tagId) {
-                        return fetch(`http://localhost:5000/api/tags/${tagId}`, {
+                        return fetch(`http://localhost:8000/api/tags/${tagId}`, {
                             method: 'DELETE'
                         });
                     }
