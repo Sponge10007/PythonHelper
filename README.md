@@ -36,7 +36,7 @@
         ```bash
         python run.py
         ```
-      * 服务默认运行在 `http://localhost:5000`。您可以通过访问 `http://localhost:5000/health` 来检查服务是否正常运行。
+      * 服务默认运行在 `http://localhost:8000`。您可以通过访问 `http://localhost:8000/health` 来检查服务是否正常运行。
 
 2.  **前端插件加载**：
 

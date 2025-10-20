@@ -3126,7 +3126,7 @@
             styles: {
               ".MathJax img, .MathJax nobr, .MathJax a": {
                 // "none" seems to work like "0px" when width is initially 0
-                "max-width": "5000em", "max-height": "5000em"
+                "max-width": "8000em", "max-height": "8000em"
               }
             }
           },

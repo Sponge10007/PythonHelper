@@ -3,7 +3,7 @@
 // 获取后端URL函数
 function getBackendUrl() {
     // 在background脚本中默认使用localhost
-    return 'http://localhost:5000';
+    return 'http://localhost:8000';
 }
 
 export class MessageHandler {

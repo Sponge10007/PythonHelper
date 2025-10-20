@@ -174,13 +174,13 @@ html, body {
 
 /* --- Chat Interface --- */
 .sidebar-header { 
-    background-color: #fdf9ff; 
+    /* background-color: #fdf9ff;  */
+    background-color: white; 
     padding: 15px 20px; 
     display: flex; 
     align-items: center; 
     gap: 10px;
     flex-shrink: 0; 
-    border-bottom: 1px solid #e0e0e0; 
 }
 .sidebar-header h1 { 
     font-size: 15px; 
@@ -280,13 +280,14 @@ html, body {
 
 .chat-container { 
     flex-grow: 1; 
-    padding: 20px; 
+    padding: 0px 20px 0px 20px; 
     overflow-y: auto; 
     display: flex; 
     flex-direction: column; 
     gap: 15px; 
     min-height: 0; /* 关键：允许flex项目缩小 */
     max-height: 100%; /* 限制最大高度 */
+    background-color: white;
 }
 
 .message { 
@@ -311,8 +312,8 @@ html, body {
     margin-top: 5px;
 }
 .message-content { 
-    padding: 15px 20px; 
-    border-radius: 28px; 
+    padding: 6px 8px; 
+    border-radius: 10px; 
     font-size: 14px; 
     line-height: 1.5; 
     flex: 1; /* 使用flex: 1让内容区域自动填充剩余空间 */
@@ -550,9 +551,9 @@ assistant回答多选框样式
 }
 
 .sidebar-footer { 
-    padding: 10px 20px 15px 20px; 
-    background-color: #fdf9ff; 
-    border-top: 1px solid #e0e0e0; 
+    padding: 0px 20px 0px 20px; 
+    /* background-color: #fdf9ff;  */
+    background-color: white; 
     flex-shrink: 0; 
     display: flex;
     flex-direction: column;
@@ -583,8 +584,8 @@ assistant回答多选框样式
     font-size: 18px;
 }
 
-.input-form { display: flex; align-items: center; gap: 10px; }
-.input-form textarea { flex-grow: 1; border: 1px solid #e0e0e0; background-color: white; padding: 15px 20px; border-radius: 28px; font-size: 14px; color: #545454; resize: none; max-height: 120px; font-family: inherit; }
+.input-form { display: flex; align-items: center; gap: 10px;height: 80px }
+.input-form textarea { flex-grow: 1; border: 1px solid #e0e0e0; background-color: white; padding: 5px 20px; border-radius: 12px; font-size: 14px; color: #545454; resize: none; max-height: 80px; font-family: inherit; }
 .input-form textarea:focus { outline: none; border-color: #8a2be2; box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2); }
 .send-btn { 
     border: none; 
@@ -1039,14 +1040,14 @@ assistant回答多选框样式
 
 .memory-manage-dialog .stat-label {
     color: #666;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
 }
 
 .memory-manage-dialog .stat-value {
     color: #7a3898;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .memory-manage-dialog .action-buttons {

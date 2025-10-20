@@ -9,13 +9,13 @@ import { SettingsManager } from './SettingsManager.js';
 function getBackendUrl() {
     // 在Chrome扩展中检测环境
     if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return 'http://localhost:5000';
+        return 'http://localhost:8000';
     }
     // 备用检测
     const isLocalDev = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
                        window.location.hostname === '';
-    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
+    return isLocalDev ? 'http://localhost:8000' : 'http://47.98.249.0:8888';
 }
 
 class SidebarManager {

@@ -265,7 +265,7 @@ export class UIManager {
 
     async loadTagsForEditModal() {
         try {
-            const response = await fetch('http://localhost:5000/api/tags/categories');
+            const response = await fetch('http://localhost:8000/api/tags/categories');
             const result = await response.json();
             
             if (result.success) {
