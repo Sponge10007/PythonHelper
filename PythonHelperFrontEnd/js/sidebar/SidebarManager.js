@@ -9,13 +9,13 @@ import { SettingsManager } from './SettingsManager.js';
 function getBackendUrl() {
     // 在Chrome扩展中检测环境
     if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return 'http://localhost:8000';
+        return 'http://localhost:5000';
     }
     // 备用检测
     const isLocalDev = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
                        window.location.hostname === '';
-    return isLocalDev ? 'http://localhost:8000' : 'http://47.98.249.0:8888';
+    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
 }
 
 class SidebarManager {
@@ -705,6 +705,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
             
@@ -776,6 +777,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     password,
@@ -819,6 +821,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email })
             });
             
@@ -850,6 +853,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'register' })
             });
             
@@ -902,6 +906,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'reset' })
             });
             
@@ -967,6 +972,7 @@ class SidebarManager {
             const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     verification_code: verificationCode,

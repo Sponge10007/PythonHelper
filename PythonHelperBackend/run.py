@@ -19,4 +19,4 @@ if __name__ == '__main__':
 
     logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理、标签管理功能、用户认证")
     # 禁用自动重载以避免watchdog版本兼容问题
-    app.run(host='0.0.0.0', port=8000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

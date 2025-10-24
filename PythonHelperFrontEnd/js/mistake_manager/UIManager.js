@@ -116,12 +116,37 @@ export class UIManager {
             });
         }
         
-        const messagesHtml = (mistake.messages || []).map(msg => `
-            <div class="mistake-message message-${msg.role}">
-                <span class="message-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
-                <div class="message-content">${this.escapeHtml(msg.content)}</div>
-            </div>
-        `).join('');
+
+        const messagesHtml = (mistake.messages || []).map((msg, index) => {
+            // 第一条消息（用户的初始提问）不显示
+            if (index === 0 && msg.role === 'user') {
+                return '';
+            }
+            
+            // 第一条AI回答（index=1）不显示角色标签
+            if (index === 1 && msg.role === 'assistant') {
+                return `
+                    <div class="mistake-message message-${msg.role}">
+                        <div class="message-content">${this.formatMessageContent(msg.content)}</div>
+                    </div>
+                `;
+            }
+            
+            // 之后的消息显示角色标签
+            let roleText = '';
+            if (msg.role === 'user') {
+                roleText = '追问';
+            } else if (msg.role === 'assistant') {
+                roleText = '回答';
+            }
+            
+            return `
+                <div class="mistake-message message-${msg.role}">
+                    <span class="message-role">${roleText}</span>
+                    <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                </div>
+            `;
+        }).filter(html => html !== '').join(''); // 过滤掉空字符串
 
         // 使用处理后的标签数组生成HTML
         const tagsHtml = tagsToShow.length > 0 ? `
@@ -144,14 +169,14 @@ export class UIManager {
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
             ${tagsHtml}
-            <div class="analysis-collapse">
-                <button class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
+            <div class="analysis-box" id="${collapseId}">
+                <div class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
                     <span class="analysis-toggle-text">展开解析</span>
                     <span class="analysis-toggle-icon">▼</span>
-                </button>
-            </div>
-            <div class="analysis-content" id="${collapseId}" style="display: none;">
-                <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
+                <div class="analysis-content" style="display: none;">
+                    <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
             </div>
             <div class="mistake-actions">
                 <button class="edit-mistake-btn btn-secondary" data-mistake-id="${mistake.id}">编辑</button>
@@ -162,31 +187,90 @@ export class UIManager {
     }
 
     /**
-     * 切换解析内容的展开/收起状态
-     * @param {HTMLElement} button - 点击的按钮元素
+     * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
      */
-    toggleAnalysis(button) {
-        const targetId = button.getAttribute('data-target');
-        const content = document.getElementById(targetId);
-        const isExpanded = button.getAttribute('data-expanded') === 'true';
+    formatMessageContent(content) {
+        if (!content) return '';
+
+        const latexPlaceholders = [];
+        const placeholder = "LATEX_PLACEHOLDER_";
+
+        // 1. 保护LaTeX公式块，用占位符替换
+        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+
+        // 2. 现在可以安全地处理Markdown格式了
+        // 处理代码块 (```language or ```)
+        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            const lang = language ? ` class="language-${language}"` : '';
+            return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
         
-        if (!content) {
+        // 处理行内代码 (`code`)
+        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 全新的换行处理策略：最小化空行
+        // 1. 将所有连续换行（2个或更多）替换为单个换行
+        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
+        // 2. 将单个换行替换为<br>，但只在非空行之间
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        // 3. 包装整个内容在一个段落中，避免段落间距问题
+        formattedContent = `<p>${formattedContent}</p>`;
+        // 4. 清理多余的空格和换行
+        formattedContent = formattedContent
+            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
+            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
+            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
+            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
+
+        // 3. 恢复LaTeX公式，让MathJax处理渲染
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        return formattedContent;
+    }
+
+    /**
+     * 切换解析内容的展开/收起状态
+     * @param {HTMLElement} toggleElement - 点击的切换元素
+     */
+    toggleAnalysis(toggleElement) {
+        const targetId = toggleElement.getAttribute('data-target');
+        const analysisBox = document.getElementById(targetId);
+        const isExpanded = toggleElement.getAttribute('data-expanded') === 'true';
+        
+        if (!analysisBox) {
             console.error('找不到目标内容元素:', targetId);
+            return;
+        }
+        
+        const content = analysisBox.querySelector('.analysis-content');
+        if (!content) {
+            console.error('找不到解析内容元素');
             return;
         }
         
         if (isExpanded) {
             // 收起内容
             content.style.display = 'none';
-            button.setAttribute('data-expanded', 'false');
-            button.querySelector('.analysis-toggle-text').textContent = '展开解析';
-            button.querySelector('.analysis-toggle-icon').textContent = '▼';
+            toggleElement.setAttribute('data-expanded', 'false');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '展开解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▼';
         } else {
             // 展开内容
             content.style.display = 'block';
-            button.setAttribute('data-expanded', 'true');
-            button.querySelector('.analysis-toggle-text').textContent = '收起解析';
-            button.querySelector('.analysis-toggle-icon').textContent = '▲';
+            toggleElement.setAttribute('data-expanded', 'true');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '收起解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▲';
         }
     }
 
@@ -265,7 +349,7 @@ export class UIManager {
 
     async loadTagsForEditModal() {
         try {
-            const response = await fetch('http://localhost:8000/api/tags/categories');
+            const response = await fetch('http://localhost:5000/api/tags/categories');
             const result = await response.json();
             
             if (result.success) {

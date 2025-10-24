@@ -188,11 +188,22 @@ def login():
             UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?
         ''', (user['id'],))
         db.commit()
-        
+
         # 创建会话
         session['user_id'] = user['id']
         session['user_email'] = user['email']
-        
+
+        # 初始化默认PPT（首次登录时）
+        try:
+            from app.database import init_mistakes_db
+            database = init_mistakes_db()
+            ppt_folder = current_app.config.get('PPT_UPLOAD_FOLDER')
+            if ppt_folder:
+                database.init_default_ppts_for_user(user['id'], ppt_folder)
+                logger.info(f"为用户 {user['id']} 初始化默认PPT")
+        except Exception as e:
+            logger.warning(f"初始化默认PPT失败（非致命错误）: {e}")
+
         return jsonify({
             'success': True,
             'message': '登录成功',

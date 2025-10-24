@@ -380,3 +380,101 @@ class Database:
         """删除错题"""
         query = "DELETE FROM mistakes WHERE id = ?"
         self.execute_update(query, (mistake_id,))
+
+    def init_default_ppts_for_user(self, user_id: int, ppt_upload_folder: str):
+        """为新用户初始化默认PPT"""
+        import os
+        from app.utils import estimate_slides_count
+        
+        # 定义固定的默认PPT列表（使用中文文件名）
+        default_ppts = [
+            {
+                'filename': '2025数据类型及表达式.pdf',
+                'display_name': '数据类型及表达式',
+                'description': 'Python基础：变量、数据类型、运算符'
+            },
+            {
+                'filename': '2025流程控制.pdf',
+                'display_name': '流程控制',
+                'description': '条件语句、循环结构、分支结构'
+            },
+            {
+                'filename': '2025函数.pdf',
+                'display_name': '函数',
+                'description': '函数定义、参数传递、返回值'
+            },
+            {
+                'filename': '复合数据类型.pdf',
+                'display_name': '复合数据类型',
+                'description': '列表、元组、字典、集合'
+            },
+            {
+                'filename': '2025面向对象.pdf',
+                'display_name': '面向对象',
+                'description': '类、对象、继承、多态'
+            },
+            {
+                'filename': '2025文件概述.pdf',
+                'display_name': '文件概述',
+                'description': '文件读写、文件操作',
+            },
+            {
+                'filename': '异常处理.pdf',
+                'display_name': '异常处理',
+                'description': 'try-except、异常类型、异常处理'
+            }
+        ]
+        
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        for ppt in default_ppts:
+            file_path = os.path.join(ppt_upload_folder, ppt['filename'])
+            
+            # 检查文件是否存在
+            if not os.path.exists(file_path):
+                logger.warning(f"默认PPT文件不存在: {file_path}")
+                continue
+            
+            # 检查是否已经为该用户添加过这个默认PPT
+            cursor.execute('''
+                SELECT id FROM ppt_files
+                WHERE user_id = ? AND filename = ? AND is_default = 1
+            ''', (user_id, ppt['filename']))
+
+            if cursor.fetchone():
+                logger.info(f"用户 {user_id} 已有默认PPT: {ppt['display_name']}")
+                continue
+
+            # 获取文件信息
+            file_size = os.path.getsize(file_path)
+            file_type = ppt['filename'].rsplit('.', 1)[1].lower()
+
+            try:
+                slides_count = estimate_slides_count(file_path, file_type)
+            except Exception:
+                slides_count = 0
+            
+            # 插入数据库（不包含tags字段）
+            cursor.execute('''
+                INSERT INTO ppt_files (
+                    filename, original_name, file_path, file_size, file_type,
+                    upload_date, slides_count, description,
+                    user_id, is_default
+                )
+                VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, 1)
+            ''', (
+                ppt['filename'],
+                ppt['display_name'],  # 显示中文名称
+                file_path,
+                file_size,
+                file_type,
+                slides_count,
+                ppt['description'],
+                user_id
+            ))
+            
+            logger.info(f"为用户 {user_id} 添加默认PPT: {ppt['display_name']}")
+
+        conn.commit()
+        conn.close()

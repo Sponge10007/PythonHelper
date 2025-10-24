@@ -25,3 +25,11 @@ class Config:
 
     # 会话密钥
     SECRET_KEY = os.environ.get('SECRET_KEY', 'python-helper-secret-key-2025')
+    
+    # Session配置
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = False  # 开发环境使用HTTP
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_DOMAIN = None  # 允许localhost
+    SESSION_COOKIE_PATH = '/'
+    SESSION_PERMANENT = False

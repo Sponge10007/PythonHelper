@@ -183,6 +183,7 @@ body {
 .sidebar-content.active {
     display: flex;
     flex-direction: column;
+    padding: 8px;
 }
 
 /* 搜索和筛选区域 */
@@ -392,7 +393,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    border: 2px dashed #d1d1d6;
+    border: 2px dashed #d1d1d6; /* 灰色虚线边框 */
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -490,14 +491,7 @@ body {
     }
 }
 
-/* 改进拖拽上传区域样式 */
-.upload-area.drag-over .upload-label {
-    border-color: #7A3797;
-    background: #f3e8ff;
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(122, 55, 151, 0.2);
-}
-
+/* 拖拽时图标放大效果 */
 .upload-area.drag-over .upload-icon {
     transform: scale(1.1);
     transition: transform 0.2s ease;
@@ -981,29 +975,33 @@ body {
     justify-content: flex-end;
 }
 
-/* 折叠解析样式 */
-.analysis-collapse {
-    margin: 12px 0 8px 0;
+/* 解析框样式 - 整合版（左侧粗紫色边框） */
+.analysis-box {
+    margin: 12px 0;
+    background: white;
+    border-left: 4px solid #7A3797; /* 左侧粗紫色边框 */
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.3s ease;
 }
 
 .analysis-toggle {
     width: 100%;
-    background: #f8f9fa;
-    border: 1px solid #e5e5e7;
-    border-radius: 6px;
-    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    padding: 12px 16px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: all 0.2s ease;
     font-size: 14px;
-    color: #7c7c7c;
+    color: #4a4a4a;
+    font-weight: 500;
 }
 
 .analysis-toggle:hover {
     background: #f3e8ff;
-    border-color: #7A3797;
     color: #7A3797;
 }
 
@@ -1014,12 +1012,18 @@ body {
 .analysis-toggle-icon {
     font-size: 12px;
     transition: transform 0.2s ease;
+    color: #7A3797;
 }
 
 .analysis-content {
-    margin-bottom: 12px;
+    padding: 0 16px 12px 16px;
     overflow: hidden;
-    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    transition: all 0.3s ease;
+}
+
+/* 展开状态时的样式 */
+.analysis-box:has(.analysis-toggle[data-expanded="true"]) {
+    box-shadow: 0 2px 8px rgba(122, 55, 151, 0.1);
 }
 
 /* 自定义复选框样式 */
@@ -1027,9 +1031,9 @@ body {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #e5e5e7;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d0d0d0;
     border-radius: 4px;
     background: white;
     cursor: pointer;
@@ -1039,16 +1043,17 @@ body {
     margin-left: 8px;
     flex-shrink: 0;
     display: none; /* 默认隐藏 */
+    z-index: 10; /* 确保在最上层 */
 }
 
 /* 编辑模式下显示复选框 */
 .edit-mode .mistake-checkbox {
-    display: block;
+    display: block !important; /* 强制显示 */
 }
 
 .mistake-checkbox:hover {
     border-color: #7A3797;
-    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.15);
 }
 
 .mistake-checkbox:checked {
@@ -1063,7 +1068,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     line-height: 1;
 }
@@ -1071,9 +1076,10 @@ body {
 /* NEW: Styles for message history in mistake item */
 .mistake-conversation {
     background: white;
-    border: 1px solid #e5e5e7;
+    border: 1px solid transparent;
     border-radius: 6px;
-    padding: 12px;
+    padding-left: 0;
+    padding-right: 12px;
     margin-bottom: 12px;
     max-height: 200px;
     overflow-y: auto;
@@ -1524,29 +1530,30 @@ body {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #e5e5e7;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d0d0d0;
     border-radius: 4px;
     background: white;
     cursor: pointer;
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
     transition: all 0.2s ease;
     margin: 0;
     flex-shrink: 0;
     display: none; /* 默认隐藏 */
+    z-index: 10; /* 确保在最上层 */
 }
 
 /* 编辑模式下显示PPT复选框 */
 .edit-mode .ppt-checkbox {
-    display: block;
+    display: block !important; /* 强制显示 */
 }
 
 .ppt-checkbox:hover {
     border-color: #7A3797;
-    box-shadow: 0 0 0 2px rgba(122, 55, 151, 0.1);
+    box-shadow: 0 0 0 3px rgba(122, 55, 151, 0.15);
 }
 
 .ppt-checkbox:checked {
@@ -1561,7 +1568,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     line-height: 1;
 }
