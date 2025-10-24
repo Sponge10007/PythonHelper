@@ -144,6 +144,7 @@ export class UIManager {
             <div class="message-avatar"></div>
             <div class="message-bubble-container">
                 <div class="message-content"><div class="streaming-content"></div></div>
+            <input type="checkbox" class="message-selector" title="选择此消息" style= “margin-left: auto” >
                 <div class="message-actions" >
                     <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
                     <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
@@ -151,7 +152,6 @@ export class UIManager {
                     <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
                 </div>
             </div>
-            <input type="checkbox" class="message-selector" title="选择此消息" style= “margin-left: auto” >
         `;
         
         this.chatMessages.appendChild(element);
@@ -219,8 +219,8 @@ export class UIManager {
             <div class="message-bubble-container">
                 <div class="message-content"><div>${this.formatMessageContent(message.content || '')}</div></div>
                 ${actionsHtml}
+                <input type="checkbox" class="message-selector" title="选择此消息" style="margin-left: auto">
             </div>
-            <input type="checkbox" class="message-selector" title="选择此消息">
 
         `;
         return element;

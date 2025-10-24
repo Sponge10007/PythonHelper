@@ -540,7 +540,7 @@ assistant回答多选框样式
 /* ADDED: Styles for message selector checkbox */
 .message-selector {
     flex-shrink: 0;
-    margin-top: 12px;
+    right: 19px;
     cursor: pointer;
     display: none; /* Hidden by default */
 }
