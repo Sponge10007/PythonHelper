@@ -93,6 +93,18 @@ class SidebarManager {
         this.ui.chatInput.addEventListener('input', () => this.ui.adjustTextareaHeight());
         // document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
         
+        // --- 重试按钮事件处理 ---
+        this.ui.chatMessages.addEventListener('click', (e) => {
+            // 处理重试按钮点击事件
+            if (e.target.closest('.retry-btn')) {
+                const messageElement = e.target.closest('.message');
+                if (messageElement && messageElement.classList.contains('assistant-message')) {
+                    const messageId = messageElement.dataset.messageId;
+                    this.handleRetryMessage(messageId);
+                }
+            }
+        });
+
         // --- 记忆管理事件绑定 ---
         document.getElementById('memoryManageBtn').addEventListener('click', () => {
             if (this.chatManager.currentChatId) {
@@ -210,6 +222,53 @@ class SidebarManager {
                 }
             });
         }
+    }
+
+    // 重试消息处理方法
+    async handleRetryMessage(messageId) {
+        if (!this.chatManager.currentChatId) return;
+        
+        const chat = this.chatManager.chats.find(c => c.id === this.chatManager.currentChatId);
+        if (!chat) return;
+        
+        // 找到要重试的消息索引
+        const messageIndex = chat.messages.findIndex(msg => msg.id === messageId);
+        if (messageIndex === -1) return;
+        
+        // 获取用户消息（重试按钮所在的消息是AI回复，我们需要找到对应的用户提问）
+        let userMessage = null;
+        for (let i = messageIndex - 1; i >= 0; i--) {
+            if (chat.messages[i].role === 'user') {
+                userMessage = chat.messages[i];
+                break;
+            }
+        }
+        
+        if (!userMessage) {
+            console.error('未找到对应的用户消息');
+            return;
+        }
+        
+        // 删除从重试消息开始的所有后续消息的UI元素
+        const chatMessagesContainer = document.getElementById('chatMessages');
+        if (chatMessagesContainer) {
+            // 从DOM中删除重试消息及其后续消息元素
+            const messageElements = chatMessagesContainer.querySelectorAll('.message');
+            for (let i = messageIndex; i < messageElements.length; i++) {
+                if (messageElements[i] && messageElements[i].parentNode) {
+                    messageElements[i].parentNode.removeChild(messageElements[i]);
+                }
+            }
+        }
+        
+        // 删除从重试消息开始的所有后续消息
+        chat.messages.splice(messageIndex);
+        
+        // 重新发送用户消息
+        await this.chatManager.fetchAndDisplayAiResponse(chat);
+        
+        // 保存聊天记录
+        await storage.saveChats(this.chatManager.chats);
     }
 
     // 新增：处理PTA分析请求
