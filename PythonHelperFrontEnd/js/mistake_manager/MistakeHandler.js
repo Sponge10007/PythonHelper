@@ -213,15 +213,64 @@ export class MistakeHandler {
         this.filterAndRender();
     }
     
+    /**
+     * 从错题的标签中提取难度等级
+     * @param {Object} mistake - 错题对象
+     * @returns {string} - 难度等级（'简单'、'中等'、'困难'），如果没有难度标签则返回 ''
+     */
+    getDifficultyFromTags(mistake) {
+        // 优先使用 difficulty 字段
+        if (mistake.difficulty) {
+            return mistake.difficulty;
+        }
+        
+        // 如果没有 difficulty 字段，从标签中提取
+        if (!mistake.tags || !Array.isArray(mistake.tags)) {
+            return '';
+        }
+        
+        const difficultyTags = ['简单', '中等', '困难'];
+        for (const tag of mistake.tags) {
+            if (difficultyTags.includes(tag)) {
+                return tag;
+            }
+        }
+        return '';
+    }
+
     sort(sortBy) {
         this.filteredMistakes.sort((a, b) => {
             switch (sortBy) {
-                case 'date': return new Date(b.date) - new Date(a.date);
-                case 'category': return (a.category || '').localeCompare(b.category || '');
+                case 'date': 
+                    return new Date(b.date) - new Date(a.date);
+                
+                case 'category': 
+                    return (a.category || '').localeCompare(b.category || '');
+                
                 case 'difficulty':
-                    const order = { '简单': 1, '中等': 2, '困难': 3 };
-                    return (order[a.difficulty] || 0) - (order[b.difficulty] || 0);
-                default: return 0;
+                    // 由难到易：困难 > 中等 > 简单
+                    const difficultyOrder = { '困难': 1, '中等': 2, '简单': 3 };
+                    const aDifficulty = this.getDifficultyFromTags(a);
+                    const bDifficulty = this.getDifficultyFromTags(b);
+                    return (difficultyOrder[aDifficulty] || 999) - (difficultyOrder[bDifficulty] || 999);
+                
+                case 'easy':
+                    // 由易到难：简单 > 中等 > 困难
+                    const easyOrder = { '简单': 1, '中等': 2, '困难': 3 };
+                    const aDifficultyEasy = this.getDifficultyFromTags(a);
+                    const bDifficultyEasy = this.getDifficultyFromTags(b);
+                    return (easyOrder[aDifficultyEasy] || 999) - (easyOrder[bDifficultyEasy] || 999);
+                
+                case 'class':
+                    // 在此处添加按课程排序的功能
+                    return 0;
+                
+                case 'knowledge':
+                    // 在此处添加按知识点排序的功能
+                    return 0;
+                
+                default: 
+                    return 0;
             }
         });
         this.currentPage = 1;
@@ -231,11 +280,15 @@ export class MistakeHandler {
     async deleteMistake(mistakeId) {
         if (!confirm('确定要删除这个错题吗？')) return;
         try {
-            // await api.deleteMistake(mistakeId); // 在生产环境中，您需要一个后端的删除API
+            // 调用后端API删除错题
+            await api.deleteMistake(mistakeId);
+            
+            // 从本地数据中移除
             this.allMistakes = this.allMistakes.filter(m => m.id !== mistakeId);
             this.selectedMistakes.delete(mistakeId);
             this.filterAndRender();
         } catch (error) {
+            console.error('删除错题失败:', error);
             alert('删除失败: ' + error.message);
         }
     }

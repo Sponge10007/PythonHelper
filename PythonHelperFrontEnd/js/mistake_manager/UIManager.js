@@ -420,7 +420,6 @@ export class UIManager {
     renderPPTGrid(pptFiles, onPreview, onDownload, onDelete) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
-            
             return;
         }
 

@@ -197,6 +197,58 @@ export class ChatManager {
     }
     
     /**
+     * 重试消息 - 找到指定消息之前的最后一条用户消息，重新生成AI回复
+     * @param {string} messageId - 要重试的消息ID
+     */
+    async retryMessage(messageId) {
+        if (this.isLoading || !this.currentChatId) {
+            console.warn('正在加载中或没有当前聊天，无法重试');
+            return;
+        }
+        
+        const chat = this.chats.find(c => c.id === this.currentChatId);
+        if (!chat) {
+            console.warn('找不到当前聊天');
+            return;
+        }
+
+        // 找到要重试的消息的索引
+        const messageIndex = chat.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            console.warn('找不到要重试的消息:', messageId);
+            return;
+        }
+
+        // 找到该消息之前的最后一条用户消息
+        let userMessageIndex = -1;
+        for (let i = messageIndex - 1; i >= 0; i--) {
+            if (chat.messages[i].role === 'user') {
+                userMessageIndex = i;
+                break;
+            }
+        }
+
+        if (userMessageIndex === -1) {
+            console.warn('找不到对应的用户消息');
+            return;
+        }
+
+        console.log(`重试消息: 从消息索引 ${userMessageIndex} 开始重新生成`);
+
+        // 删除从用户消息之后的所有消息（包括旧的AI回复）
+        chat.messages = chat.messages.slice(0, userMessageIndex + 1);
+        
+        // 保存状态
+        await storage.saveChats(this.chats);
+        
+        // 重新渲染消息列表
+        this.ui.renderMessages(chat.messages);
+        
+        // 重新获取AI响应
+        await this.fetchAndDisplayAiResponse(chat);
+    }
+    
+    /**
      * 对话记忆管理 - 智能压缩和清理对话历史
      * @param {Array} messages - 原始消息数组
      * @returns {Array} - 管理后的消息数组

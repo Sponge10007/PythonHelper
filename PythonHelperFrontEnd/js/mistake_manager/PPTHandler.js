@@ -790,11 +790,21 @@ export class PPTHandler {
             this.filteredPptFiles = [...this.allPptFiles];
         } else {
             const lowerQuery = query.toLowerCase();
-            this.filteredPptFiles = this.allPptFiles.filter(file => 
-                file.original_name.toLowerCase().includes(lowerQuery) ||
-                file.description?.toLowerCase().includes(lowerQuery) ||
-                (file.tags && file.tags.some(tag => tag.toLowerCase().includes(lowerQuery)))
-            );
+            this.filteredPptFiles = this.allPptFiles.filter(file => {
+                // 搜索文件名
+                if (file.original_name.toLowerCase().includes(lowerQuery)) {
+                    return true;
+                }
+                // 搜索描述
+                if (file.description?.toLowerCase().includes(lowerQuery)) {
+                    return true;
+                }
+                // 搜索标签 - 确保 tags 是数组
+                if (file.tags && Array.isArray(file.tags)) {
+                    return file.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+                }
+                return false;
+            });
         }
         
         this.render();

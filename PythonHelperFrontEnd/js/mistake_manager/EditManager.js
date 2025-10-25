@@ -205,17 +205,16 @@ export class EditManager {
         console.log(`执行 ${type} 批量删除，删除项目:`, Array.from(this.selectedItems));
         
         try {
-            // 直接使用api.js中已经工作的函数
             if (type === 'ppt') {
                 console.log('调用api.batchDeletePPTFiles');
                 await api.batchDeletePPTFiles(Array.from(this.selectedItems));
             } else if (type === 'mistake') {
-                console.log('错题暂不支持批量删除，逐个删除');
+                console.log('错题逐个删除');
                 // 错题没有批量删除API，逐个删除
-                for (const id of this.selectedItems) {
-                    // 这里需要找到正确的错题删除API
-                    console.log(`删除错题 ${id}`);
-                }
+                const deletePromises = Array.from(this.selectedItems).map(id => 
+                    api.deleteMistake(id)
+                );
+                await Promise.all(deletePromises);
             }
             
             console.log(`${type} 批量删除成功`);

@@ -3,6 +3,7 @@
 export class UIManager {
     constructor() {
         this.initElements();
+        this.retryCallback = null; // 存储重试回调函数
     }
 
     initElements() {
@@ -23,6 +24,14 @@ export class UIManager {
         this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
         this.mistakeListContainer = document.getElementById('mistakeListContainer'); //侧边栏的错题列表
         this.memoryManageBtn = document.getElementById('memoryManageBtn'); //记忆管理
+    }
+    
+    /**
+     * 设置重试消息的回调函数
+     * @param {Function} callback - 重试回调函数，接收 messageId 作为参数
+     */
+    setRetryCallback(callback) {
+        this.retryCallback = callback;
     }
     
     showView(viewToShow) {
@@ -129,6 +138,84 @@ export class UIManager {
         
         return messageElement;
     }
+    
+    /**
+     * 绑定消息操作按钮的事件
+     * @param {string} messageId - 消息ID
+     * @param {Function} onRetry - 重试回调函数
+     */
+    MessageClickActions(messageId, onRetry = null) {
+        // 获取特定消息的容器
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            console.warn(`Message with id ${messageId} not found`);
+            return null;
+        }
+
+        // 在消息容器内查找按钮和图标（避免ID冲突）
+        const LikeBtn = messageElement.querySelector('.like-btn');
+        const LikeBtnImg = messageElement.querySelector('.like-btn img');
+        const DislikeBtn = messageElement.querySelector('.dislike-btn');
+        const DislikeBtnImg = messageElement.querySelector('.dislike-btn img');
+        const RetryBtn = messageElement.querySelector('.retry-btn');
+        const RetryBtnImg = messageElement.querySelector('.retry-btn img');
+
+        // 检查按钮是否存在
+        if (!LikeBtn || !DislikeBtn || !RetryBtn) {
+            console.warn(`Some buttons not found for message ${messageId}`);
+            return null;
+        }
+
+        // 点赞按钮
+        LikeBtn.addEventListener('click', () => {
+            console.log(`Liked message ${messageId}`);
+            if (LikeBtnImg && LikeBtnImg.src.includes('good.png')) {
+                LikeBtnImg.src = '../icons/good-active.png';
+                // 如果点赞，取消踩
+                if (DislikeBtnImg) {
+                    DislikeBtnImg.src = '../icons/bad.png';
+                }
+            } else if (LikeBtnImg) {
+                LikeBtnImg.src = '../icons/good.png';
+            }
+        });
+
+        // 点踩按钮
+        DislikeBtn.addEventListener('click', () => {
+            console.log(`Disliked message ${messageId}`);
+            if (DislikeBtnImg && DislikeBtnImg.src.includes('bad.png')) {
+                DislikeBtnImg.src = '../icons/bad-active.png';
+                // 如果点踩，取消赞
+                if (LikeBtnImg) {
+                    LikeBtnImg.src = '../icons/good.png';
+                }
+            } else if (DislikeBtnImg) {
+                DislikeBtnImg.src = '../icons/bad.png';
+            }
+        });
+
+        // 重试按钮
+        RetryBtn.addEventListener('click', () => {
+            console.log(`Retry message ${messageId}`);
+            
+            // 添加旋转动画
+            if (RetryBtnImg) {
+                RetryBtnImg.classList.add('rotating');
+                setTimeout(() => {
+                    RetryBtnImg.classList.remove('rotating');
+                }, 1000);
+            }
+            
+            // 调用重试回调函数
+            if (onRetry && typeof onRetry === 'function') {
+                onRetry(messageId);
+            } else {
+                console.warn('No retry handler provided for message', messageId);
+            }
+        });
+
+        return { LikeBtn, DislikeBtn, RetryBtn };
+    }
 
     /**
      * 创建流式消息元素 - 用于实时更新内容
@@ -144,18 +231,22 @@ export class UIManager {
             <div class="message-avatar"></div>
             <div class="message-bubble-container">
                 <div class="message-content"><div class="streaming-content"></div></div>
-            <input type="checkbox" class="message-selector" title="选择此消息" style= “margin-left: auto” >
+            <input type="checkbox" class="message-selector" title="选择此消息" style= "margin-left: auto" >
                 <div class="message-actions" >
-                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
                     <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
-                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
-                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             </div>
         `;
         
         this.chatMessages.appendChild(element);
         this.scrollToBottom();
+
+        // 绑定消息操作按钮的点击事件
+        this.MessageClickActions(messageId, this.retryCallback);
+
         return element;
     }
 
@@ -179,6 +270,7 @@ export class UIManager {
         
         // 滚动到底部
         this.scrollToBottom();
+        this.MessageClickActions(messageId, this.retryCallback);
     }
 
     /**
@@ -193,6 +285,7 @@ export class UIManager {
         if (actionsElement) {
             // actionsElement.style.display = 'block';
         }
+        this.MessageClickActions(messageId, this.retryCallback);
     }
     // 创建AI消息气泡
     createMessageElement(message) {
@@ -206,7 +299,7 @@ export class UIManager {
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
                 <div class="message-actions">
-                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img src="../icons/refresh.png" alt="refresh icon" class="action-icon"></button>
                     <span style="color: #3c3c3c; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
                     <span style="padding-bottom:4px">|</span>
                     <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
