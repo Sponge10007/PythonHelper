@@ -152,6 +152,11 @@ export class UIManager {
             return null;
         }
 
+        // 检查是否已经绑定过事件，避免重复绑定
+        if (messageElement.dataset.actionsbound === 'true') {
+            return null;
+        }
+
         // 在消息容器内查找按钮和图标（避免ID冲突）
         const LikeBtn = messageElement.querySelector('.like-btn');
         const LikeBtnImg = messageElement.querySelector('.like-btn img');
@@ -159,6 +164,7 @@ export class UIManager {
         const DislikeBtnImg = messageElement.querySelector('.dislike-btn img');
         const RetryBtn = messageElement.querySelector('.retry-btn');
         const RetryBtnImg = messageElement.querySelector('.retry-btn img');
+        const CopyBtn = messageElement.querySelector('.copy-btn');
 
         // 检查按钮是否存在
         if (!LikeBtn || !DislikeBtn || !RetryBtn) {
@@ -214,7 +220,23 @@ export class UIManager {
             }
         });
 
-        return { LikeBtn, DislikeBtn, RetryBtn };
+        // 复制按钮
+        CopyBtn.addEventListener('click', () => {
+            const messageContentElement = messageElement.querySelector('.message-content');
+            if (messageContentElement) {
+                const textToCopy = messageContentElement.innerText || messageContentElement.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    console.log(`Copied message ${messageId} content to clipboard`);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        });
+
+        // 标记已绑定事件，防止重复绑定
+        messageElement.dataset.actionsbound = 'true';
+
+        return { LikeBtn, DislikeBtn, RetryBtn, CopyBtn };
     }
 
     /**
@@ -235,6 +257,9 @@ export class UIManager {
                 <div class="message-actions" >
                     <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
                     <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:6px; height:24px; margin-left:1px; margin-right:1px;"></span>
                     <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
                     <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
@@ -270,7 +295,7 @@ export class UIManager {
         
         // 滚动到底部
         this.scrollToBottom();
-        this.MessageClickActions(messageId, this.retryCallback);
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
     }
 
     /**
@@ -285,7 +310,7 @@ export class UIManager {
         if (actionsElement) {
             // actionsElement.style.display = 'block';
         }
-        this.MessageClickActions(messageId, this.retryCallback);
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
     }
     // 创建AI消息气泡
     createMessageElement(message) {
@@ -299,11 +324,13 @@ export class UIManager {
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
                 <div class="message-actions">
-                    <button class="action-btn retry-btn" title="重试"><img src="../icons/refresh.png" alt="refresh icon" class="action-icon"></button>
-                    <span style="color: #3c3c3c; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
-                    <span style="padding-bottom:4px">|</span>
-                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
-                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:24px; margin-left:1px; margin-right:1px;"></span>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             `;
         }

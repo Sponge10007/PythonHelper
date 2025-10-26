@@ -444,10 +444,10 @@ html, body {
     left: 0;
     display: flex;
     align-items: center;
-    gap: 8px; 
+    gap: 6px; 
 }
 
-assistant回答多选框样式
+/* assistant回答多选框样式 */
 .assistant-message .message-selector {
     position: absolute;
     right: 19px;
