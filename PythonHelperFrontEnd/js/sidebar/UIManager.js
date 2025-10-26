@@ -588,7 +588,7 @@ export class UIManager {
         });
         
         dialog.querySelector('.clear-history-btn').addEventListener('click', () => {
-            onClearHistory(5);
+            onClearHistory(10);
             document.body.removeChild(dialog);
         });
         

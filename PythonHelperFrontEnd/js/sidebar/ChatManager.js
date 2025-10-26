@@ -338,10 +338,15 @@ export class ChatManager {
     clearChatHistory(chatId, keepRecent = 5) {
         const chat = this.chats.find(c => c.id === chatId);
         if (!chat) return;
-        
         const originalLength = chat.messages.length;
-        chat.messages = chat.messages.slice(-keepRecent);
-        
+
+        // 如果 keepRecent <= 0 则清空所有消息；否则保留最近 keepRecent 条
+        if (!keepRecent || keepRecent <= 0) {
+            chat.messages = [];
+        } else {
+            chat.messages = chat.messages.slice(-keepRecent);
+        }
+
         console.log(`清理对话历史: ${chatId}, 原始消息数: ${originalLength}, 保留消息数: ${chat.messages.length}`);
         
         // 保存更新
