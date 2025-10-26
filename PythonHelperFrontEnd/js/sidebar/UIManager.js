@@ -263,7 +263,7 @@ export class UIManager {
                     <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             </div>
-            <input type="checkbox" class="message-selector" title="选择此消息" style= "margin-left: auto" >
+            <input type="checkbox" class="message-selector" title="选择此消息" style= "margin-left: auto; margin-right:3px" >
         `;
         
         this.chatMessages.appendChild(element);
@@ -593,6 +593,18 @@ export class UIManager {
         });
         
         dialog.querySelector('.clear-all-btn').addEventListener('click', () => {
+            // 先在对话内清除所有 stat-label / stat-value 文本
+            try {
+                dialog.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                dialog.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+                // 作为兜底，如果页面上还有其他 stat-label / stat-value，一并清空
+                document.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                document.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+            } catch (e) {
+                console.warn('清空 stat-label/stat-value 时出错:', e);
+            }
+
+            // 调用外部传入的清理回调（0 表示清空全部）
             onClearHistory(0);
             document.body.removeChild(dialog);
         });
