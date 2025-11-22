@@ -12,6 +12,11 @@ export class PPTHandler {
         this.thumbnailCache = new Map(); // 缩略图缓存
         this.selectedFiles = new Set(); // 选中的文件
         
+        // 状态管理
+        this.currentSort = 'date';
+        this.currentSearch = '';
+        this.currentTypeFilter = 'all';
+        
         // 监听简单的刷新事件
         document.addEventListener('refreshPPTList', () => {
             console.log('PPTHandler收到刷新事件');
@@ -786,11 +791,36 @@ export class PPTHandler {
      * 搜索文件
      */
     searchFiles(query) {
-        if (!query.trim()) {
-            this.filteredPptFiles = [...this.allPptFiles];
-        } else {
-            const lowerQuery = query.toLowerCase();
-            this.filteredPptFiles = this.allPptFiles.filter(file => {
+        this.currentSearch = query;
+        this.refreshList();
+    }
+
+    /**
+     * 排序文件
+     */
+    sortFiles(sortBy) {
+        this.currentSort = sortBy;
+        this.refreshList();
+    }
+
+    /**
+     * 过滤文件类型
+     */
+    filterByType(fileType) {
+        this.currentTypeFilter = fileType;
+        this.refreshList();
+    }
+
+    /**
+     * 刷新列表（应用所有筛选和排序）
+     */
+    refreshList() {
+        let result = [...this.allPptFiles];
+
+        // 1. 搜索
+        if (this.currentSearch.trim()) {
+            const lowerQuery = this.currentSearch.toLowerCase();
+            result = result.filter(file => {
                 // 搜索文件名
                 if (file.original_name.toLowerCase().includes(lowerQuery)) {
                     return true;
@@ -799,21 +829,22 @@ export class PPTHandler {
                 if (file.description?.toLowerCase().includes(lowerQuery)) {
                     return true;
                 }
-                // 搜索标签 - 确保 tags 是数组
+                // 搜索标签
                 if (file.tags && Array.isArray(file.tags)) {
                     return file.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
                 }
                 return false;
             });
         }
-        
-        this.render();
-    }
 
-    /**
-     * 排序文件
-     */
-    sortFiles(sortBy) {
+        // 2. 类型过滤
+        if (this.currentTypeFilter && this.currentTypeFilter !== 'all') {
+            result = result.filter(file => 
+                file.file_type.toLowerCase() === this.currentTypeFilter.toLowerCase()
+            );
+        }
+
+        // 3. 排序
         const sortFunctions = {
             'name': (a, b) => a.original_name.localeCompare(b.original_name),
             'date': (a, b) => new Date(b.upload_date) - new Date(a.upload_date),
@@ -821,10 +852,12 @@ export class PPTHandler {
             'type': (a, b) => a.file_type.localeCompare(b.file_type)
         };
 
-        if (sortFunctions[sortBy]) {
-            this.filteredPptFiles.sort(sortFunctions[sortBy]);
-            this.render();
+        if (sortFunctions[this.currentSort]) {
+            result.sort(sortFunctions[this.currentSort]);
         }
+        
+        this.filteredPptFiles = result;
+        this.render();
     }
 
     /**
@@ -863,21 +896,8 @@ export class PPTHandler {
         return this.thumbnailCache.get(pptId) || this.getDefaultThumbnail('unknown');
     }
 
-    /**
-     * 过滤文件类型
-     */
-    filterByType(fileType) {
-        if (!fileType || fileType === 'all') {
-            this.filteredPptFiles = [...this.allPptFiles];
-        } else {
-            this.filteredPptFiles = this.allPptFiles.filter(file => 
-                file.file_type.toLowerCase() === fileType.toLowerCase()
-            );
-        }
-        
-        this.render();
-    }
-
+    // filterByType 方法已整合到 refreshList 中，这里删除旧的实现
+    
     /**
      * 清空所有文件
      */

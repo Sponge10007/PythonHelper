@@ -12,6 +12,7 @@ export class MistakeHandler {
         this.itemsPerPage = 10;
         this.editingMistakeId = null;
         this.currentFilters = { search: '', tags: new Set() };
+        this.currentSort = 'date'; // 默认排序
         
         // 标签筛选条件
         this.tagFilters = {
@@ -187,6 +188,11 @@ export class MistakeHandler {
             return true;
         });
 
+        // --- 排序逻辑 ---
+        this.filteredMistakes.sort((a, b) => {
+            return this.compareMistakes(a, b, this.currentSort);
+        });
+
         // --- 渲染逻辑 ---
         const totalPages = Math.ceil(this.filteredMistakes.length / this.itemsPerPage);
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
@@ -214,18 +220,104 @@ export class MistakeHandler {
     }
     
     sort(sortBy) {
-        this.filteredMistakes.sort((a, b) => {
-            switch (sortBy) {
-                case 'date': return new Date(b.date) - new Date(a.date);
-                case 'category': return (a.category || '').localeCompare(b.category || '');
-                case 'difficulty':
-                    const order = { '简单': 1, '中等': 2, '困难': 3 };
-                    return (order[a.difficulty] || 0) - (order[b.difficulty] || 0);
-                default: return 0;
-            }
-        });
+        this.currentSort = sortBy;
         this.currentPage = 1;
         this.filterAndRender();
+    }
+
+    /**
+     * 比较两个错题
+     */
+    compareMistakes(a, b, sortBy) {
+        switch (sortBy) {
+            case 'date':
+                // 按日期降序（最新的在前）
+                return new Date(b.date) - new Date(a.date);
+            case 'class': // 按课程标签排序
+                const courseA = this.getMistakeTagByCategory(a, 'course') || '';
+                const courseB = this.getMistakeTagByCategory(b, 'course') || '';
+                return courseA.localeCompare(courseB, 'zh-CN');
+            case 'knowledge': // 按知识点标签排序
+                return this.compareByKnowledge(a, b);
+            case 'easy': // 由易到难
+                return this.getDifficultyValue(a) - this.getDifficultyValue(b);
+            case 'difficulty': // 由难到易
+                return this.getDifficultyValue(b) - this.getDifficultyValue(a);
+            default:
+                return 0;
+        }
+    }
+
+    /**
+     * 自定义知识点排序
+     */
+    compareByKnowledge(a, b) {
+        const order = [
+            '变量', '字符串', '列表', '字典', 
+            '循环', '条件语句', '文件操作', '类', '继承'
+        ];
+        
+        const knowA = this.getMistakeTagByCategory(a, 'knowledge') || '';
+        const knowB = this.getMistakeTagByCategory(b, 'knowledge') || '';
+        
+        const indexA = order.indexOf(knowA);
+        const indexB = order.indexOf(knowB);
+        
+        // 如果都在列表中，按列表顺序
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        
+        // 如果只有一个在列表中，在列表中的排前面
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // 如果都不在列表中，按拼音排序
+        return knowA.localeCompare(knowB, 'zh-CN');
+    }
+
+    /**
+     * 自定义课程排序
+     */
+    compareByCourse(a, b) {
+        const order = ['函数', '复合数据类型', '异常处理', '数据类型及表达式', '文件概述', '流程控制', '面向对象'];
+
+        const courseA = this.getMistakeTagByCategory(a, 'course') || '';
+        const courseB = this.getMistakeTagByCategory(b, 'course') || '';
+
+        const indexA = order.indexOf(courseA);
+        const indexB = order.indexOf(courseB);
+
+        // 如果都在列表中，按列表顺序
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        
+        // 如果只有一个在列表中，在列表中的排前面
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // 如果都不在列表中，按拼音排序
+        return courseA.localeCompare(courseB, 'zh-CN');
+    }
+
+    /**
+     * 获取错题指定类别的标签
+     */
+    getMistakeTagByCategory(mistake, category) {
+        if (!mistake.tags || !Array.isArray(mistake.tags)) return null;
+        if (!window.tagCategories || !window.tagCategories[category]) return null;
+        
+        return mistake.tags.find(tag => window.tagCategories[category].has(tag));
+    }
+
+    /**
+     * 获取难度值
+     */
+    getDifficultyValue(mistake) {
+        const tag = this.getMistakeTagByCategory(mistake, 'difficulty');
+        const order = { '简单': 1, '中等': 2, '困难': 3 };
+        return order[tag] || 0;
     }
 
     async deleteMistake(mistakeId) {

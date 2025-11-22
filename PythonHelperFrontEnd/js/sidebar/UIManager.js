@@ -255,10 +255,10 @@ export class UIManager {
                 <div class="message-content"><div class="streaming-content"></div></div>
                 <div class="message-actions" >
                     <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
-                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
                     <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
-                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
-                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:6px; height:24px; margin-left:1px; margin-right:1px;"></span>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:22px; margin-left:1px; margin-right:1px;"></span>
                     <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
                     <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>

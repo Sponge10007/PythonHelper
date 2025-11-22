@@ -474,8 +474,8 @@ html, body {
 }
 
 .assistant-message .action-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     display: flex;
     transition: transform 0.3s ease;
 }
