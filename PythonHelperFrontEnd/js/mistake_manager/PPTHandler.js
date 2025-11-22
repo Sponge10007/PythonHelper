@@ -60,7 +60,7 @@ export class PPTHandler {
             (id) => this.previewPPT(id),
             (id) => this.downloadPPT(id),
             (id) => this.deletePPT(id),
-            (id) => this.toggleSelectPPT(id)
+            (id, isSelected) => this.togglePPTSelection(id, isSelected)
         );
         this.updateStatistics();
         this.renderSelectedActions();
@@ -551,18 +551,9 @@ export class PPTHandler {
     }
 
     /**
-     * 切换文件选择状态
+     * 切换文件选择状态 - 已废弃，使用 togglePPTSelection
      */
-    toggleSelectPPT(pptId) {
-        if (this.selectedFiles.has(pptId)) {
-            this.selectedFiles.delete(pptId);
-        } else {
-            this.selectedFiles.add(pptId);
-        }
-        
-        this.renderSelectedActions();
-        this.ui.updateFileSelection(pptId, this.selectedFiles.has(pptId));
-    }
+    // toggleSelectPPT(pptId) { ... }
 
     /**
      * 全选/取消全选
@@ -583,22 +574,9 @@ export class PPTHandler {
     }
 
     /**
-     * 切换PPT选择状态
+     * 切换PPT选择状态 - 已废弃，使用 togglePPTSelection
      */
-    toggleSelectPPT(pptId) {
-        // 确保pptId是字符串类型
-        pptId = String(pptId);
-        
-        if (this.selectedFiles.has(pptId)) {
-            this.selectedFiles.delete(pptId);
-        } else {
-            this.selectedFiles.add(pptId);
-        }
-        
-        // 更新复选框状态
-        this.updateCheckboxes();
-        this.renderSelectedActions();
-    }
+    // toggleSelectPPT(pptId) { ... }
 
     /**
      * 更新复选框状态
@@ -653,6 +631,7 @@ export class PPTHandler {
         }
         
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log(`PPT ${pptId} ${isSelected ? '已选中' : '取消选中'}，当前选中数量: ${this.selectedFiles.size}`);
     }
 
@@ -720,6 +699,7 @@ export class PPTHandler {
         });
         
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log(`已选择 ${this.selectedFiles.size} 个PPT文件`);
     }
 
@@ -744,6 +724,7 @@ export class PPTHandler {
         
         this.selectedFiles.clear();
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log('已取消选择所有PPT文件');
     }
 
@@ -757,14 +738,6 @@ export class PPTHandler {
         }
 
         const selectedIds = Array.from(this.selectedFiles);
-        const fileNames = selectedIds.map(id => {
-            const file = this.allPptFiles.find(f => f.id === id);
-            return file ? file.original_name : `文件${id}`;
-        });
-
-        if (!confirm(`确定要删除以下 ${selectedIds.length} 个文件吗？\n\n${fileNames.join('\n')}`)) {
-            return;
-        }
 
         try {
             this.ui.showLoading('正在删除文件...');

@@ -417,7 +417,7 @@ export class UIManager {
     // PPT 预览相关 UI 方法
     // ================================
 
-    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete) {
+    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onSelect) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
             return;
@@ -430,10 +430,30 @@ export class UIManager {
             const previewBtn = pptCard.querySelector('.btn-preview');
             const downloadBtn = pptCard.querySelector('.btn-download');
             const deleteBtn = pptCard.querySelector('.btn-delete');
+            const checkbox = pptCard.querySelector('.ppt-checkbox');
 
             if (previewBtn) previewBtn.addEventListener('click', () => onPreview(ppt.id));
             if (downloadBtn) downloadBtn.addEventListener('click', () => onDownload(ppt.id));
             if (deleteBtn) deleteBtn.addEventListener('click', () => onDelete(ppt.id));
+            
+            // 绑定 checkbox 事件
+            if (checkbox && onSelect) {
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    onSelect(ppt.id, e.target.checked);
+                });
+                
+                // 点击卡片头部区域也可以触发选择
+                const header = pptCard.querySelector('.ppt-card-header');
+                if (header) {
+                    header.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            onSelect(ppt.id, checkbox.checked);
+                        }
+                    });
+                }
+            }
 
             this.pptGrid.appendChild(pptCard);
         });
