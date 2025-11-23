@@ -149,6 +149,24 @@ export async function updateMistake(mistakeId, updatedMistake) {
     return response.json(); 
 }
 
+/**
+ * 删除一个错题
+ * @param {number} mistakeId - 错题的ID
+ * @returns {Promise<Object>}
+ */
+export async function deleteMistake(mistakeId) {
+    const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除错题失败');
+    }
+    
+    return response.json();
+}
+
 // PPT 文件管理相关 API 函数
 
 /**

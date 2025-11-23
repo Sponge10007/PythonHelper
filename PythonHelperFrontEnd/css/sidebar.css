@@ -444,14 +444,14 @@ html, body {
     left: 0;
     display: flex;
     align-items: center;
-    gap: 8px; 
+    gap: 6px; 
 }
 
-assistant回答多选框样式
-.assistant-message .message-selector {
+/* assistant回答多选框样式 */
+/* .assistant-message .message-selector {
     position: absolute;
     right: 19px;
-}
+} */
 
 
 .assistant-message .action-btn {
@@ -474,10 +474,26 @@ assistant回答多选框样式
 }
 
 .assistant-message .action-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     display: flex;
+    transition: transform 0.3s ease;
 }
+
+/* 旋转动画 - 用于重试按钮 */
+.assistant-message .action-icon.rotating {
+    animation: rotate360 1s linear;
+}
+
+@keyframes rotate360 {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .assistant-message .action-btn .material-symbols-outlined {
     font-size: 20px;
 }

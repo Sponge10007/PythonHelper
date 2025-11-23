@@ -3,6 +3,7 @@
 export class UIManager {
     constructor() {
         this.initElements();
+        this.retryCallback = null; // 存储重试回调函数
     }
 
     initElements() {
@@ -23,6 +24,14 @@ export class UIManager {
         this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
         this.mistakeListContainer = document.getElementById('mistakeListContainer'); //侧边栏的错题列表
         this.memoryManageBtn = document.getElementById('memoryManageBtn'); //记忆管理
+    }
+    
+    /**
+     * 设置重试消息的回调函数
+     * @param {Function} callback - 重试回调函数，接收 messageId 作为参数
+     */
+    setRetryCallback(callback) {
+        this.retryCallback = callback;
     }
     
     showView(viewToShow) {
@@ -129,6 +138,106 @@ export class UIManager {
         
         return messageElement;
     }
+    
+    /**
+     * 绑定消息操作按钮的事件
+     * @param {string} messageId - 消息ID
+     * @param {Function} onRetry - 重试回调函数
+     */
+    MessageClickActions(messageId, onRetry = null) {
+        // 获取特定消息的容器
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            console.warn(`Message with id ${messageId} not found`);
+            return null;
+        }
+
+        // 检查是否已经绑定过事件，避免重复绑定
+        if (messageElement.dataset.actionsbound === 'true') {
+            return null;
+        }
+
+        // 在消息容器内查找按钮和图标（避免ID冲突）
+        const LikeBtn = messageElement.querySelector('.like-btn');
+        const LikeBtnImg = messageElement.querySelector('.like-btn img');
+        const DislikeBtn = messageElement.querySelector('.dislike-btn');
+        const DislikeBtnImg = messageElement.querySelector('.dislike-btn img');
+        const RetryBtn = messageElement.querySelector('.retry-btn');
+        const RetryBtnImg = messageElement.querySelector('.retry-btn img');
+        const CopyBtn = messageElement.querySelector('.copy-btn');
+
+        // 检查按钮是否存在
+        if (!LikeBtn || !DislikeBtn || !RetryBtn) {
+            console.warn(`Some buttons not found for message ${messageId}`);
+            return null;
+        }
+
+        // 点赞按钮
+        LikeBtn.addEventListener('click', () => {
+            console.log(`Liked message ${messageId}`);
+            if (LikeBtnImg && LikeBtnImg.src.includes('good.png')) {
+                LikeBtnImg.src = '../icons/good-active.png';
+                // 如果点赞，取消踩
+                if (DislikeBtnImg) {
+                    DislikeBtnImg.src = '../icons/bad.png';
+                }
+            } else if (LikeBtnImg) {
+                LikeBtnImg.src = '../icons/good.png';
+            }
+        });
+
+        // 点踩按钮
+        DislikeBtn.addEventListener('click', () => {
+            console.log(`Disliked message ${messageId}`);
+            if (DislikeBtnImg && DislikeBtnImg.src.includes('bad.png')) {
+                DislikeBtnImg.src = '../icons/bad-active.png';
+                // 如果点踩，取消赞
+                if (LikeBtnImg) {
+                    LikeBtnImg.src = '../icons/good.png';
+                }
+            } else if (DislikeBtnImg) {
+                DislikeBtnImg.src = '../icons/bad.png';
+            }
+        });
+
+        // 重试按钮
+        RetryBtn.addEventListener('click', () => {
+            console.log(`Retry message ${messageId}`);
+            
+            // 添加旋转动画
+            if (RetryBtnImg) {
+                RetryBtnImg.classList.add('rotating');
+                setTimeout(() => {
+                    RetryBtnImg.classList.remove('rotating');
+                }, 1000);
+            }
+            
+            // 调用重试回调函数
+            if (onRetry && typeof onRetry === 'function') {
+                onRetry(messageId);
+            } else {
+                console.warn('No retry handler provided for message', messageId);
+            }
+        });
+
+        // 复制按钮
+        CopyBtn.addEventListener('click', () => {
+            const messageContentElement = messageElement.querySelector('.message-content');
+            if (messageContentElement) {
+                const textToCopy = messageContentElement.innerText || messageContentElement.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    console.log(`Copied message ${messageId} content to clipboard`);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        });
+
+        // 标记已绑定事件，防止重复绑定
+        messageElement.dataset.actionsbound = 'true';
+
+        return { LikeBtn, DislikeBtn, RetryBtn, CopyBtn };
+    }
 
     /**
      * 创建流式消息元素 - 用于实时更新内容
@@ -144,18 +253,25 @@ export class UIManager {
             <div class="message-avatar"></div>
             <div class="message-bubble-container">
                 <div class="message-content"><div class="streaming-content"></div></div>
-            <input type="checkbox" class="message-selector" title="选择此消息" style= “margin-left: auto” >
                 <div class="message-actions" >
-                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
-                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
-                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
-                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:22px; margin-left:1px; margin-right:1px;"></span>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             </div>
+            <input type="checkbox" class="message-selector" title="选择此消息" style= "margin-left: auto; margin-right:3px" >
         `;
         
         this.chatMessages.appendChild(element);
         this.scrollToBottom();
+
+        // 绑定消息操作按钮的点击事件
+        this.MessageClickActions(messageId, this.retryCallback);
+
         return element;
     }
 
@@ -179,6 +295,7 @@ export class UIManager {
         
         // 滚动到底部
         this.scrollToBottom();
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
     }
 
     /**
@@ -193,6 +310,7 @@ export class UIManager {
         if (actionsElement) {
             // actionsElement.style.display = 'block';
         }
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
     }
     // 创建AI消息气泡
     createMessageElement(message) {
@@ -206,20 +324,22 @@ export class UIManager {
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
                 <div class="message-actions">
-                    <button class="action-btn retry-btn" title="重试"><img src="../侧边栏icon/33.png" alt="refresh icon" class="action-icon"></button>
-                    <span style="color: #3c3c3c; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
-                    <span style="padding-bottom:4px">|</span>
-                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
-                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:24px; margin-left:1px; margin-right:1px;"></span>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             `;
         }
     
         element.innerHTML = `
+            <input type="checkbox" class="message-selector" title="选择此消息" >
             <div class="message-bubble-container">
                 <div class="message-content"><div>${this.formatMessageContent(message.content || '')}</div></div>
                 ${actionsHtml}
-                <input type="checkbox" class="message-selector" title="选择此消息" style="margin-left: auto">
             </div>
 
         `;
@@ -468,11 +588,23 @@ export class UIManager {
         });
         
         dialog.querySelector('.clear-history-btn').addEventListener('click', () => {
-            onClearHistory(5);
+            onClearHistory(10);
             document.body.removeChild(dialog);
         });
         
         dialog.querySelector('.clear-all-btn').addEventListener('click', () => {
+            // 先在对话内清除所有 stat-label / stat-value 文本
+            try {
+                dialog.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                dialog.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+                // 作为兜底，如果页面上还有其他 stat-label / stat-value，一并清空
+                document.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                document.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+            } catch (e) {
+                console.warn('清空 stat-label/stat-value 时出错:', e);
+            }
+
+            // 调用外部传入的清理回调（0 表示清空全部）
             onClearHistory(0);
             document.body.removeChild(dialog);
         });

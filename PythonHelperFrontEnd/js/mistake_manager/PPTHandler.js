@@ -12,6 +12,11 @@ export class PPTHandler {
         this.thumbnailCache = new Map(); // 缩略图缓存
         this.selectedFiles = new Set(); // 选中的文件
         
+        // 状态管理
+        this.currentSort = 'date';
+        this.currentSearch = '';
+        this.currentTypeFilter = 'all';
+        
         // 监听简单的刷新事件
         document.addEventListener('refreshPPTList', () => {
             console.log('PPTHandler收到刷新事件');
@@ -55,7 +60,7 @@ export class PPTHandler {
             (id) => this.previewPPT(id),
             (id) => this.downloadPPT(id),
             (id) => this.deletePPT(id),
-            (id) => this.toggleSelectPPT(id)
+            (id, isSelected) => this.togglePPTSelection(id, isSelected)
         );
         this.updateStatistics();
         this.renderSelectedActions();
@@ -546,18 +551,9 @@ export class PPTHandler {
     }
 
     /**
-     * 切换文件选择状态
+     * 切换文件选择状态 - 已废弃，使用 togglePPTSelection
      */
-    toggleSelectPPT(pptId) {
-        if (this.selectedFiles.has(pptId)) {
-            this.selectedFiles.delete(pptId);
-        } else {
-            this.selectedFiles.add(pptId);
-        }
-        
-        this.renderSelectedActions();
-        this.ui.updateFileSelection(pptId, this.selectedFiles.has(pptId));
-    }
+    // toggleSelectPPT(pptId) { ... }
 
     /**
      * 全选/取消全选
@@ -578,22 +574,9 @@ export class PPTHandler {
     }
 
     /**
-     * 切换PPT选择状态
+     * 切换PPT选择状态 - 已废弃，使用 togglePPTSelection
      */
-    toggleSelectPPT(pptId) {
-        // 确保pptId是字符串类型
-        pptId = String(pptId);
-        
-        if (this.selectedFiles.has(pptId)) {
-            this.selectedFiles.delete(pptId);
-        } else {
-            this.selectedFiles.add(pptId);
-        }
-        
-        // 更新复选框状态
-        this.updateCheckboxes();
-        this.renderSelectedActions();
-    }
+    // toggleSelectPPT(pptId) { ... }
 
     /**
      * 更新复选框状态
@@ -648,6 +631,7 @@ export class PPTHandler {
         }
         
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log(`PPT ${pptId} ${isSelected ? '已选中' : '取消选中'}，当前选中数量: ${this.selectedFiles.size}`);
     }
 
@@ -715,6 +699,7 @@ export class PPTHandler {
         });
         
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log(`已选择 ${this.selectedFiles.size} 个PPT文件`);
     }
 
@@ -739,6 +724,7 @@ export class PPTHandler {
         
         this.selectedFiles.clear();
         this.updateCheckboxes();
+        this.renderSelectedActions();
         console.log('已取消选择所有PPT文件');
     }
 
@@ -752,14 +738,6 @@ export class PPTHandler {
         }
 
         const selectedIds = Array.from(this.selectedFiles);
-        const fileNames = selectedIds.map(id => {
-            const file = this.allPptFiles.find(f => f.id === id);
-            return file ? file.original_name : `文件${id}`;
-        });
-
-        if (!confirm(`确定要删除以下 ${selectedIds.length} 个文件吗？\n\n${fileNames.join('\n')}`)) {
-            return;
-        }
 
         try {
             this.ui.showLoading('正在删除文件...');
@@ -786,24 +764,60 @@ export class PPTHandler {
      * 搜索文件
      */
     searchFiles(query) {
-        if (!query.trim()) {
-            this.filteredPptFiles = [...this.allPptFiles];
-        } else {
-            const lowerQuery = query.toLowerCase();
-            this.filteredPptFiles = this.allPptFiles.filter(file => 
-                file.original_name.toLowerCase().includes(lowerQuery) ||
-                file.description?.toLowerCase().includes(lowerQuery) ||
-                (file.tags && file.tags.some(tag => tag.toLowerCase().includes(lowerQuery)))
-            );
-        }
-        
-        this.render();
+        this.currentSearch = query;
+        this.refreshList();
     }
 
     /**
      * 排序文件
      */
     sortFiles(sortBy) {
+        this.currentSort = sortBy;
+        this.refreshList();
+    }
+
+    /**
+     * 过滤文件类型
+     */
+    filterByType(fileType) {
+        this.currentTypeFilter = fileType;
+        this.refreshList();
+    }
+
+    /**
+     * 刷新列表（应用所有筛选和排序）
+     */
+    refreshList() {
+        let result = [...this.allPptFiles];
+
+        // 1. 搜索
+        if (this.currentSearch.trim()) {
+            const lowerQuery = this.currentSearch.toLowerCase();
+            result = result.filter(file => {
+                // 搜索文件名
+                if (file.original_name.toLowerCase().includes(lowerQuery)) {
+                    return true;
+                }
+                // 搜索描述
+                if (file.description?.toLowerCase().includes(lowerQuery)) {
+                    return true;
+                }
+                // 搜索标签
+                if (file.tags && Array.isArray(file.tags)) {
+                    return file.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+                }
+                return false;
+            });
+        }
+
+        // 2. 类型过滤
+        if (this.currentTypeFilter && this.currentTypeFilter !== 'all') {
+            result = result.filter(file => 
+                file.file_type.toLowerCase() === this.currentTypeFilter.toLowerCase()
+            );
+        }
+
+        // 3. 排序
         const sortFunctions = {
             'name': (a, b) => a.original_name.localeCompare(b.original_name),
             'date': (a, b) => new Date(b.upload_date) - new Date(a.upload_date),
@@ -811,10 +825,12 @@ export class PPTHandler {
             'type': (a, b) => a.file_type.localeCompare(b.file_type)
         };
 
-        if (sortFunctions[sortBy]) {
-            this.filteredPptFiles.sort(sortFunctions[sortBy]);
-            this.render();
+        if (sortFunctions[this.currentSort]) {
+            result.sort(sortFunctions[this.currentSort]);
         }
+        
+        this.filteredPptFiles = result;
+        this.render();
     }
 
     /**
@@ -853,21 +869,8 @@ export class PPTHandler {
         return this.thumbnailCache.get(pptId) || this.getDefaultThumbnail('unknown');
     }
 
-    /**
-     * 过滤文件类型
-     */
-    filterByType(fileType) {
-        if (!fileType || fileType === 'all') {
-            this.filteredPptFiles = [...this.allPptFiles];
-        } else {
-            this.filteredPptFiles = this.allPptFiles.filter(file => 
-                file.file_type.toLowerCase() === fileType.toLowerCase()
-            );
-        }
-        
-        this.render();
-    }
-
+    // filterByType 方法已整合到 refreshList 中，这里删除旧的实现
+    
     /**
      * 清空所有文件
      */

@@ -39,6 +39,12 @@ class SidebarManager {
         // 检查登录状态
         await this.checkLoginStatus();
         
+        // 设置重试回调
+        this.ui.setRetryCallback((messageId) => {
+            console.log('SidebarManager: 重试消息', messageId);
+            this.chatManager.retryMessage(messageId);
+        });
+        
         // 初始化发送按钮状态
         if (this.ui.sendMessageBtn) {
             this.ui.sendMessageBtn.classList.add('ready');
