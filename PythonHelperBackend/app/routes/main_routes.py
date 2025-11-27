@@ -34,13 +34,25 @@ SYSTEM_PROMPT = """
                 当用户问你选择题的题目时，请你不要将答案告诉用户，这样会让用户失去思考空间，所以在你的回答中不能出现诸如"正确答案是..."等提及题目答案的字眼。
                 当用户询问你某道题目时，请你分析后不要告诉用户题目答案是什么（非常重要，不要给出答案）。
                 """
+
+FILTER_SYSTEM_PROMPT = """
+你是一个严格的Python教学助教审核员。你的任务是审查一段由AI生成的教学回复，并对其进行“去答案化”处理。
+
+请遵循以下审核与修改规则：
+1. **删除直接答案**：如果回复中包含了选择题、填空题的直接答案（如“选A”、“答案是B”），请直接删除该句子，或将其修改为引导性提问。
+2. **代码伪代码化**：如果回复中包含了直接解决问题的完整Python代码，请将其转换为“伪代码”或“代码框架”（保留注释和逻辑结构，但隐藏关键实现细节）。
+3. **保留教学内容**：保留原回复中的知识点讲解、思路分析和错误的辨析。
+4. **语气保持**：保持原回复的鼓励性和教学语气。
+5. **原样输出**：如果原回复已经符合要求（没有直接答案），请原样输出，不要做任何多余的修改或总结。
+
+请直接输出修改后的内容，不需要输出“审核完成”等额外废话。
+"""
 main_bp = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
 
 
 @main_bp.route('/health', methods=['GET'])
 def health_check():
-    # ... (此路由内容与原代码相同)
     question_service = current_app.question_service
     question_types = {q.get('question_type', '未知'): 0 for q in question_service.questions_db}
     for q in question_service.questions_db:
@@ -114,15 +126,16 @@ def ai_chat_stream():
             logger.warning(f"API为{api_key}未提供API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
-            
-            # 模拟流式传输
-            def generate_mock_stream():
-                words = mock_response.split()
-                for i, word in enumerate(words):
-                    yield f"data: {json.dumps({'content': word + ' ', 'done': False})}\n\n"
-                    import time
-                    time.sleep(0.1)  # 模拟延迟
-                yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
+        
+
+        # # 模拟流式传输
+        # def generate_mock_stream():
+        #     words = mock_response.split()
+        #     for i, word in enumerate(words):
+        #         yield f"data: {json.dumps({'content': word + ' ', 'done': False})}\n\n"
+        #         import time
+        #         time.sleep(0.1)  # 模拟延迟
+        #     yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
             
             return Response(generate_mock_stream(), mimetype='text/event-stream',
                           headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
@@ -130,17 +143,35 @@ def ai_chat_stream():
         system = data.get('system', SYSTEM_PROMPT)
         api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
         
-        # 使用流式AI API调用
-        def generate_stream():
+        draft_content = ""
+        try:
+            # 我们复用 call_ai_api_stream，但在后端循环消费它，不发送给前端
+            for chunk in call_ai_api_stream(messages, api_key, api_endpoint, system):
+                if chunk.get('content'):
+                    draft_content += chunk['content']
+                if chunk.get('error'):
+                    # 如果第一步就错了，直接报错给前端
+                    return Response(f"data: {json.dumps(chunk)}\n\n", mimetype='text/event-stream')
+        except Exception as e:
+            logger.error(f"第一阶段draft生成失败 from main_routes.py:{e}")
+            return jsonify({'error': str(e)}), 500
+        logger.info(f"第一阶段draft生成完成, 草稿长度: {len(draft_content)}")
+
+        # 进行审查
+        filter_message = [
+            {'role': 'user', 'content': f"请审查以下回复:\n\n{draft_content}"}
+        ]
+        
+        def generate_filter_stream():
             try:
-                for chunk in call_ai_api_stream(messages, api_key, api_endpoint, system):
+                for chunk in call_ai_api_stream(filter_message, api_key, api_endpoint, FILTER_SYSTEM_PROMPT):
                     yield f"data: {json.dumps(chunk)}\n\n"
             except Exception as e:
                 logger.error(f"流式AI调用错误: {e}")
                 error_chunk = {'content': f'错误: {str(e)}', 'done': True, 'error': True}
                 yield f"data: {json.dumps(error_chunk)}\n\n"
         
-        return Response(generate_stream(), mimetype='text/event-stream',
+        return Response(generate_filter_stream(), mimetype='text/event-stream',
                       headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
     except Exception as e:
         logger.error(f"AI流式聊天接口错误: {e}")

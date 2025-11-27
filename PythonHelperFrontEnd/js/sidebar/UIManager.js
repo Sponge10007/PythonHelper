@@ -317,9 +317,15 @@ export class UIManager {
         const element = document.createElement('div');
         element.className = `message ${message.role}-message`;
         element.dataset.messageId = message.id;
+        // 1. 定义多选框的 HTML
+        const checkboxHtml = `<input type="checkbox" class="message-selector" title="选择此消息">`;
 
+        // 2. 定义头像 HTML
+        // 用户显示 'U'，AI 显示背景图(内容为空)
         const avatarContent = message.role === 'user' ? 'U' : '';
-    
+        const avatarHtml = `<div class="message-avatar">${avatarContent}</div>`;
+
+        // 3. 定义操作按钮 HTML
         let actionsHtml = '';
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
@@ -334,15 +340,24 @@ export class UIManager {
                 </div>
             `;
         }
-    
-        element.innerHTML = `
-            <input type="checkbox" class="message-selector" title="选择此消息" >
+        
+        // 4. 定义消息气泡HTML
+        const bubbleHtml = `
             <div class="message-bubble-container">
                 <div class="message-content"><div>${this.formatMessageContent(message.content || '')}</div></div>
                 ${actionsHtml}
             </div>
-
-        `;
+        `
+        /*
+        5. 组装各个消息元素（头像，气泡，复选框）    
+            1. Checkbox -> Avatar -> Bubble
+            2. Avatar | Bubble | Checkbox
+        */
+        if (message.role === 'user') {
+            element.innerHTML = checkboxHtml + avatarHtml + bubbleHtml;
+        } else {
+            element.innerHTML = avatarHtml + bubbleHtml + checkboxHtml;
+        }
         return element;
     }
 

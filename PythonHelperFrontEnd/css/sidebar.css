@@ -553,15 +553,21 @@ html, body {
     border-color: #718096;
 }
 
-/* ADDED: Styles for message selector checkbox */
+/* Styles for message selector checkbox */
 .message-selector {
     flex-shrink: 0;
     right: 19px;
     cursor: pointer;
     display: none; /* Hidden by default */
+
+    /* 用于调整大小 */
+    width: 20px;        /* 增加宽度 */
+    height: 20px;       /* 增加高度 */
+    margin: 0 10px;     /* 增加左右间距，防止离气泡太近 */
+    accent-color: #7a3898; /* 设置选中时的颜色为主题紫 */
 }
 
-/* ADDED: Show checkboxes when in selection mode */
+/* Show checkboxes when in selection mode */
 .chat-container.selection-mode .message-selector {
     display: block;
 }

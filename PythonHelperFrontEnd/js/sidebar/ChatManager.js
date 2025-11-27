@@ -327,23 +327,13 @@ export class ChatManager {
         const chat = this.chats.find(c => c.id === chatId);
         if (!chat) return;
         const originalLength = chat.messages.length;
-<<<<<<< HEAD
-        // 明确处理keepRecent为0的情况
-        if (keepRecent === 0) {
-=======
 
         // 如果 keepRecent <= 0 则清空所有消息；否则保留最近 keepRecent 条
         if (!keepRecent || keepRecent <= 0) {
->>>>>>> 3a385a7d4401608f70f80cdf3277f30015bc033a
             chat.messages = [];
         } else {
             chat.messages = chat.messages.slice(-keepRecent);
         }
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> 3a385a7d4401608f70f80cdf3277f30015bc033a
         console.log(`清理对话历史: ${chatId}, 原始消息数: ${originalLength}, 保留消息数: ${chat.messages.length}`);
         
         // 保存更新
