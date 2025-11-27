@@ -138,6 +138,27 @@ export class EditManager {
     }
     
     /**
+     * 同步选中状态到Handler
+     */
+    _syncToHandler(type) {
+        if (type === 'ppt' && window.pptHandler) {
+            // 同步Set
+            window.pptHandler.selectedFiles = new Set(this.selectedItems);
+            // 更新统计信息
+            window.pptHandler.updateStatistics();
+        } else if (type === 'mistake' && window.mistakeHandler) {
+             window.mistakeHandler.selectedMistakes = new Set(this.selectedItems);
+             // 错题管理器可能也需要更新UI，如果有相关统计的话
+             if (window.mistakeHandler.updateSelectionUI) {
+                 // 注意：updateSelectionUI可能会尝试更新checkbox，这可能会有冲突，
+                 // 但我们主要目的是同步状态。
+                 // 实际上，MistakeHandler没有显式的updateStatistics方法用于选中计数，
+                 // 但保持状态同步是个好习惯。
+             }
+        }
+    }
+
+    /**
      * 全选
      */
     selectAll(type) {
@@ -160,6 +181,7 @@ export class EditManager {
             }
         });
         this.updateBatchDeleteButton();
+        this._syncToHandler(type);
     }
     
     /**
@@ -184,6 +206,7 @@ export class EditManager {
         
         this.selectedItems.clear();
         this.updateBatchDeleteButton();
+        this._syncToHandler(type);
     }
     
     /**
@@ -222,9 +245,21 @@ export class EditManager {
             // 清空选中状态
             this.selectedItems.clear();
             this.updateBatchDeleteButton();
+            this._syncToHandler(type);
             
             // 刷新页面重新加载数据
-            window.location.reload();
+            // window.location.reload();
+            
+            if (type === 'ppt' && window.pptHandler) {
+                await window.pptHandler.init();
+            } else if (type === 'mistake' && window.mistakeHandler) {
+                await window.mistakeHandler.init();
+            } else {
+                window.location.reload();
+            }
+
+            // 保持编辑模式，重新绑定事件
+            this.enterEditMode(type);
             
         } catch (error) {
             console.error(`${type} 批量删除失败:`, error);
@@ -257,8 +292,17 @@ export class EditManager {
         }
         
         this.updateBatchDeleteButton();
+        this._syncToHandler(type);
     }
     
+    /**
+     * 更新选中项（供外部调用，如PPTHandler）
+     */
+    updateSelectedItems(items) {
+        this.selectedItems = new Set(items);
+        this.updateBatchDeleteButton();
+    }
+
     /**
      * 更新批量删除按钮状态
      */
