@@ -112,17 +112,6 @@ export class ChatManager {
         
         let accumulatedContent = '';
 
-        // try{
-        //     const response = await api.generateAiResponse(chat.messages);
-        //     const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: response };
-        //     chat.messages.push(aiMessage);
-        //     this.ui.appendMessage(aiMessage);
-        //     storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
-        // } catch (error) {
-        //     console.error('AI请求失败:', error);
-        //     let errorMessage = '抱歉，请求失败。';
-        //     this.ui.updateStreamingMessage(messageId, errorMessage);
-        // }
         try {
             // 在发送给AI之前，先进行记忆管理
             const managedMessages = this.manageConversationMemory(chat.messages);
@@ -154,7 +143,6 @@ export class ChatManager {
                         content: accumulatedContent 
                     };
                     chat.messages.push(aiMessage);
-                    console.log('AI响应完成:', aiMessage);
                     storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
                 }
             });
@@ -339,14 +327,23 @@ export class ChatManager {
         const chat = this.chats.find(c => c.id === chatId);
         if (!chat) return;
         const originalLength = chat.messages.length;
+<<<<<<< HEAD
+        // 明确处理keepRecent为0的情况
+        if (keepRecent === 0) {
+=======
 
         // 如果 keepRecent <= 0 则清空所有消息；否则保留最近 keepRecent 条
         if (!keepRecent || keepRecent <= 0) {
+>>>>>>> 3a385a7d4401608f70f80cdf3277f30015bc033a
             chat.messages = [];
         } else {
             chat.messages = chat.messages.slice(-keepRecent);
         }
+<<<<<<< HEAD
+        
+=======
 
+>>>>>>> 3a385a7d4401608f70f80cdf3277f30015bc033a
         console.log(`清理对话历史: ${chatId}, 原始消息数: ${originalLength}, 保留消息数: ${chat.messages.length}`);
         
         // 保存更新
@@ -355,6 +352,7 @@ export class ChatManager {
         // 如果当前对话被清理，重新渲染
         if (this.currentChatId === chatId) {
             this.ui.renderMessages(chat.messages);
+            console.log(`已更新UI，当前消息数: ${chat.messages.length}`);
         }
     }
     
