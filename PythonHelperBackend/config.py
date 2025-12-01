@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 class Config:
@@ -32,4 +33,5 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'None'
     SESSION_COOKIE_DOMAIN = None  # 允许localhost
     SESSION_COOKIE_PATH = '/'
-    SESSION_PERMANENT = False
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)

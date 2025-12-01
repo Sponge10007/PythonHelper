@@ -103,6 +103,8 @@ class PageManager {
         const cancelEditPPT = document.getElementById('cancelEditPPT');
         console.log('PPT编辑模式按钮:', { editModePPT, cancelEditPPT });
 
+        // EditManager 会处理这些事件，这里不需要重复绑定，而且 PPTHandler 没有 enterEditMode 方法
+        /*
         if (editModePPT) {
             console.log('绑定PPT编辑模式事件');
             editModePPT.addEventListener('click', () => {
@@ -126,6 +128,7 @@ class PageManager {
         } else {
             console.error('未找到退出PPT编辑模式按钮');
         }
+        */
 
         // PPT批量操作
         const selectAllPPTs = document.getElementById('selectAllPPTs');
@@ -134,6 +137,8 @@ class PageManager {
         const clearAllPPTs = document.getElementById('clearAllPPTs');
         console.log('PPT批量操作按钮:', { selectAllPPTs, deselectAllPPTs, batchDeletePPTs, clearAllPPTs });
 
+        // EditManager 会处理这些事件
+        /*
         if (selectAllPPTs) {
             console.log('绑定全选PPT事件');
             selectAllPPTs.addEventListener('click', () => {
@@ -163,6 +168,7 @@ class PageManager {
         } else {
             console.error('未找到批量删除PPT按钮');
         }
+        */
 
         if (clearAllPPTs) {
             clearAllPPTs.addEventListener('click', () => {

@@ -190,6 +190,7 @@ def login():
         db.commit()
 
         # 创建会话
+        session.permanent = True
         session['user_id'] = user['id']
         session['user_email'] = user['email']
 
