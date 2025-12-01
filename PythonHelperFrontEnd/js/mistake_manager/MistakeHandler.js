@@ -558,4 +558,40 @@ export class MistakeHandler {
             window.editManager.updateSelectedItems(Array.from(this.selectedMistakes));
         }
     }
+
+    async analyzeMistake(mistakeId) {
+        try {
+            // 调用后端接口
+            const response = await fetch(`${window.getBackendUrl()}/mistakes/${mistakeId}/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 如果有登录 token，记得带上
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || '分析请求失败');
+            }
+
+            const result = await response.json();
+            console.log(result)
+
+            // 更新本地数据
+            const index = this.allMistakes.findIndex(m => m.id === mistakeId);
+            if (index !== -1) {
+                this.allMistakes[index].title = result.title;
+                this.allMistakes[index].ai_summary = result.ai_summary;
+                
+                // 重新渲染列表以显示结果
+                this.filterAndRender();
+                alert('✨ 分析完成！题目和解析已更新。');
+            }
+
+        } catch (error) {
+            console.error('AI分析失败:', error);
+            throw error; // 抛出给调用者处理UI状态
+        }
+    }
 }

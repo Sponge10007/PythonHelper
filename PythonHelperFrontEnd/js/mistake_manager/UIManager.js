@@ -116,7 +116,7 @@ export class UIManager {
             });
         }
         
-
+        console.log("保存的错题数据",mistake.messages)
         const messagesHtml = (mistake.messages || []).map((msg, index) => {
             // 第一条消息（用户的初始提问）不显示
             if (index === 0 && msg.role === 'user') {
@@ -158,6 +158,31 @@ export class UIManager {
         // 生成唯一的ID用于折叠功能
         const collapseId = `analysis-${mistake.id}`;
 
+        // === 新增：AI 解析区域逻辑 ===
+        let aiAnalysisHtml = '';
+        if (mistake.ai_summary) {
+            // 如果已有解析，直接显示
+            aiAnalysisHtml = `
+                <div class="ai-analysis-container" style="background:#f0f7ff; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #cce5ff;">
+                    <h4 style="color:#004085; margin:0 0 10px 0; display:flex; align-items:center; gap:5px;">
+                        <span>🤖 AI 题目与解析</span>
+                    </h4>
+                    <div class="ai-summary-content markdown-body" style="font-size:14px; color:#333;">
+                        ${mistake.ai_summary}  </div>
+                </div>
+            `;
+        } else {
+            // 如果没有解析，显示生成按钮
+            aiAnalysisHtml = `
+                <div class="ai-analysis-placeholder" style="margin:10px 0;">
+                    <button class="btn-ai-analyze btn-secondary" data-mistake-id="${mistake.id}" style="width:100%; border-style:dashed; background:#fff; color:#7a3898; border-color:#7a3898;">
+                        ✨ 点击生成 AI 题目与解析 (基于对话分析)
+                    </button>
+                </div>
+            `;
+        }
+
+        // === 更新 HTML 结构 ===
         div.innerHTML = `
             <div class="mistake-header">
                 <div>
@@ -169,9 +194,12 @@ export class UIManager {
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
             ${tagsHtml}
+            
+            ${aiAnalysisHtml}
+
             <div class="analysis-box" id="${collapseId}">
                 <div class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
-                    <span class="analysis-toggle-text">展开解析</span>
+                    <span class="analysis-toggle-text">查看原始对话记录</span>
                     <span class="analysis-toggle-icon">▼</span>
                 </div>
                 <div class="analysis-content" style="display: none;">
@@ -183,6 +211,29 @@ export class UIManager {
                 <button class="delete-mistake-btn btn-danger" data-mistake-id="${mistake.id}">删除</button>
             </div>
         `;
+        
+        // === 绑定新增按钮的事件 ===
+        const analyzeBtn = div.querySelector('.btn-ai-analyze');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', async (e) => {
+                const btn = e.target;
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = '🤖 正在分析对话中...';
+                
+                try {
+                    // 调用全局暴露的 Handler 方法
+                    if (window.mistakeHandler) {
+                        await window.mistakeHandler.analyzeMistake(mistake.id);
+                    }
+                } catch (err) {
+                    alert('分析失败: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            });
+        }
+        
         return div;
     }
 

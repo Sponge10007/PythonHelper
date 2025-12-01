@@ -128,17 +128,6 @@ def ai_chat_stream():
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
         
 
-        # # 模拟流式传输
-        # def generate_mock_stream():
-        #     words = mock_response.split()
-        #     for i, word in enumerate(words):
-        #         yield f"data: {json.dumps({'content': word + ' ', 'done': False})}\n\n"
-        #         import time
-        #         time.sleep(0.1)  # 模拟延迟
-        #     yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
-            
-            return Response(generate_mock_stream(), mimetype='text/event-stream',
-                          headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
 
         system = data.get('system', SYSTEM_PROMPT)
         api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')

@@ -111,6 +111,7 @@ export async function fetchMistakes() {
  * 保存新的错题到后端
  * @param {Object} mistake - 新的错题对象
  * @returns {Promise<void>}
+ * @use {sidebar/ChatManager.js} 
  */
 export async function saveMistake(mistake) {
     // 这个函数用于添加一个全新的错题记录

@@ -69,11 +69,11 @@ def call_ai_api_with_memory(messages: List[Dict], api_key: str, api_endpoint: st
         # 获取AI回复内容
         ai_response = result['choices'][0]['message']['content']
         
-        # 将markdown转换为HTML
-        html_response = convert_markdown_to_html(ai_response)
+        # # 将markdown转换为HTML
+        # html_response = convert_markdown_to_html(ai_response)
         
-        return html_response
-
+        # return html_response
+        return ai_response
     except requests.exceptions.RequestException as e:
         logger.error(f"AI API调用失败 (持久记忆): {e}")
         raise Exception(f"AI服务调用失败: {str(e)}")
@@ -114,12 +114,8 @@ def call_ai_api(message: str, api_key: str, api_endpoint: str, system: str) -> s
         
         # 获取AI回复内容
         ai_response = result['choices'][0]['message']['content']
-        
-        # 将markdown转换为HTML
-        html_response = convert_markdown_to_html(ai_response)
-        
-        return html_response
 
+        return ai_response
     except requests.exceptions.RequestException as e:
         logger.error(f"AI API调用失败: {e}")
         raise Exception(f"AI服务调用失败: {str(e)}")
