@@ -1,5 +1,5 @@
 /others
-/ppt_files
+PythonHelperBackend/ppt_files
 --- Python 核心忽略 ---
 
 pycache/
