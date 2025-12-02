@@ -48,6 +48,7 @@ class Database:
                 difficulty TEXT,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 ai_summary TEXT,
+                user_id INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

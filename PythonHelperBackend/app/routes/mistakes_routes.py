@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from app.database import get_db
 from app.utils import parse_json_field
 import logging
@@ -27,10 +27,14 @@ ANALYSIS_SYSTEM_PROMPT = """
 
 @mistakes_bp.route('/', methods=['GET'])
 def get_mistakes():
-    # ... (此路由内容与原代码相同)
+    user_id = session.get('user_id') #获取当前登录用户的ID
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
     try:
         rows = get_db().execute(
-            'SELECT id, title, messages, tags, category, difficulty, date FROM mistakes ORDER BY date DESC').fetchall()
+            'SELECT id, title, messages, tags, category, difficulty, date FROM mistakes WHERE user_id = ? ORDER BY date DESC',
+            (user_id,)
+        ).fetchall()
         mistakes = [{
             'id': row['id'], 'title': row['title'],
             'messages': parse_json_field(row['messages'], []),
@@ -46,23 +50,28 @@ def get_mistakes():
 
 @mistakes_bp.route('/', methods=['POST'])
 def save_mistakes():
-    # ... (此路由内容与原代码相同)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
     try:
         mistakes = request.get_json().get('mistakes', [])
         db = get_db()
         cursor = db.cursor()
-        cursor.execute('DELETE FROM mistakes')
+
+        cursor.execute('DELETE FROM mistakes WHERE user_id = ?', (user_id,))
+
         for m in mistakes:
             cursor.execute('''
-                           INSERT INTO mistakes (id, title, messages, tags, category, difficulty, date)
-                           VALUES (?, ?, ?, ?, ?, ?, ?)
+                           INSERT INTO mistakes (id, title, messages, tags, category, difficulty, date, user_id)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                            ''', (
                                m.get('id'), m.get('title', ''), json.dumps(m.get('messages', []), ensure_ascii=False),
                                json.dumps(m.get('tags', []), ensure_ascii=False), m.get('category', ''),
-                               m.get('difficulty', ''), m.get('date', datetime.now().isoformat())
+                               m.get('difficulty', ''), m.get('date', datetime.now().isoformat()),
+                               user_id
                            ))
         db.commit()
-        logger.info(f"成功保存 {len(mistakes)} 个错题")
+        logger.info(f"用户{user_id}成功保存 {len(mistakes)} 个错题")
         return jsonify({'status': 'success'})
     except Exception as e:
         logger.error(f"保存错题失败: {e}")
@@ -71,12 +80,14 @@ def save_mistakes():
 
 @mistakes_bp.route('/<int:mistake_id>', methods=['PUT'])
 def update_mistake(mistake_id):
-    # ... (此路由内容与原代码相同)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
     try:
         data = request.get_json()
         db = get_db()
-        if not db.execute('SELECT id FROM mistakes WHERE id = ?', (mistake_id,)).fetchone():
-            return jsonify({'error': '错题不存在'}), 404
+        if not db.execute('SELECT id FROM mistakes WHERE id = ? AND user_id = ?', (mistake_id, user_id)).fetchone():
+            return jsonify({'error': f'用户{user_id}的错题不存在'}), 404
         db.execute('''
                    UPDATE mistakes
                    SET title      = ?,
@@ -84,14 +95,14 @@ def update_mistake(mistake_id):
                        tags       = ?,
                        category   = ?,
                        difficulty = ?
-                   WHERE id = ?
+                   WHERE id = ? AND user_id = ?
                    ''', (
                        data.get('title', ''), json.dumps(data.get('messages', []), ensure_ascii=False),
                        json.dumps(data.get('tags', []), ensure_ascii=False), data.get('category', ''),
-                       data.get('difficulty', ''), mistake_id
+                       data.get('difficulty', ''), mistake_id, user_id
                    ))
         db.commit()
-        logger.info(f"成功更新错题 ID: {mistake_id}")
+        logger.info(f"用户{user_id}成功更新错题 ID: {mistake_id}")
         return jsonify({'status': 'success'})
     except Exception as e:
         logger.error(f"更新错题失败: {e}")
@@ -100,14 +111,16 @@ def update_mistake(mistake_id):
 
 @mistakes_bp.route('/<int:mistake_id>', methods=['DELETE'])
 def delete_mistake(mistake_id):
-    # ... (此路由内容与原代码相同)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
     try:
         db = get_db()
-        if not db.execute('SELECT id FROM mistakes WHERE id = ?', (mistake_id,)).fetchone():
-            return jsonify({'error': '错题不存在'}), 404
-        db.execute('DELETE FROM mistakes WHERE id = ?', (mistake_id,))
+        if not db.execute('SELECT id FROM mistakes WHERE id = ? AND user_id = ?', (mistake_id, user_id)).fetchone():
+            return jsonify({'error': f'用户{user_id}的错题不存在'}), 404
+        db.execute('DELETE FROM mistakes WHERE id = ? AND user_id = ?', (mistake_id, user_id))
         db.commit()
-        logger.info(f"成功删除错题 ID: {mistake_id}")
+        logger.info(f"用户{user_id}成功删除错题 ID: {mistake_id}")
         return jsonify({'status': 'success'})
     except Exception as e:
         logger.error(f"删除错题失败: {e}")
@@ -116,12 +129,15 @@ def delete_mistake(mistake_id):
 @mistakes_bp.route('/<int:mistake_id>/analyze', methods=['POST'])
 def analyze_mistake_route(mistake_id):
     """使用AI分析错题对话，生成题目和解析"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': '未登录'}), 401
     try:
         db = get_db()
         # 1. 获取错题信息
-        mistake = db.execute('SELECT * FROM mistakes WHERE id = ?', (mistake_id,)).fetchone()
+        mistake = db.execute('SELECT * FROM mistakes WHERE id = ? AND user_id = ?', (mistake_id, user_id)).fetchone()
         if not mistake:
-            return jsonify({'error': '错题不存在'}), 404
+            return jsonify({'error': f'用户{user_id}的错题不存在'}), 404
             
         messages = json.loads(mistake['messages'])
         
@@ -182,8 +198,8 @@ def analyze_mistake_route(mistake_id):
         db.execute('''
             UPDATE mistakes 
             SET title = ?, ai_summary = ?, updated_at = CURRENT_TIMESTAMP 
-            WHERE id = ?
-        ''', (new_title, analysis_content, mistake_id))
+            WHERE id = ? AND user_id = ?
+        ''', (new_title, analysis_content, mistake_id, user_id))
         db.commit()
         
         return jsonify({
