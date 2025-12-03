@@ -1,22 +1,10 @@
 // js/sidebar/SidebarManager.js
 
 import { UIManager } from './UIManager.js';
+import { BACKEND_URL } from '../common/config.js';
 import { ChatManager } from './ChatManager.js';
 // 导入 SettingsManager 来处理设置逻辑
 import { SettingsManager } from './SettingsManager.js';
-
-// 获取后端URL函数
-function getBackendUrl() {
-    // 在Chrome扩展中检测环境
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return 'http://localhost:5000';
-    }
-    // 备用检测
-    const isLocalDev = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname === '';
-    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
-}
 
 class SidebarManager {
     constructor() {
@@ -767,7 +755,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/login`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -839,7 +827,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/register`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -883,7 +871,7 @@ class SidebarManager {
         if (!this.validateEmail(email)) return;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -915,7 +903,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -968,7 +956,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -1034,7 +1022,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL()}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

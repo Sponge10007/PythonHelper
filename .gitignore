@@ -27,6 +27,7 @@ database.json
 
 .DS_Store
 Thumbs.db
+PythonHelperBackend/Dockerfile
 
 ---IDE 配置 (可选) ---
 

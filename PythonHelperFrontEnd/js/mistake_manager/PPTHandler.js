@@ -1,7 +1,7 @@
 // js/mistake_manager/PPTHandler.js
 
 import * as api from '../common/api.js';
-import { getBackendUrl } from './backend_config.js';
+import { BACKEND_URL } from '../common/config.js';
 
 export class PPTHandler {
     constructor(uiManager) {
@@ -141,7 +141,7 @@ export class PPTHandler {
      */
     showPreviewOptions(file) {
         // 构建文件URL
-        const serverUrl = getBackendUrl();
+        const serverUrl = BACKEND_URL;
         const fileUrl = `${serverUrl}/ppt/files/${file.id}/download`;
         const fileType = (file.file_type || '').toLowerCase();
 

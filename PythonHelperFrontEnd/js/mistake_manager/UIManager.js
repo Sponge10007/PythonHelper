@@ -1,6 +1,5 @@
 // js/mistake_manager/UIManager.js
-
-import { getBackendUrl } from './backend_config.js';
+import { BACKEND_URL } from '../common/config.js';
 
 export class UIManager {
     constructor() {
@@ -30,35 +29,6 @@ export class UIManager {
             knowledge: new Set(),
             difficulty: new Set()
         };
-    }
-
-    /**
-     * 获取服务器URL - 支持开发和生产环境
-     */
-    getServerUrl() {
-        // Chrome扩展环境检测
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-            // 扩展环境：使用动态检测的后端地址
-            return getBackendUrl();
-        }
-        
-        // 检查是否设置了全局服务器地址
-        if (typeof window !== 'undefined' && window.SERVER_URL) {
-            return window.SERVER_URL;
-        }
-        
-        // 检查是否是生产环境
-        const isProduction = window.location.protocol === 'https:' || 
-                           (window.location.hostname !== 'localhost' && 
-                            window.location.hostname !== '127.0.0.1');
-        
-        if (isProduction) {
-            // 生产环境：使用当前域名
-            return `${window.location.protocol}//${window.location.hostname}`;
-        } else {
-            // 开发环境：使用localhost
-            return getBackendUrl();
-        }
     }
 
     renderMistakeList(mistakes, onEdit, onDelete) {
@@ -609,7 +579,7 @@ export class UIManager {
             
             const fileType = file.file_type.toLowerCase();
             // 使用动态服务器地址，支持生产环境部署
-            const serverUrl = await Promise.resolve(this.getServerUrl());
+            const serverUrl = BACKEND_URL;
             const previewUrl = `${serverUrl}/ppt/files/${file.id}/preview?type=direct`;
             
             // 根据文件类型创建不同的预览内容

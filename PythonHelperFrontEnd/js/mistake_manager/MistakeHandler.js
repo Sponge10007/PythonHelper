@@ -1,6 +1,7 @@
 // js/mistake_manager/MistakeHandler.js
 
 import * as api from '../common/api.js';
+import { BACKEND_URL } from '../common/config.js';
 
 export class MistakeHandler {
     constructor(uiManager) {
@@ -562,7 +563,7 @@ export class MistakeHandler {
     async analyzeMistake(mistakeId) {
         try {
             // 调用后端接口
-            const response = await fetch(`${window.getBackendUrl()}/mistakes/${mistakeId}/analyze`, {
+            const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

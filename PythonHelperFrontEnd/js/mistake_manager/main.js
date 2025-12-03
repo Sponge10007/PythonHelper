@@ -4,10 +4,10 @@ import { UIManager } from './UIManager.js';
 import { MistakeHandler } from './MistakeHandler.js';
 import { PPTHandler } from './PPTHandler.js';
 import { EditManager } from './EditManager.js';
-import { getBackendUrl } from './backend_config.js';
+import { BACKEND_URL } from '../common/config.js';
 
 // 将函数添加到全局作用域，供其他模块使用
-window.getBackendUrl = getBackendUrl;
+window.BACKEND_URL = BACKEND_URL;
 
 class PageManager {
     constructor() {

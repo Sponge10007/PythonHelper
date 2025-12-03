@@ -1,9 +1,5 @@
 // js/common/api.js
-
-const BACKEND_URL = 'http://localhost:5000';
-// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--35427.ap-shanghai2.cloudstudio.club";
-// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--8000.ap-shanghai2.cloudstudio.club";
-
+import { BACKEND_URL } from './config.js';
 /**
  * 与AI后端进行对话 - 支持流式传输
  * @param {Array} messages - 完整对话消息数组

@@ -7,7 +7,7 @@ class Config:
     MISTAKES_DB_FILE = 'mistakes.db'
 
     # PPT文件存储目录
-    PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')
+    PPT_UPLOAD_FOLDER = os.environ.get('PPT_UPLOAD_FOLDER', os.path.join(os.getcwd(), 'ppt_files'))
 
     # 允许上传的文件类型
     ALLOWED_EXTENSIONS = {'ppt', 'pptx', 'doc', 'docx', 'pdf'}

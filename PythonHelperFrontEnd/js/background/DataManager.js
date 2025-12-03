@@ -1,13 +1,6 @@
 // js/background/DataManager.js
 import * as storage from '../common/storage.js';
-
-// 获取后端URL函数
-function getBackendUrl() {
-    // 在background脚本中默认使用localhost
-    return 'http://localhost:5000';
-}
-
-const BACKEND_URL = getBackendUrl();
+import { BACKEND_URL } from '../common/config.js';
 
 export class DataManager {
     constructor() {

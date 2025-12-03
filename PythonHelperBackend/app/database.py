@@ -3,11 +3,14 @@ import json
 from datetime import datetime
 from typing import List, Dict, Optional
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-# 全局数据库实例
 _db_instance = None
+
+# 全局数据库实例
+DEFAULT_DB_PATH = os.environ.get('DATABASE_PATH', 'mistakes.db')
 
 def get_db():
     """获取数据库连接（兼容原有代码）"""
@@ -27,8 +30,8 @@ def init_mistakes_db():
     return _db_instance
 
 class Database:
-    def __init__(self, db_path: str = "mistakes.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str = "None"):
+        self.db_path = db_path if db_path != "None" else DEFAULT_DB_PATH
         self.init_database()
 
     def init_database(self):
