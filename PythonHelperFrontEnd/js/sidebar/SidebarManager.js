@@ -755,7 +755,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/login`, {
+            const response = await fetch(`${BACKEND_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -827,7 +827,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/register`, {
+            const response = await fetch(`${BACKEND_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -871,7 +871,7 @@ class SidebarManager {
         if (!this.validateEmail(email)) return;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -903,7 +903,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -956,7 +956,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -1022,7 +1022,7 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${BACKEND_URL()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

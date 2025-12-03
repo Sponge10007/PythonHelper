@@ -14,7 +14,7 @@ export const BACKEND_URL = (function() {
         // 你可以在这里通过 hardcode 强制指定，或者保留原来的逻辑
         // 如果是打包后的扩展，通常视为生产环境，但在本地调试扩展时可能是开发环境
         // 这里为了方便调试，暂时保留 localhost，你可以随时改成 PROD_URL
-        return DEV_URL; 
+        return PROD_URL; 
     }
 
     // 2. 普通网页环境检测 (通过域名判断)
