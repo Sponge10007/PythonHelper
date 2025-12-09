@@ -35,10 +35,21 @@ window.MathJax = {
         
         elementsToProcess.forEach(element => {
           // 先处理块级公式 $$...$$（必须先处理，避免被行内公式处理）
+          // 修改块级公式处理部分，仅当公式前后有空行时才作为块级元素处理
           element.innerHTML = element.innerHTML.replace(
-            /\$\$([\s\S]*?)\$\$/g, 
-            (match, formula) => {
-              return `<div class="math-display" style="text-align: center; font-family: 'Times New Roman', serif; color: #333; margin: 15px 0; font-size: 1.2em; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff;">${renderLatexFormula(formula.trim())}</div>`;
+            /(?:\n\s*)?\$\$([\s\S]*?)\$\$(?:\s*\n)?/g, 
+            (match, formula, offset, string) => {
+              // 检查公式前后是否有换行符来决定是块级还是行内
+              const beforeMatch = string.substring(0, offset).match(/(?:^|\n)\s*$/);
+              const afterMatch = string.substring(offset + match.length).match(/^\s*(?:\n|$)/);
+              
+              if (beforeMatch && afterMatch) {
+                // 真正的块级公式，独占一行
+                return `<div class="math-display" style="text-align: center; font-family: 'Times New Roman', serif; color: #333; margin: 10px 0; font-size: 1.2em; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff;">${renderLatexFormula(formula.trim())}</div>`;
+              } else {
+                // 行内公式，不独占一行
+                return `<span class="math-display-inline" style="display: inline-block; text-align: center; font-family: 'Times New Roman', serif; color: #333; margin: 2px 0; font-size: 1.1em; background: #f8f9fa; padding: 3px 6px; border-radius: 3px;">${renderLatexFormula(formula.trim())}</span>`;
+              }
             }
           );
           

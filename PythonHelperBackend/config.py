@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 class Config:
@@ -6,7 +7,7 @@ class Config:
     MISTAKES_DB_FILE = 'mistakes.db'
 
     # PPT文件存储目录
-    PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')
+    PPT_UPLOAD_FOLDER = os.environ.get('PPT_UPLOAD_FOLDER', os.path.join(os.getcwd(), 'ppt_files'))
 
     # 允许上传的文件类型
     ALLOWED_EXTENSIONS = {'ppt', 'pptx', 'doc', 'docx', 'pdf'}
@@ -25,3 +26,12 @@ class Config:
 
     # 会话密钥
     SECRET_KEY = os.environ.get('SECRET_KEY', 'python-helper-secret-key-2025')
+    
+    # Session配置
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = True  # 开发环境使用HTTP
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_DOMAIN = None  # 允许localhost
+    SESSION_COOKIE_PATH = '/'
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)

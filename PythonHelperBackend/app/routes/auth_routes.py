@@ -188,11 +188,23 @@ def login():
             UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?
         ''', (user['id'],))
         db.commit()
-        
+
         # 创建会话
+        session.permanent = True
         session['user_id'] = user['id']
         session['user_email'] = user['email']
-        
+
+        # 初始化默认PPT（首次登录时）
+        try:
+            from app.database import init_mistakes_db
+            database = init_mistakes_db()
+            ppt_folder = current_app.config.get('PPT_UPLOAD_FOLDER')
+            if ppt_folder:
+                database.init_default_ppts_for_user(user['id'], ppt_folder)
+                logger.info(f"为用户 {user['id']} 初始化默认PPT")
+        except Exception as e:
+            logger.warning(f"初始化默认PPT失败（非致命错误）: {e}")
+
         return jsonify({
             'success': True,
             'message': '登录成功',
@@ -454,6 +466,7 @@ def send_verification():
         verification_type = data.get('type', 'register')  # 默认为注册类型
         
         if not email:
+            print('邮箱不能为空')
             return jsonify({
                 'success': False,
                 'message': '邮箱不能为空'
@@ -461,6 +474,7 @@ def send_verification():
             
         # 验证浙大邮箱
         if not is_zju_email(email):
+            print('只允许使用@zju.edu.cn邮箱')
             return jsonify({
                 'success': False,
                 'message': '只允许使用@zju.edu.cn邮箱'
@@ -476,6 +490,7 @@ def send_verification():
         if verification_type == 'register':
             # 注册验证：邮箱不应该已被注册
             if existing_user:
+                print('该邮箱已被注册，请直接登录')
                 return jsonify({
                     'success': False,
                     'message': '该邮箱已被注册，请直接登录'
@@ -483,11 +498,13 @@ def send_verification():
         elif verification_type == 'reset':
             # 重置密码验证：邮箱必须已被注册
             if not existing_user:
+                print('该邮箱未注册，请先注册账户')
                 return jsonify({
                     'success': False,
                     'message': '该邮箱未注册，请先注册账户'
                 }), 400
         else:
+            print('无效的验证类型')
             return jsonify({
                 'success': False,
                 'message': '无效的验证类型'
@@ -499,6 +516,7 @@ def send_verification():
         
         # 发送验证邮件
         if not email_service.send_verification_email(email, verification_code):
+            print('验证码发送失败，请稍后重试')
             return jsonify({
                 'success': False,
                 'message': '验证码发送失败，请稍后重试'
@@ -520,7 +538,7 @@ def send_verification():
         })
 
     except Exception as e:
-        logger.error(f"发送验证码失败: {str(e)}")
+        logger.error(f"发送验证码失败: 500 {str(e)}")
         return jsonify({
             'success': False,
             'message': '验证码发送失败，请稍后重试'

@@ -35,11 +35,11 @@
                             <input type="text" id="searchInput" placeholder="搜索题目内容..." class="search-input">
                         </div>
                         <div class="filter-tags">
-                            <h4>🏷️ 标签筛选</h4>
+                            <h4>标签筛选</h4>
                             <div class="filter-categories">
                                 <!-- 课程标签筛选 -->
                                 <div class="filter-category">
-                                    <h5>📚 课程标签</h5>
+                                    <h5>课程标签</h5>
                                     <div id="courseFilter" class="filter-tag-list">
                                         <!-- 课程标签将动态加载 -->
                                     </div>
@@ -47,7 +47,7 @@
                                 
                                 <!-- 知识点标签筛选 -->
                                 <div class="filter-category">
-                                    <h5>💡 知识点标签</h5>
+                                    <h5>知识点标签</h5>
                                     <div id="knowledgeFilter" class="filter-tag-list">
                                         <!-- 知识点标签将动态加载 -->
                                     </div>
@@ -55,7 +55,7 @@
                                 
                                 <!-- 难度标签筛选 -->
                                 <div class="filter-category">
-                                    <h5>⚡ 难度标签</h5>
+                                    <h5>难度标签</h5>
                                     <div id="difficultyFilter" class="filter-tag-list">
                                         <!-- 难度标签将动态加载 -->
                                     </div>
@@ -213,10 +213,9 @@
                             </div>
                             <div class="ppt-toolbar-right">
                                 <select id="pptSortBy" class="sort-select">
-                                    <option value="date">按日期排序</option>
-                                    <option value="name">按名称排序</option>
-                                    <option value="size">按大小排序</option>
+                                    <option value="name">按默认排序</option>
                                     <option value="type">按类型排序</option>
+                                    <option value="date">按日期排序</option>
                                 </select>
                             </div>
                         </div>
@@ -347,7 +346,9 @@
         </div>
     </div>
 
-    <script src="../js/common/api.js"></script>
+    <script type="module" src="../js/common/api.js"></script>
     <script type="module" src="../js/mistake_manager/main.js"></script>
+    <script type="module" src="../js/mistake_manager/ppt_upload.js"></script>
+    <script type="module" src="../js/mistake_manager/backend_config.js"></script>
 </body>
 </html>

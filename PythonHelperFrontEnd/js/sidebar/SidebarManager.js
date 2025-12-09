@@ -1,22 +1,10 @@
 // js/sidebar/SidebarManager.js
 
 import { UIManager } from './UIManager.js';
+import { BACKEND_URL } from '../common/config.js';
 import { ChatManager } from './ChatManager.js';
 // 导入 SettingsManager 来处理设置逻辑
 import { SettingsManager } from './SettingsManager.js';
-
-// 获取后端URL函数
-function getBackendUrl() {
-    // 在Chrome扩展中检测环境
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return 'http://localhost:5000';
-    }
-    // 备用检测
-    const isLocalDev = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname === '';
-    return isLocalDev ? 'http://localhost:5000' : 'http://47.98.249.0:8888';
-}
 
 class SidebarManager {
     constructor() {
@@ -36,6 +24,19 @@ class SidebarManager {
         await this.chatManager.init();
         await this.settingsManager.init();
         this.setupMessageListener();
+        // 检查登录状态
+        await this.checkLoginStatus();
+        
+        // 设置重试回调
+        this.ui.setRetryCallback((messageId) => {
+            console.log('SidebarManager: 重试消息', messageId);
+            this.chatManager.retryMessage(messageId);
+        });
+        
+        // 初始化发送按钮状态
+        if (this.ui.sendMessageBtn) {
+            this.ui.sendMessageBtn.classList.add('ready');
+        }
     }
 
     setupMessageListener() {
@@ -58,8 +59,22 @@ class SidebarManager {
     }
     
     async bindEvents() {
+        // 首先检查登录状态
         await this.checkLoginStatus();
-    }    bindEvents() {
+        
+        /*点击空白处收回侧边栏列表的功能*/
+        this.ui.mainContent.addEventListener('click', (e) => {
+            // 只有当侧边栏展开时才执行收回操作
+            if (this.ui.isChatListExpanded()) {
+                // 检查点击的元素是否在侧边栏内部
+                const sidebarNav = this.ui.sidebarNav;
+                if (!sidebarNav.contains(e.target)) {
+                    // 点击的是侧边栏外部，收回侧边栏
+                    this.ui.hideChatList();
+                }
+            }
+        });
+        
         // --- 聊天相关事件 ---
         this.ui.welcomeScreen.querySelector('#startFirstChat').addEventListener('click', () => this.chatManager.createNewChat());
         this.ui.sendMessageBtn.addEventListener('click', (e) => { e.preventDefault(); this.chatManager.sendMessage(this.ui.chatInput.value.trim()); });
@@ -72,6 +87,18 @@ class SidebarManager {
         this.ui.chatInput.addEventListener('input', () => this.ui.adjustTextareaHeight());
         // document.getElementById('clearChatBtn').addEventListener('click', () => this.chatManager.clearCurrentChat());
         
+        // --- 重试按钮事件处理 ---
+        this.ui.chatMessages.addEventListener('click', (e) => {
+            // 处理重试按钮点击事件
+            if (e.target.closest('.retry-btn')) {
+                const messageElement = e.target.closest('.message');
+                if (messageElement && messageElement.classList.contains('assistant-message')) {
+                    const messageId = messageElement.dataset.messageId;
+                    this.handleRetryMessage(messageId);
+                }
+            }
+        });
+
         // --- 记忆管理事件绑定 ---
         document.getElementById('memoryManageBtn').addEventListener('click', () => {
             if (this.chatManager.currentChatId) {
@@ -104,17 +131,38 @@ class SidebarManager {
         document.getElementById('newChatBtn').addEventListener('click', () => this.chatManager.createNewChat());
         document.getElementById('mistakesBtn').addEventListener('click', () => this.chatManager.showMistakeCollection());
         
+        // --- 报告按钮事件绑定 ---
+        const reportBtn = document.getElementById('ReportBtn');
+        if (reportBtn) {
+            reportBtn.addEventListener('click', () => {
+                // 这里可以添加报告功能的逻辑
+                console.log('套题报告功能待实现');
+            });
+        }
+        
         // --- 设置事件绑定 ---
-        document.getElementById('settingsBtn').addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
-        this.ui.settingsInterface.querySelector('#saveSettings').addEventListener('click', () => this.handleSaveSettings());
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.ui.showView(this.ui.settingsInterface));
+        }
+        const saveSettingsBtn = this.ui.settingsInterface.querySelector('#saveSettings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => this.handleSaveSettings());
+        }
 
         // --- PTA题目分析事件绑定 ---
-        document.getElementById('ptaBtn').addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));
-        document.getElementById('startPtaAnalysisBtn').addEventListener('click', () => this.handlePtaAnalysis());
+        const ptaBtn = document.getElementById('ptaBtn');
+        if (ptaBtn) {
+            ptaBtn.addEventListener('click', () => this.ui.showView(this.ui.ptaAnalysisInterface));
+        }
+        const startPtaAnalysisBtn = document.getElementById('startPtaAnalysisBtn');
+        if (startPtaAnalysisBtn) {
+            startPtaAnalysisBtn.addEventListener('click', () => this.handlePtaAnalysis());
+        }
         
         // --- 登录按钮事件绑定 ---
         const loginBtn = document.getElementById('loginBtn');
-        const loginFromSidebar = document.getElementById('loginFromSidebar');
+        const userBtn = document.getElementById('userBtn');
         
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
@@ -122,9 +170,25 @@ class SidebarManager {
             });
         }
         
-        if (loginFromSidebar) {
-            loginFromSidebar.addEventListener('click', () => {
+        if (userBtn) {
+            userBtn.addEventListener('click', () => {
                 this.handleLogin();
+            });
+        }
+        
+        // --- 跳转网页按钮事件绑定 ---
+        const jumpwebpageBtn = document.getElementById('jumpwebpageBtn');
+        if (jumpwebpageBtn) {
+            jumpwebpageBtn.addEventListener('click', () => {
+                try {
+                    // 尝试使用扩展内部页面
+                    const mistakeManagerUrl = chrome.runtime.getURL('html/mistake_manager.html');
+                    chrome.tabs.create({ url: mistakeManagerUrl });
+                } catch (error) {
+                    console.error('无法打开错题管理器:', error);
+                    // 备用方案：显示错误提示
+                    this.showAuthMessage('无法打开错题管理器，请检查扩展权限', 'error');
+                }
             });
         }
         
@@ -133,6 +197,9 @@ class SidebarManager {
         
         // --- 登录界面事件绑定 ---
         this.bindAuthEvents();
+        
+        // --- 添加禁用按钮点击提示 ---
+        this.bindDisabledButtonWarnings();
         
         // 打开错题管理器页面的按钮
         const openMistakeManagerBtn = document.getElementById('openMistakeManagerBtn');
@@ -149,6 +216,53 @@ class SidebarManager {
                 }
             });
         }
+    }
+
+    // 重试消息处理方法
+    async handleRetryMessage(messageId) {
+        if (!this.chatManager.currentChatId) return;
+        
+        const chat = this.chatManager.chats.find(c => c.id === this.chatManager.currentChatId);
+        if (!chat) return;
+        
+        // 找到要重试的消息索引
+        const messageIndex = chat.messages.findIndex(msg => msg.id === messageId);
+        if (messageIndex === -1) return;
+        
+        // 获取用户消息（重试按钮所在的消息是AI回复，我们需要找到对应的用户提问）
+        let userMessage = null;
+        for (let i = messageIndex - 1; i >= 0; i--) {
+            if (chat.messages[i].role === 'user') {
+                userMessage = chat.messages[i];
+                break;
+            }
+        }
+        
+        if (!userMessage) {
+            console.error('未找到对应的用户消息');
+            return;
+        }
+        
+        // 删除从重试消息开始的所有后续消息的UI元素
+        const chatMessagesContainer = document.getElementById('chatMessages');
+        if (chatMessagesContainer) {
+            // 从DOM中删除重试消息及其后续消息元素
+            const messageElements = chatMessagesContainer.querySelectorAll('.message');
+            for (let i = messageIndex; i < messageElements.length; i++) {
+                if (messageElements[i] && messageElements[i].parentNode) {
+                    messageElements[i].parentNode.removeChild(messageElements[i]);
+                }
+            }
+        }
+        
+        // 删除从重试消息开始的所有后续消息
+        chat.messages.splice(messageIndex);
+        
+        // 重新发送用户消息
+        await this.chatManager.fetchAndDisplayAiResponse(chat);
+        
+        // 保存聊天记录
+        await storage.saveChats(this.chatManager.chats);
     }
 
     // 新增：处理PTA分析请求
@@ -218,81 +332,191 @@ class SidebarManager {
         document.getElementById('backToMainFromProfile').addEventListener('click', backToMain);
     }
 
-    // 检查登录状态
+    // 检查登录状态, 如果没登录, 自动跳转到登录页面
     async checkLoginStatus() {
+        console.log('=== 开始检查登录状态 ===');
         try {
-            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail']);
-            this.updateUIBasedOnLoginStatus(result.isLoggedIn, result.userEmail);
+            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail', 'userToken']);
+            console.log('从存储获取的数据:', result);
+            
+            const isLoggedIn = result.isLoggedIn === true;
+            const userEmail = result.userEmail || null;
+            
+            console.log('解析的登录状态:', { isLoggedIn, userEmail });
+            
+            this.updateUIBasedOnLoginStatus(isLoggedIn, userEmail);
+            
+            // 新增：如果用户未登录，自动跳转到登录页面
+            if (!isLoggedIn) {
+                console.log('用户未登录，自动跳转到登录页面');
+                setTimeout(() => {
+                    console.log(this.ui.loginInterface)
+                    this.ui.showView(this.ui.loginInterface);
+                }, 500); // 延迟500ms以确保UI初始化完成
+            }
         } catch (error) {
             console.error('检查登录状态失败:', error);
             this.updateUIBasedOnLoginStatus(false, null);
+            // 出错时也跳转到登录页面
+            setTimeout(() => {
+                this.ui.showView(this.ui.loginInterface);
+            }, 500);
         }
+        console.log('=== 登录状态检查完成 ===');
     }
 
     // 根据登录状态更新UI
     updateUIBasedOnLoginStatus(isLoggedIn, userEmail) {
-        const loginPrompt = document.getElementById('loginPrompt');
+        console.log('=== 开始更新UI状态 ===');
+        console.log('更新UI状态:', { isLoggedIn, userEmail });
+        
+        // 获取所有相关元素
         const startFirstChat = document.getElementById('startFirstChat');
-        const loginBtn = document.getElementById('loginBtn');
+        const userBtn = document.getElementById('userBtn'); // 正确的按钮ID
+        const displayEmailElement = document.getElementById('displayUserEmail');
         
         // 需要登录后才能使用的按钮
         const requireLoginButtons = [
-            'mistakesBtn', 'settingsBtn', 'ptaBtn',
-            'openMistakeManagerBtn', 'toggleChatListBtn'
+            'mistakesBtn', 'settingsBtn', 'ptaBtn', 
+            /*'openMistakeManagerBtn'*/, 'toggleChatListBtn',
+            /*'ReportBtn'*/, 'newChatBtn', 'memoryManageBtn',
+            'enterMistakeModeBtn', 'saveSelectionBtn', 'jumpwebpageBtn'
         ];
         
+        // 聊天相关按钮（单独处理）
+        const chatButtons = ['sendMessage'];
+        const allButtons = [...requireLoginButtons, ...chatButtons];
+        
         if (isLoggedIn && userEmail) {
-            // 用户已登录 - 启用所有功能
-            if (loginPrompt) loginPrompt.style.display = 'none';
+            console.log('用户已登录，启用所有功能');
+            
+            // 启用开始对话按钮
             if (startFirstChat) {
                 startFirstChat.disabled = false;
                 startFirstChat.textContent = '开始对话';
                 startFirstChat.style.opacity = '1';
+                startFirstChat.style.pointerEvents = 'auto';
+                console.log('启用开始对话按钮');
             }
             
             // 启用所有功能按钮
-            requireLoginButtons.forEach(btnId => {
+            allButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = false;
+                    btn.classList.remove('disabled');
                     btn.style.opacity = '1';
                     btn.style.pointerEvents = 'auto';
+                    btn.style.filter = 'none'; // 清除可能的灰度滤镜
+                    console.log(`启用按钮: ${btnId}`);
+                } else {
+                    console.warn(`找不到按钮: ${btnId}`);
+                }
+            });
+            
+            // 启用侧边栏所有按钮
+            const sidebarButtons = [
+                'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
+                'mistakesBtn', 'ptaBtn', 'settingsBtn', 'loginBtn'
+            ];
+            
+            sidebarButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.filter = 'none';
+                    console.log(`启用侧边栏按钮: ${btnId}`);
                 }
             });
             
             // 更新登录按钮显示
-            if (loginBtn) {
-                loginBtn.innerHTML = '<span class="material-symbols-outlined">account_circle</span>';
-                loginBtn.title = `已登录: ${userEmail}`;
-                loginBtn.style.background = 'rgba(76, 175, 80, 0.3)';
-                loginBtn.style.color = '#28a745';
+            if (userBtn) {
+                userBtn.innerHTML = '<span class="material-symbols-outlined">account_circle</span>';
+                userBtn.title = `已登录: ${userEmail}`;
+                userBtn.style.background = 'rgba(122, 55, 151, 0.2)';
+                userBtn.style.color = '#7A3797';
+                console.log('更新登录按钮为已登录状态');
             }
+            
+            // 更新用户邮箱显示
+            if (displayEmailElement) {
+                displayEmailElement.textContent = userEmail;
+                console.log(`更新用户邮箱显示: ${userEmail}`);
+            }
+            
         } else {
-            // 用户未登录 - 显示登录提示
-            if (loginPrompt) loginPrompt.style.display = 'block';
+            console.log('用户未登录，禁用所有按钮并显示登录界面');
+            
+            // 禁用开始对话按钮
             if (startFirstChat) {
                 startFirstChat.disabled = true;
                 startFirstChat.textContent = '请先登录';
                 startFirstChat.style.opacity = '0.5';
+                console.log('禁用开始对话按钮');
             }
             
-            // 禁用功能按钮
-            requireLoginButtons.forEach(btnId => {
+            // 禁用所有功能按钮（除了登录按钮）
+            allButtons.forEach(btnId => {
                 const btn = document.getElementById(btnId);
                 if (btn) {
                     btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                    btn.style.pointerEvents = 'none';
+                    btn.classList.add('disabled');
+                    btn.style.opacity = '0.4';
+                    btn.style.filter = 'grayscale(100%)';
+                    console.log(`禁用按钮: ${btnId}`);
                 }
             });
             
-            // 重置登录按钮显示
+            // 禁用侧边栏所有按钮（除了登录按钮）
+            const sidebarButtons = [
+                'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn', 
+                'mistakesBtn', 'ptaBtn', 'settingsBtn'
+            ];
+            
+            sidebarButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    btn.style.opacity = '0.4';
+                    btn.style.filter = 'grayscale(100%)';
+                    console.log(`禁用侧边栏按钮: ${btnId}`);
+                }
+            });
+            
+            // 确保登录按钮可用
+            const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                loginBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
-                loginBtn.title = '用户登录';
-                loginBtn.style.background = '';
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('disabled');
+                loginBtn.style.opacity = '1';
+                loginBtn.style.filter = 'none';
+                console.log('确保登录按钮可用');
             }
+            
+            // 更新登录按钮显示
+            if (userBtn) {
+                userBtn.innerHTML = '<span class="material-symbols-outlined">login</span>';
+                userBtn.title = '点击登录';
+                userBtn.style.background = 'none';
+                userBtn.style.color = '#555';
+                console.log('更新登录按钮为未登录状态');
+            }
+            
+            // 更新用户邮箱显示
+            if (displayEmailElement) {
+                displayEmailElement.textContent = '请登录';
+                console.log('更新用户邮箱显示为未登录状态');
+            }
+            
+            // 显示登录界面
+            this.ui.showView(this.ui.loginInterface);
         }
+        
+        console.log('=== UI状态更新完成 ===');
     }
 
     // 处理登录按钮点击
@@ -314,25 +538,53 @@ class SidebarManager {
 
     // 显示用户信息页面
     showUserProfile(userEmail) {
+        console.log('=== 显示用户资料界面 ===');
+        console.log('用户邮箱:', userEmail);
+        
         // 更新用户邮箱显示
         const displayEmailElement = document.getElementById('displayUserEmail');
         if (displayEmailElement) {
             displayEmailElement.textContent = userEmail;
+            console.log(`已更新用户邮箱显示: ${userEmail}`);
+        } else {
+            console.warn('找不到用户邮箱显示元素');
         }
+        
+        // 确保UI状态是最新的
+        this.updateUIBasedOnLoginStatus(true, userEmail);
         
         // 显示用户信息界面
         this.ui.showView(this.ui.userProfileInterface);
+        console.log('已显示用户资料界面');
     }
 
     // 处理登出
     async handleLogout() {
+        console.log('=== 开始登出操作 ===');
         try {
+            // 清除所有登录相关的存储数据
             await chrome.storage.local.remove(['isLoggedIn', 'userEmail', 'userToken']);
+            console.log('已清除所有登录相关数据');
+            
+            // 立即更新UI状态为未登录
             this.updateUIBasedOnLoginStatus(false, null);
-            this.showMainView();
+            
+            // 显示登出成功消息
+            this.showAuthMessage('已成功登出', 'success');
+            
+            // 等待一下然后跳转到登录界面
+            setTimeout(() => {
+                this.ui.showView(this.ui.loginInterface);
+                console.log('已跳转到登录界面');
+            }, 1000);
+            
         } catch (error) {
             console.error('登出失败:', error);
+            // 即使登出失败，也要强制更新UI状态
+            this.updateUIBasedOnLoginStatus(false, null);
+            this.ui.showView(this.ui.loginInterface);
         }
+        console.log('=== 登出操作完成 ===');
     }
 
     // 绑定认证相关事件
@@ -381,6 +633,38 @@ class SidebarManager {
         });
     }
 
+    // 绑定禁用按钮的点击提示
+    bindDisabledButtonWarnings() {
+        // 需要登录的按钮列表
+        const buttonsNeedLogin = [
+            'toggleChatListBtn', 'newChatBtn', 'jumpwebpageBtn',
+            'mistakesBtn', 'ptaBtn', 'settingsBtn'
+        ];
+        
+        buttonsNeedLogin.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    // 如果按钮被禁用，阻止默认行为并显示提示
+                    if (btn.disabled || btn.classList.contains('disabled')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // 显示提示消息
+                        this.showAuthMessage('请先登录后再使用此功能', 'info');
+                        
+                        // 短暂延迟后跳转到登录页面
+                        setTimeout(() => {
+                            this.ui.showView(this.ui.loginInterface);
+                        }, 1500);
+                        
+                        return false;
+                    }
+                });
+            }
+        });
+    }
+
     // 显示认证表单
     showAuthForm(type) {
         const loginForm = document.getElementById('loginForm');
@@ -401,6 +685,9 @@ class SidebarManager {
         // 清除之前的错误消息
         this.hideAuthMessage();
         
+        // 重置所有验证码发送按钮状态
+        this.resetVerificationButtons();
+        
         if (type === 'register') {
             registerForm.classList.remove('hidden');
             registerTab.classList.add('active');
@@ -413,6 +700,16 @@ class SidebarManager {
             loginTab.classList.add('active');
         }
     }
+
+    // 显示发送信息
+    showSendMessage(message) {
+        const sendMessageEl = document.getElementById('isSendmessage');
+        if (!sendMessageEl) return;
+
+        sendMessageEl.textContent = message; 
+        sendMessageEl.classList.remove('hidden');
+    }
+
 
     // 显示认证消息
     showAuthMessage(message, type = 'info') {
@@ -458,32 +755,45 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/login`, {
+            const response = await fetch(`${BACKEND_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
             
             const result = await response.json();
             
             if (result.success) {
+                // 立即保存登录状态
                 await chrome.storage.local.set({
                     isLoggedIn: true,
                     userEmail: email,
                     userToken: result.token || 'temp'
                 });
+                console.log('登录成功，已保存登录状态:', { email });
                 
                 this.showAuthMessage('登录成功！', 'success');
+                
+                // 立即更新UI状态
+                this.updateUIBasedOnLoginStatus(true, email);
+                
+                // 登录成功后跳转到主聊天界面
                 setTimeout(() => {
-                    this.showMainView();
-                    this.checkLoginStatus();
+                    this.ui.showView(this.ui.chatInterface);
                 }, 1500);
             } else {
                 this.showAuthMessage(result.message || '登录失败', 'error');
             }
         } catch (error) {
             console.error('登录错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -517,9 +827,10 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/register`, {
+            const response = await fetch(`${BACKEND_URL}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     password,
@@ -540,7 +851,13 @@ class SidebarManager {
             }
         } catch (error) {
             console.error('注册错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -554,9 +871,10 @@ class SidebarManager {
         if (!this.validateEmail(email)) return;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email })
             });
             
@@ -585,25 +903,42 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'register' })
             });
+            
+            console.log('发送验证码接口返回:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
             if (result.success) {
                 this.showAuthMessage('验证码已发送到您的邮箱', 'success');
                 this.startVerificationCountdown(btn, 60);
+                this.showSendMessage('验证码已通过邮件发送，有效期10分钟');
             } else {
-                this.showAuthMessage(result.message || '发送失败', 'error');
+                this.showAuthMessage(result.message || '发送失败，请检查邮箱地址', 'error');
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
             console.error('发送验证码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，数据库配置问题，请联系管理员', 'error');
+            } else if (error.message.includes('HTTP 404')) {
+                this.showAuthMessage('服务不可用，请检查服务器状态', 'error');
+            } else if (error.message.includes('HTTP')) {
+                this.showAuthMessage(`服务器错误：${error.message}`, 'error');
+            } else {
+                this.showAuthMessage('发送失败，请稍后重试', 'error');
+            }
             btn.textContent = originalText;
             btn.disabled = false;
         }
@@ -621,11 +956,16 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/send-verification`, {
+            const response = await fetch(`${BACKEND_URL}/auth/send-verification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, type: 'reset' })
             });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
@@ -633,13 +973,23 @@ class SidebarManager {
                 this.showAuthMessage('验证码已发送到您的邮箱', 'success');
                 this.startVerificationCountdown(btn, 60);
             } else {
-                this.showAuthMessage(result.message || '发送失败', 'error');
+                this.showAuthMessage(result.message || '发送失败，请检查邮箱地址', 'error');
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
             console.error('发送验证码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，数据库配置问题，请联系管理员', 'error');
+            } else if (error.message.includes('HTTP 404')) {
+                this.showAuthMessage('服务不可用，请检查服务器状态', 'error');
+            } else if (error.message.includes('HTTP')) {
+                this.showAuthMessage(`服务器错误：${error.message}`, 'error');
+            } else {
+                this.showAuthMessage('发送失败，请稍后重试', 'error');
+            }
             btn.textContent = originalText;
             btn.disabled = false;
         }
@@ -672,9 +1022,10 @@ class SidebarManager {
         btn.disabled = true;
         
         try {
-            const response = await fetch(`${getBackendUrl()}/auth/reset-password`, {
+            const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     email, 
                     verification_code: verificationCode,
@@ -696,7 +1047,13 @@ class SidebarManager {
             }
         } catch (error) {
             console.error('重置密码错误:', error);
-            this.showAuthMessage('网络错误，请稍后重试', 'error');
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                this.showAuthMessage('网络连接失败，请检查网络后重试', 'error');
+            } else if (error.message && error.message.includes('HTTP 500')) {
+                this.showAuthMessage('服务器内部错误，请联系管理员', 'error');
+            } else {
+                this.showAuthMessage('网络错误，请稍后重试', 'error');
+            }
         }
         
         btn.textContent = originalText;
@@ -705,19 +1062,60 @@ class SidebarManager {
 
     // 验证码倒计时
     startVerificationCountdown(button, seconds) {
-        let remaining = seconds;
-        const originalText = button.textContent;
+        // 清除可能存在的之前的倒计时
+        if (button.countdownInterval) {
+            clearInterval(button.countdownInterval);
+        }
         
-        const countdown = setInterval(() => {
-            button.textContent = `${remaining}秒后重发`;
+        let remaining = seconds;
+        const originalText = button.dataset.originalText || button.textContent;
+        
+        // 保存原始文本
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = originalText;
+        }
+        
+        // 立即禁用按钮并显示倒计时
+        button.disabled = true;
+        button.textContent = `${remaining}秒后重发`;
+        
+        button.countdownInterval = setInterval(() => {
             remaining--;
             
-            if (remaining < 0) {
-                clearInterval(countdown);
+            if (remaining > 0) {
+                button.textContent = `${remaining}秒后重发`;
+            } else {
+                // 倒计时结束，恢复按钮
+                clearInterval(button.countdownInterval);
+                button.countdownInterval = null;
                 button.textContent = originalText;
                 button.disabled = false;
+                console.log('验证码发送倒计时结束，按钮已恢复');
             }
         }, 1000);
+        
+        console.log(`开始${seconds}秒验证码发送倒计时`);
+    }
+
+    // 重置验证码发送按钮状态
+    resetVerificationButtons() {
+        const buttons = [
+            { id: 'sendVerificationBtn', text: '发送验证码' },
+            { id: 'sendResetCodeBtn', text: '发送验证码' }
+        ];
+        
+        buttons.forEach(({ id, text }) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.textContent = text;
+                btn.disabled = false;
+                // 清除可能存在的倒计时
+                if (btn.countdownInterval) {
+                    clearInterval(btn.countdownInterval);
+                    btn.countdownInterval = null;
+                }
+            }
+        });
     }
 
     // 隐藏认证消息

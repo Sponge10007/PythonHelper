@@ -1,4 +1,5 @@
 // js/mistake_manager/UIManager.js
+import { BACKEND_URL } from '../common/config.js';
 
 export class UIManager {
     constructor() {
@@ -30,36 +31,7 @@ export class UIManager {
         };
     }
 
-    /**
-     * 获取服务器URL - 支持开发和生产环境
-     */
-    getServerUrl() {
-        // Chrome扩展环境检测
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-            // 扩展环境：使用动态检测的后端地址
-            return getBackendUrl();
-        }
-        
-        // 检查是否设置了全局服务器地址
-        if (typeof window !== 'undefined' && window.SERVER_URL) {
-            return window.SERVER_URL;
-        }
-        
-        // 检查是否是生产环境
-        const isProduction = window.location.protocol === 'https:' || 
-                           (window.location.hostname !== 'localhost' && 
-                            window.location.hostname !== '127.0.0.1');
-        
-        if (isProduction) {
-            // 生产环境：使用当前域名
-            return `${window.location.protocol}//${window.location.hostname}`;
-        } else {
-            // 开发环境：使用localhost
-            return getBackendUrl();
-        }
-    }
-
-    renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
+    renderMistakeList(mistakes, onEdit, onDelete) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
             this.mistakeList.innerHTML = `<div class="no-mistakes">暂无错题记录</div>`;
@@ -69,14 +41,28 @@ export class UIManager {
             const mistakeElement = this.createMistakeElement(mistake);
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
-            mistakeElement.querySelector('.mistake-checkbox').addEventListener('change', (e) => onToggleSelect(mistake.id, e.target.checked));
+            
+            // 添加折叠功能的事件绑定
+            const toggleButton = mistakeElement.querySelector('.analysis-toggle');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    this.toggleAnalysis(e.target);
+                });
+            }
+            
             this.mistakeList.appendChild(mistakeElement);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('mistake'), 0);
+        }
     }
 
     createMistakeElement(mistake) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
+        div.id = `mistake-${mistake.id}`; // 添加ID以便选择
         
         // 处理标签显示 - 只使用新的标签数组格式
         const tagsToShow = [];
@@ -100,12 +86,37 @@ export class UIManager {
             });
         }
         
-        const messagesHtml = (mistake.messages || []).map(msg => `
-            <div class="mistake-message message-${msg.role}">
-                <span class="message-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
-                <div class="message-content">${this.escapeHtml(msg.content)}</div>
-            </div>
-        `).join('');
+        console.log("保存的错题数据",mistake.messages)
+        const messagesHtml = (mistake.messages || []).map((msg, index) => {
+            // 第一条消息（用户的初始提问）不显示
+            if (index === 0 && msg.role === 'user') {
+                return '';
+            }
+            
+            // 第一条AI回答（index=1）不显示角色标签
+            if (index === 1 && msg.role === 'assistant') {
+                return `
+                    <div class="mistake-message message-${msg.role}">
+                        <div class="message-content">${this.formatMessageContent(msg.content)}</div>
+                    </div>
+                `;
+            }
+            
+            // 之后的消息显示角色标签
+            let roleText = '';
+            if (msg.role === 'user') {
+                roleText = '追问';
+            } else if (msg.role === 'assistant') {
+                roleText = '回答';
+            }
+            
+            return `
+                <div class="mistake-message message-${msg.role}">
+                    <span class="message-role">${roleText}</span>
+                    <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                </div>
+            `;
+        }).filter(html => html !== '').join(''); // 过滤掉空字符串
 
         // 使用处理后的标签数组生成HTML
         const tagsHtml = tagsToShow.length > 0 ? `
@@ -117,6 +128,31 @@ export class UIManager {
         // 生成唯一的ID用于折叠功能
         const collapseId = `analysis-${mistake.id}`;
 
+        // === 新增：AI 解析区域逻辑 ===
+        let aiAnalysisHtml = '';
+        if (mistake.ai_summary) {
+            // 如果已有解析，直接显示
+            aiAnalysisHtml = `
+                <div class="ai-analysis-container" style="background:#f0f7ff; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #cce5ff;">
+                    <h4 style="color:#004085; margin:0 0 10px 0; display:flex; align-items:center; gap:5px;">
+                        <span>🤖 AI 题目与解析</span>
+                    </h4>
+                    <div class="ai-summary-content markdown-body" style="font-size:14px; color:#333;">
+                        ${mistake.ai_summary}  </div>
+                </div>
+            `;
+        } else {
+            // 如果没有解析，显示生成按钮
+            aiAnalysisHtml = `
+                <div class="ai-analysis-placeholder" style="margin:10px 0;">
+                    <button class="btn-ai-analyze btn-secondary" data-mistake-id="${mistake.id}" style="width:100%; border-style:dashed; background:#fff; color:#7a3898; border-color:#7a3898;">
+                        ✨ 点击生成 AI 题目与解析 (基于对话分析)
+                    </button>
+                </div>
+            `;
+        }
+
+        // === 更新 HTML 结构 ===
         div.innerHTML = `
             <div class="mistake-header">
                 <div>
@@ -128,21 +164,135 @@ export class UIManager {
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
             ${tagsHtml}
-            <div class="analysis-collapse">
-                <button class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
-                    <span class="analysis-toggle-text">展开解析</span>
+            
+            ${aiAnalysisHtml}
+
+            <div class="analysis-box" id="${collapseId}">
+                <div class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
+                    <span class="analysis-toggle-text">查看原始对话记录</span>
                     <span class="analysis-toggle-icon">▼</span>
-                </button>
-            </div>
-            <div class="analysis-content" id="${collapseId}" style="display: none;">
-                <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
+                <div class="analysis-content" style="display: none;">
+                    <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
             </div>
             <div class="mistake-actions">
                 <button class="edit-mistake-btn btn-secondary" data-mistake-id="${mistake.id}">编辑</button>
                 <button class="delete-mistake-btn btn-danger" data-mistake-id="${mistake.id}">删除</button>
             </div>
         `;
+        
+        // === 绑定新增按钮的事件 ===
+        const analyzeBtn = div.querySelector('.btn-ai-analyze');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', async (e) => {
+                const btn = e.target;
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = '🤖 正在分析对话中...';
+                
+                try {
+                    // 调用全局暴露的 Handler 方法
+                    if (window.mistakeHandler) {
+                        await window.mistakeHandler.analyzeMistake(mistake.id);
+                    }
+                } catch (err) {
+                    alert('分析失败: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            });
+        }
+        
         return div;
+    }
+
+    /**
+     * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
+
+        const latexPlaceholders = [];
+        const placeholder = "LATEX_PLACEHOLDER_";
+
+        // 1. 保护LaTeX公式块，用占位符替换
+        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+            latexPlaceholders.push(match);
+            return `${placeholder}${latexPlaceholders.length - 1}`;
+        });
+
+        // 2. 现在可以安全地处理Markdown格式了
+        // 处理代码块 (```language or ```)
+        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            const lang = language ? ` class="language-${language}"` : '';
+            return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // 处理行内代码 (`code`)
+        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // 全新的换行处理策略：最小化空行
+        // 1. 将所有连续换行（2个或更多）替换为单个换行
+        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
+        // 2. 将单个换行替换为<br>，但只在非空行之间
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        // 3. 包装整个内容在一个段落中，避免段落间距问题
+        formattedContent = `<p>${formattedContent}</p>`;
+        // 4. 清理多余的空格和换行
+        formattedContent = formattedContent
+            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
+            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
+            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
+            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
+
+        // 3. 恢复LaTeX公式，让MathJax处理渲染
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        return formattedContent;
+    }
+
+    /**
+     * 切换解析内容的展开/收起状态
+     * @param {HTMLElement} toggleElement - 点击的切换元素
+     */
+    toggleAnalysis(toggleElement) {
+        const targetId = toggleElement.getAttribute('data-target');
+        const analysisBox = document.getElementById(targetId);
+        const isExpanded = toggleElement.getAttribute('data-expanded') === 'true';
+        
+        if (!analysisBox) {
+            console.error('找不到目标内容元素:', targetId);
+            return;
+        }
+        
+        const content = analysisBox.querySelector('.analysis-content');
+        if (!content) {
+            console.error('找不到解析内容元素');
+            return;
+        }
+        
+        if (isExpanded) {
+            // 收起内容
+            content.style.display = 'none';
+            toggleElement.setAttribute('data-expanded', 'false');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '展开解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▼';
+        } else {
+            // 展开内容
+            content.style.display = 'block';
+            toggleElement.setAttribute('data-expanded', 'true');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '收起解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▲';
+        }
     }
 
     // isLessonTag(tag) {
@@ -288,16 +438,9 @@ export class UIManager {
     // PPT 预览相关 UI 方法
     // ================================
 
-    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onToggleSelect) {
+    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onSelect) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
-            this.pptGrid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📁</div>
-                    <div class="empty-text">暂无PPT文件</div>
-                    <div class="empty-hint">点击上传按钮添加课程PPT</div>
-                </div>
-            `;
             return;
         }
 
@@ -308,15 +451,38 @@ export class UIManager {
             const previewBtn = pptCard.querySelector('.btn-preview');
             const downloadBtn = pptCard.querySelector('.btn-download');
             const deleteBtn = pptCard.querySelector('.btn-delete');
-            const selectCheckbox = pptCard.querySelector('.ppt-checkbox');
+            const checkbox = pptCard.querySelector('.ppt-checkbox');
 
             if (previewBtn) previewBtn.addEventListener('click', () => onPreview(ppt.id));
             if (downloadBtn) downloadBtn.addEventListener('click', () => onDownload(ppt.id));
             if (deleteBtn) deleteBtn.addEventListener('click', () => onDelete(ppt.id));
-            if (selectCheckbox) selectCheckbox.addEventListener('change', (e) => onToggleSelect(ppt.id));
+            
+            // 绑定 checkbox 事件
+            if (checkbox && onSelect) {
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    onSelect(ppt.id, e.target.checked);
+                });
+                
+                // 点击卡片头部区域也可以触发选择
+                const header = pptCard.querySelector('.ppt-card-header');
+                if (header) {
+                    header.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            onSelect(ppt.id, checkbox.checked);
+                        }
+                    });
+                }
+            }
 
             this.pptGrid.appendChild(pptCard);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('ppt'), 0);
+        }
     }
     
     createPPTCardElement(ppt) {
@@ -351,13 +517,13 @@ export class UIManager {
             
             <div class="ppt-actions">
                 <button class="ppt-card-btn btn-preview" title="查看">
-                    <img src="../icons/preview.png" alt="查看" class="btn-icon"> 查看
+                    <img src="../../icons/preview.png" alt="查看" class="btn-icon"> 查看
                 </button>
                 <button class="ppt-card-btn btn-download" title="下载">
-                    <img src="../icons/download.png" alt="下载" class="btn-icon"> 下载
+                    <img src="../../icons/download.png" alt="下载" class="btn-icon"> 下载
                 </button>
                 <button class="ppt-card-btn btn-delete" title="删除">
-                    <img src="../icons/delete.png" alt="删除" class="btn-icon"> 删除
+                    <img src="../../icons/delete.png" alt="删除" class="btn-icon"> 删除
                 </button>
             </div>
         `;
@@ -413,7 +579,7 @@ export class UIManager {
             
             const fileType = file.file_type.toLowerCase();
             // 使用动态服务器地址，支持生产环境部署
-            const serverUrl = await Promise.resolve(this.getServerUrl());
+            const serverUrl = BACKEND_URL;
             const previewUrl = `${serverUrl}/ppt/files/${file.id}/preview?type=direct`;
             
             // 根据文件类型创建不同的预览内容
@@ -620,43 +786,11 @@ export class UIManager {
         }
     }
 
-    /**
-     * 显示上传进度
-     */
-    showUploadProgress() {
-        // 创建或显示上传进度条
-        let progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) {
-            progressModal = this.createUploadProgressModal();
-            document.body.appendChild(progressModal);
-        }
-        
-        progressModal.classList.add('active');
-    }
+    // 上传进度功能已移除
 
-    /**
-     * 更新上传进度
-     */
-    updateUploadProgress(progress, status) {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) return;
+    // 上传进度更新功能已移除
 
-        const progressBar = progressModal.querySelector('.upload-progress-bar');
-        const statusText = progressModal.querySelector('.upload-status-text');
-
-        if (progressBar) progressBar.style.width = `${progress}%`;
-        if (statusText) statusText.textContent = status;
-    }
-
-    /**
-     * 隐藏上传进度
-     */
-    hideUploadProgress() {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (progressModal) {
-            progressModal.classList.remove('active');
-        }
-    }
+    // 上传进度隐藏功能已移除
 
     /**
      * 工具方法
@@ -684,17 +818,118 @@ export class UIManager {
     }
 
     showError(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
+    }
+
+    showSuccess(message) {
+        console.log('成功:', message);
+        this.showTempMessage(message, 'success');
+    }
+
+    showWarning(message) {
+        console.warn('警告:', message);
+        this.showTempMessage(message, 'warning');
     }
 
     showSuccessMessage(message) {
         // 显示成功消息
         console.log(`成功: ${message}`);
+        // 添加临时的成功提示
+        this.showTempMessage(message, 'success');
     }
 
     showErrorMessage(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
     }
+
+    /**
+     * 显示临时消息
+     */
+    showTempMessage(message, type = 'info') {
+        // 移除已存在的临时消息
+        const existingMessages = document.querySelectorAll('.temp-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temp-message temp-message-${type}`;
+        messageDiv.textContent = message;
+        
+        // 根据类型设置不同的颜色
+        const colors = {
+            success: { bg: '#28a745', border: '#1e7e34' },
+            error: { bg: '#dc3545', border: '#bd2130' },
+            warning: { bg: '#ffc107', border: '#d39e00', text: '#212529' },
+            info: { bg: '#007bff', border: '#0056b3' }
+        };
+        
+        const color = colors[type] || colors.info;
+        
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${color.bg};
+            color: ${color.text || 'white'};
+            border: 2px solid ${color.border};
+            border-radius: 6px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        // 添加动画样式
+        if (!document.getElementById('temp-message-styles')) {
+            const style = document.createElement('style');
+            style.id = 'temp-message-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(messageDiv);
+        
+        // 3秒后移除消息
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+
+    // 上传状态更新功能已移除
+
+    // 上传总结功能已移除
 
     /**
      * 更新PPT统计信息
@@ -764,24 +999,7 @@ export class UIManager {
         });
     }
 
-    /**
-     * 显示上传摘要
-     */
-    showUploadSummary(successCount, failCount) {
-        const totalCount = successCount + failCount;
-        let message = `上传完成！\n`;
-        message += `成功: ${successCount}/${totalCount}\n`;
-        if (failCount > 0) {
-            message += `失败: ${failCount}/${totalCount}`;
-        }
-        
-        if (failCount > 0) {
-            alert(message);
-        } else {
-            // 可以显示更友好的成功提示
-            console.log(message);
-        }
-    }
+    // 上传摘要功能已移除
 
     /**
      * 更新上传状态
@@ -791,28 +1009,7 @@ export class UIManager {
         console.log(`上传状态: ${status}`);
     }
 
-    /**
-     * 创建上传进度模态框
-     */
-    createUploadProgressModal() {
-        const modal = document.createElement('div');
-        modal.id = 'upload-progress-modal';
-        modal.className = 'upload-progress-modal';
-
-        modal.innerHTML = `
-            <div class="upload-progress-header">
-                <h3>上传文件</h3>
-            </div>
-            <div class="upload-progress-body">
-                <div class="upload-progress-bar-container">
-                    <div class="upload-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="upload-status-text">准备上传...</div>
-            </div>
-        `;
-
-        return modal;
-    }
+    // 上传进度模态框功能已移除
 
     /**
      * 在新窗口预览（由PPTHandler调用）
@@ -894,7 +1091,7 @@ export class UIManager {
         }
         
         // 备用：使用硬编码的难度标签
-        const difficultyTags = ['简单', '中等', '困难', '基础', '进阶', '高级'];
+        const difficultyTags = ['简单', '中等', '困难'];
         return difficultyTags.includes(tagName);
     }
 
@@ -1079,5 +1276,19 @@ export class UIManager {
                 ${tagArray.map(tag => `<span class="ppt-tag">${this.escapeHtml(String(tag))}</span>`).join('')}
             </div>
         `;
+    }
+
+    /**
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
+     */
+    enterMistakeEditMode() {
+        console.log('UIManager: enterMistakeEditMode 已被 EditManager 替代');
+    }
+
+    /**
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
+     */
+    exitMistakeEditMode() {
+        console.log('UIManager: exitMistakeEditMode 已被 EditManager 替代');
     }
 }

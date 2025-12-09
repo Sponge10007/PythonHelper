@@ -82,7 +82,7 @@ export class ChatManager {
 
     async sendMessage(messageText) {
         if (!messageText || this.isLoading || !this.currentChatId) return;
-
+        
         const chat = this.chats.find(c => c.id === this.currentChatId);
         if (!chat) return;
 
@@ -104,28 +104,136 @@ export class ChatManager {
     async fetchAndDisplayAiResponse(chat) {
         this.isLoading = true;
         this.ui.setLoadingState(true);
-        const placeholder = this.ui.appendMessage({ role: 'assistant', content: '思考中...' });
+        
+        const messageId = `msg-${Date.now()}`;
+        console.log('fetchAndDisplayAiResponse', chat);
+        const streamingElement = this.ui.createStreamingMessage(messageId);
+        // 创建流式消息元素
+        
+        let accumulatedContent = '';
 
         try {
             // 在发送给AI之前，先进行记忆管理
             const managedMessages = this.manageConversationMemory(chat.messages);
-            
-            const data = await api.fetchAiResponse(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint);
-            const aiMessage = { id: `msg-${Date.now()}`, role: 'assistant', content: data.response };
-            chat.messages.push(aiMessage);
-            
-            const finalElement = this.ui.createMessageElement(aiMessage);
-            placeholder.replaceWith(finalElement);
-            await storage.saveChats(this.chats);
+            // console.log('managedMessages', managedMessages);
+            // 使用流式API调用
+            await api.fetchAiResponseStream(managedMessages, this.settings.aiApiKey, this.settings.aiApiEndpoint, (chunk) => {
+                
+                if (chunk.error) {
+                    // 处理错误
+                    accumulatedContent = chunk.content;
+                    this.ui.updateStreamingMessage(messageId, accumulatedContent);
+                    return;
+                }
+                
+                if (chunk.content) {
+                    accumulatedContent += chunk.content;
+                    console.log('accumulatedContent', accumulatedContent);
+                    this.ui.updateStreamingMessage(messageId, accumulatedContent);
+                }
+                
+                if (chunk.done) {
+                    // 流式传输完成
+                    this.ui.finishStreamingMessage(messageId);
+                    
+                    // 保存完整的AI消息到聊天记录
+                    const aiMessage = { 
+                        id: messageId, 
+                        role: 'assistant', 
+                        content: accumulatedContent 
+                    };
+                    chat.messages.push(aiMessage);
+                    storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
+                }
+            });
 
         } catch (error) {
-            console.error('AI request failed:', error);
-            const errorElement = this.ui.createMessageElement({ role: 'assistant', content: `抱歉，请求失败。错误: ${error.message}` });
-            placeholder.replaceWith(errorElement);
+            console.error('AI流式请求失败:', error);
+            let errorMessage = '抱歉，请求失败。';
+            
+            // 针对不同错误类型给出具体提示
+            if (error.message.includes('402') || error.message.includes('Payment Required')) {
+                errorMessage = '❌ API账户余额不足，请检查DeepSeek账户余额或更新API Key。点击左侧设置图标可以更新API Key。';
+            } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                errorMessage = '❌ API Key无效或已过期，请在设置中更新您的API Key。';
+            } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+                errorMessage = '❌ API访问被拒绝，请检查API Key权限。';
+            } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+                errorMessage = '❌ API调用频率超限，请稍后再试。';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = '❌ 网络连接失败，请检查网络连接或稍后重试。';
+            } else {
+                errorMessage = `❌ 请求失败: ${error.message}`;
+            }
+            
+            // 更新流式消息显示错误
+            this.ui.updateStreamingMessage(messageId, errorMessage);
+            this.ui.finishStreamingMessage(messageId);
+            
+            // 保存错误消息到聊天记录
+            const errorMsg = { 
+                id: messageId, 
+                role: 'assistant', 
+                content: errorMessage 
+            };
+            chat.messages.push(errorMsg);
+            storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
         } finally {
             this.isLoading = false;
             this.ui.setLoadingState(false);
         }
+    }
+    
+    /**
+     * 重试消息 - 找到指定消息之前的最后一条用户消息，重新生成AI回复
+     * @param {string} messageId - 要重试的消息ID
+     */
+    async retryMessage(messageId) {
+        if (this.isLoading || !this.currentChatId) {
+            console.warn('正在加载中或没有当前聊天，无法重试');
+            return;
+        }
+        
+        const chat = this.chats.find(c => c.id === this.currentChatId);
+        if (!chat) {
+            console.warn('找不到当前聊天');
+            return;
+        }
+
+        // 找到要重试的消息的索引
+        const messageIndex = chat.messages.findIndex(m => m.id === messageId);
+        if (messageIndex === -1) {
+            console.warn('找不到要重试的消息:', messageId);
+            return;
+        }
+
+        // 找到该消息之前的最后一条用户消息
+        let userMessageIndex = -1;
+        for (let i = messageIndex - 1; i >= 0; i--) {
+            if (chat.messages[i].role === 'user') {
+                userMessageIndex = i;
+                break;
+            }
+        }
+
+        if (userMessageIndex === -1) {
+            console.warn('找不到对应的用户消息');
+            return;
+        }
+
+        console.log(`重试消息: 从消息索引 ${userMessageIndex} 开始重新生成`);
+
+        // 删除从用户消息之后的所有消息（包括旧的AI回复）
+        chat.messages = chat.messages.slice(0, userMessageIndex + 1);
+        
+        // 保存状态
+        await storage.saveChats(this.chats);
+        
+        // 重新渲染消息列表
+        this.ui.renderMessages(chat.messages);
+        
+        // 重新获取AI响应
+        await this.fetchAndDisplayAiResponse(chat);
     }
     
     /**
@@ -218,10 +326,14 @@ export class ChatManager {
     clearChatHistory(chatId, keepRecent = 5) {
         const chat = this.chats.find(c => c.id === chatId);
         if (!chat) return;
-        
         const originalLength = chat.messages.length;
-        chat.messages = chat.messages.slice(-keepRecent);
-        
+
+        // 如果 keepRecent <= 0 则清空所有消息；否则保留最近 keepRecent 条
+        if (!keepRecent || keepRecent <= 0) {
+            chat.messages = [];
+        } else {
+            chat.messages = chat.messages.slice(-keepRecent);
+        }
         console.log(`清理对话历史: ${chatId}, 原始消息数: ${originalLength}, 保留消息数: ${chat.messages.length}`);
         
         // 保存更新
@@ -230,6 +342,7 @@ export class ChatManager {
         // 如果当前对话被清理，重新渲染
         if (this.currentChatId === chatId) {
             this.ui.renderMessages(chat.messages);
+            console.log(`已更新UI，当前消息数: ${chat.messages.length}`);
         }
     }
     

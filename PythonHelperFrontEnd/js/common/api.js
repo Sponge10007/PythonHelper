@@ -1,8 +1,66 @@
 // js/common/api.js
+import { BACKEND_URL } from './config.js';
+/**
+ * 与AI后端进行对话 - 支持流式传输
+ * @param {Array} messages - 完整对话消息数组
+ * @param {string} apiKey - 用户的 API Key
+ * @param {string} apiEndpoint - API 端点
+ * @param {Function} onChunk - 接收流式数据的回调函数
+ * @returns {Promise<void>}
+ */
+export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChunk) {
 
-const BACKEND_URL = 'http://localhost:5000';
-// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--35427.ap-shanghai2.cloudstudio.club";
-// const BACKEND_URL = "https://89a39c1476f74a949b6e7dddabaf7ba4--5000.ap-shanghai2.cloudstudio.club";
+    const response = await fetch(`${BACKEND_URL}/ai/chat/stream`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            messages: messages,  // 发送完整对话历史
+            apiKey: apiKey,
+            apiEndpoint: apiEndpoint
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    console.log('response', response);
+    // 处理Server-Sent Events
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            // console.log('chunk', chunk);
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        onChunk(data);
+
+                        // 如果传输完成，退出循环
+                        if (data.done) {
+                            return;
+                        }
+                        
+                    } catch (e) {
+                        console.warn('解析流式数据失败:', e, line);
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+}
 
 /**
  * 与AI后端进行对话 - 支持持久记忆
@@ -14,6 +72,9 @@ const BACKEND_URL = 'http://localhost:5000';
 export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
     const response = await fetch(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
             messages: messages,  // 发送完整对话历史
             apiKey: apiKey,
@@ -46,6 +107,7 @@ export async function fetchMistakes() {
  * 保存新的错题到后端
  * @param {Object} mistake - 新的错题对象
  * @returns {Promise<void>}
+ * @use {sidebar/ChatManager.js} 
  */
 export async function saveMistake(mistake) {
     // 这个函数用于添加一个全新的错题记录
@@ -84,15 +146,35 @@ export async function updateMistake(mistakeId, updatedMistake) {
     return response.json(); 
 }
 
+/**
+ * 删除一个错题
+ * @param {number} mistakeId - 错题的ID
+ * @returns {Promise<Object>}
+ */
+export async function deleteMistake(mistakeId) {
+    const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除错题失败');
+    }
+    
+    return response.json();
+}
+
 // PPT 文件管理相关 API 函数
 
 /**
- * 获取所有PPT文件列表
+ * 获取所有PPT文件列表（携带session）
  * @returns {Promise<Array>} - PPT文件列表
  */
 export async function fetchPPTFiles() {
     try {
-        const response = await fetch(`${BACKEND_URL}/ppt/files`);
+        const response = await fetch(`${BACKEND_URL}/ppt/files`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             throw new Error(`获取PPT文件列表失败: ${response.status}`);
         }
@@ -173,6 +255,7 @@ export async function uploadPPTFile(file, description = '', tags = [], onProgres
 
             xhr.timeout = 300000; // 5分钟超时
             xhr.open('POST', `${BACKEND_URL}/ppt/upload`);
+            xhr.withCredentials = true;  // 携带cookie/session
             xhr.send(formData);
         });
 
@@ -194,7 +277,9 @@ export async function downloadPPTFile(pptId, filename = null) {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/download`);
+        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/download`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `下载失败: ${response.status}`);
@@ -274,6 +359,7 @@ export async function batchDeletePPTFiles(pptIds) {
         const response = await fetch(`${BACKEND_URL}/ppt/files/batch-delete`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',  // 携带cookie/session
             body: JSON.stringify({ ids: pptIds })
         });
 

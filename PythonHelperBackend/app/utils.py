@@ -28,7 +28,7 @@ def estimate_slides_count(file_path, file_type):
     try:
         file_size = os.path.getsize(file_path)
         if file_type == 'pdf':
-            return max(1, file_size // 50000)  # 每50KB约1页
+            return max(1, file_size // 80000)  # 每50KB约1页
         else:
             return max(1, file_size // 100000) # 每100KB约1页
     except Exception as e:

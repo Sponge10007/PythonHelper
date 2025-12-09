@@ -4,7 +4,7 @@ class ProductionConfig:
     """生产环境配置"""
     DEBUG = False
     HOST = '0.0.0.0'
-    PORT = 8888
+    port = 5000
 
     # 数据库文件
     MISTAKES_DB_FILE = 'mistakes.db'
@@ -52,7 +52,7 @@ class DevelopmentConfig:
     """开发环境配置"""
     DEBUG = True
     HOST = 'localhost'
-    PORT = 5000
+    port = 5000
 
     MISTAKES_DB_FILE = 'mistakes.db'
     PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')

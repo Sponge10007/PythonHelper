@@ -3,6 +3,7 @@
 export class UIManager {
     constructor() {
         this.initElements();
+        this.retryCallback = null; // 存储重试回调函数
     }
 
     initElements() {
@@ -21,8 +22,16 @@ export class UIManager {
         this.chatInput = document.getElementById('chatInput');
         this.sendMessageBtn = document.getElementById('sendMessage');
         this.saveSelectionBtn = document.getElementById('saveSelectionBtn');
-        this.mistakeListContainer = document.getElementById('mistakeListContainer');
-        this.memoryManageBtn = document.getElementById('memoryManageBtn');
+        this.mistakeListContainer = document.getElementById('mistakeListContainer'); //侧边栏的错题列表
+        this.memoryManageBtn = document.getElementById('memoryManageBtn'); //记忆管理
+    }
+    
+    /**
+     * 设置重试消息的回调函数
+     * @param {Function} callback - 重试回调函数，接收 messageId 作为参数
+     */
+    setRetryCallback(callback) {
+        this.retryCallback = callback;
     }
     
     showView(viewToShow) {
@@ -66,7 +75,15 @@ export class UIManager {
     // --- 原有的聊天UI方法保持不变 ---
     toggleChatList() {
         this.sidebarNav.classList.toggle('expanded');
-    }
+    } // 切换聊天列表展开状态
+    
+    isChatListExpanded() {
+        return this.sidebarNav.classList.contains('expanded');
+    } // 判断聊天列表是否展开
+    
+    hideChatList() {
+        this.sidebarNav.classList.remove('expanded');
+    } // 隐藏聊天列表
     
     renderChatList(chats, currentChatId, onChatSelect, onChatDelete) {
         this.chatList.innerHTML = '';
@@ -122,32 +139,225 @@ export class UIManager {
         return messageElement;
     }
     
+    /**
+     * 绑定消息操作按钮的事件
+     * @param {string} messageId - 消息ID
+     * @param {Function} onRetry - 重试回调函数
+     */
+    MessageClickActions(messageId, onRetry = null) {
+        // 获取特定消息的容器
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) {
+            console.warn(`Message with id ${messageId} not found`);
+            return null;
+        }
+
+        // 检查是否已经绑定过事件，避免重复绑定
+        if (messageElement.dataset.actionsbound === 'true') {
+            return null;
+        }
+
+        // 在消息容器内查找按钮和图标（避免ID冲突）
+        const LikeBtn = messageElement.querySelector('.like-btn');
+        const LikeBtnImg = messageElement.querySelector('.like-btn img');
+        const DislikeBtn = messageElement.querySelector('.dislike-btn');
+        const DislikeBtnImg = messageElement.querySelector('.dislike-btn img');
+        const RetryBtn = messageElement.querySelector('.retry-btn');
+        const RetryBtnImg = messageElement.querySelector('.retry-btn img');
+        const CopyBtn = messageElement.querySelector('.copy-btn');
+
+        // 检查按钮是否存在
+        if (!LikeBtn || !DislikeBtn || !RetryBtn) {
+            console.warn(`Some buttons not found for message ${messageId}`);
+            return null;
+        }
+
+        // 点赞按钮
+        LikeBtn.addEventListener('click', () => {
+            console.log(`Liked message ${messageId}`);
+            if (LikeBtnImg && LikeBtnImg.src.includes('good.png')) {
+                LikeBtnImg.src = '../icons/good-active.png';
+                // 如果点赞，取消踩
+                if (DislikeBtnImg) {
+                    DislikeBtnImg.src = '../icons/bad.png';
+                }
+            } else if (LikeBtnImg) {
+                LikeBtnImg.src = '../icons/good.png';
+            }
+        });
+
+        // 点踩按钮
+        DislikeBtn.addEventListener('click', () => {
+            console.log(`Disliked message ${messageId}`);
+            if (DislikeBtnImg && DislikeBtnImg.src.includes('bad.png')) {
+                DislikeBtnImg.src = '../icons/bad-active.png';
+                // 如果点踩，取消赞
+                if (LikeBtnImg) {
+                    LikeBtnImg.src = '../icons/good.png';
+                }
+            } else if (DislikeBtnImg) {
+                DislikeBtnImg.src = '../icons/bad.png';
+            }
+        });
+
+        // 重试按钮
+        RetryBtn.addEventListener('click', () => {
+            console.log(`Retry message ${messageId}`);
+            
+            // 添加旋转动画
+            if (RetryBtnImg) {
+                RetryBtnImg.classList.add('rotating');
+                setTimeout(() => {
+                    RetryBtnImg.classList.remove('rotating');
+                }, 1000);
+            }
+            
+            // 调用重试回调函数
+            if (onRetry && typeof onRetry === 'function') {
+                onRetry(messageId);
+            } else {
+                console.warn('No retry handler provided for message', messageId);
+            }
+        });
+
+        // 复制按钮
+        CopyBtn.addEventListener('click', () => {
+            const messageContentElement = messageElement.querySelector('.message-content');
+            if (messageContentElement) {
+                const textToCopy = messageContentElement.innerText || messageContentElement.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    console.log(`Copied message ${messageId} content to clipboard`);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        });
+
+        // 标记已绑定事件，防止重复绑定
+        messageElement.dataset.actionsbound = 'true';
+
+        return { LikeBtn, DislikeBtn, RetryBtn, CopyBtn };
+    }
+
+    /**
+     * 创建流式消息元素 - 用于实时更新内容
+     * @param {string} messageId - 消息ID
+     * @returns {HTMLElement} - 消息元素
+     */
+    createStreamingMessage(messageId) {
+        const element = document.createElement('div');
+        element.className = 'message assistant-message';
+        element.dataset.messageId = messageId;
+
+        element.innerHTML = `
+            <div class="message-avatar"></div>
+            <div class="message-bubble-container">
+                <div class="message-content"><div class="streaming-content"></div></div>
+                <div class="message-actions" >
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 12px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:22px; margin-left:1px; margin-right:1px;"></span>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
+                </div>
+            </div>
+            <input type="checkbox" class="message-selector" title="选择此消息" style= "margin-left: auto; margin-right:3px" >
+        `;
+        
+        this.chatMessages.appendChild(element);
+        this.scrollToBottom();
+
+        // 绑定消息操作按钮的点击事件
+        this.MessageClickActions(messageId, this.retryCallback);
+
+        return element;
+    }
+
+    /**
+     * 更新流式消息内容
+     * @param {string} messageId - 消息ID
+     * @param {string} content - 新的内容
+     */
+    updateStreamingMessage(messageId, content) {
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const contentElement = messageElement.querySelector('.streaming-content');
+        if (!contentElement) return;
+
+        // 更新内容
+        contentElement.innerHTML = this.formatMessageContent(content);
+        
+        // 重新渲染数学公式
+        this.renderMathInElement(messageElement);
+        
+        // 滚动到底部
+        this.scrollToBottom();
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
+    }
+
+    /**
+     * 完成流式消息 - 显示操作按钮
+     * @param {string} messageId - 消息ID
+     */
+    finishStreamingMessage(messageId) {
+        const messageElement = this.chatMessages.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const actionsElement = messageElement.querySelector('.message-actions');
+        if (actionsElement) {
+            // actionsElement.style.display = 'block';
+        }
+        // 不需要重复绑定事件，createStreamingMessage 时已经绑定过了
+    }
+    // 创建AI消息气泡
     createMessageElement(message) {
         const element = document.createElement('div');
         element.className = `message ${message.role}-message`;
         element.dataset.messageId = message.id;
+        // 1. 定义多选框的 HTML
+        const checkboxHtml = `<input type="checkbox" class="message-selector" title="选择此消息">`;
 
+        // 2. 定义头像 HTML
+        // 用户显示 'U'，AI 显示背景图(内容为空)
         const avatarContent = message.role === 'user' ? 'U' : '';
-    
+        const avatarHtml = `<div class="message-avatar">${avatarContent}</div>`;
+
+        // 3. 定义操作按钮 HTML
         let actionsHtml = '';
         if (message.role === 'assistant' && message.content && !message.content.includes('思考中...')) {
             actionsHtml = `
                 <div class="message-actions">
-                    <button class="action-btn retry-btn" title="重试"><span class="material-symbols-outlined">refresh</span></button>
-                    <button class="action-btn like-btn" title="点赞"><img src="../icons/good.png" alt="like icon" class="action-icon"></button>
-                    <button class="action-btn dislike-btn" title="点踩"><img src="../icons/bad.png" alt="dislike icon" class="action-icon"></button>
+                    <button class="action-btn retry-btn" title="重试"><img class="refresh-icon action-icon" src="../icons/refresh.png" alt="refresh icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">重试 </span>
+                    <button class="action-btn copy-btn" title="复制"><img class="copy-icon action-icon" src="../icons/copy.png" alt="copy icon"></button>
+                    <span style="color: #757373ff; font-size: 14px; margin-left: -6px; font-weight: 500; font-family: "思源宋体", "Source Han Serif SC", "宋体", SimSun, serif">复制 </span>
+                    <span class="separator"><img src="../icons/separator.png" alt="separator" style="width:8px; height:24px; margin-left:1px; margin-right:1px;"></span>
+                    <button class="action-btn like-btn" title="点赞"><img class="like-icon action-icon" src="../icons/good.png" alt="like icon"></button>
+                    <button class="action-btn dislike-btn" title="点踩"><img class="dislike-icon action-icon" src="../icons/bad.png" alt="dislike icon"></button>
                 </div>
             `;
         }
-    
-        element.innerHTML = `
-            <input type="checkbox" class="message-selector" title="选择此消息">
-            <div class="message-avatar">${avatarContent}</div>
+        
+        // 4. 定义消息气泡HTML
+        const bubbleHtml = `
             <div class="message-bubble-container">
                 <div class="message-content"><div>${this.formatMessageContent(message.content || '')}</div></div>
                 ${actionsHtml}
             </div>
-        `;
+        `
+        /*
+        5. 组装各个消息元素（头像，气泡，复选框）    
+            1. Checkbox -> Avatar -> Bubble
+            2. Avatar | Bubble | Checkbox
+        */
+        if (message.role === 'user') {
+            element.innerHTML = checkboxHtml + avatarHtml + bubbleHtml;
+        } else {
+            element.innerHTML = avatarHtml + bubbleHtml + checkboxHtml;
+        }
         return element;
     }
 
@@ -156,24 +366,28 @@ export class UIManager {
      * @param {HTMLElement} element - The element to render math in.
      */
     renderMathInElement(element) {
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise([element]).catch((err) =>
-                console.log('MathJax typesetting error:', err)
-            );
-        } else if (window.MathJax && window.MathJax.Hub) {
-            // 兼容MathJax v2
-            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
-        } else {
-            console.warn('MathJax not loaded or typesetPromise method not available');
-        }
+        // 使用setTimeout确保DOM更新完成后再渲染
+        setTimeout(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                // 使用MathJax v3的typesetPromise方法
+                window.MathJax.typesetPromise([element]).catch((err) =>
+                    console.log('MathJax typesetting error:', err)
+                );
+            } else if (window.MathJax && window.MathJax.Hub) {
+                // 兼容MathJax v2
+                window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, element]);
+            } else {
+                console.warn('MathJax not loaded, waiting for it to be available...');
+                // 如果MathJax还没加载完成，等待一段时间后重试
+                setTimeout(() => {
+                    this.renderMathInElement(element);
+                }, 100);
+            }
+        }, 10);
     }
 
+
     /**
-     * 格式化消息内容，处理markdown代码块
-     * @param {string} content - 原始消息内容
-     * @returns {string} - 格式化后的HTML内容
-     */
- /**
      * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
      * @param {string} content - 原始消息内容
      * @returns {string} - 格式化后的HTML内容
@@ -181,22 +395,67 @@ export class UIManager {
     formatMessageContent(content) {
         if (!content) return '';
 
+        // 保护LaTeX公式块，用占位符替换
         const latexPlaceholders = [];
         const placeholder = "LATEX_PLACEHOLDER_";
-
-        // 1. 保护LaTeX公式块，用占位符替换
-        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+        
+        // 保护块级公式 $$...$$（独占一行的公式）
+        // 修改正则表达式，确保只匹配真正的块级公式
+        let tempContent = content.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => {
+            // 过滤掉空公式
+            if (formula.trim() === '') return match;
+            console.log('块级公式'+match);
             latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
+            return `${placeholder}${latexPlaceholders.length - 1}$$`;
         });
-        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
+        // 保护行内公式 $...$（不独占一行的公式）
+        // 修改正则表达式，避免匹配到块级公式
+        tempContent = tempContent.replace(/\$(?!\$)([^$]*?)\$(?!\$)/g, (match) => {
+            console.log('行内公式'+match);
             latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
+            return `$${placeholder}${latexPlaceholders.length - 1}`;
         });
+        
+        // 使用 marked.js 渲染 Markdown
+        let formattedContent;
+        if (window.marked) {
+            // 配置 marked 选项
+            marked.setOptions({
+                breaks: true, // 转换 \n 为 <br>
+                gfm: true,    // 启用 GitHub 风格的 Markdown
+                smartypants: true // 启用智能标点符号
+            });
+            
+            // 渲染 Markdown
+            formattedContent = marked.parse(tempContent);
+        } else {
+            // 如果 marked.js 未加载，使用简单的替换
+            console.warn('Marked.js not loaded, using fallback formatting');
+            formattedContent = this.fallbackFormat(tempContent);
+        }
 
-        // 2. 现在可以安全地处理Markdown格式了
+        // 恢复LaTeX公式，让MathJax处理渲染
+        // 行内公式恢复
+        formattedContent = formattedContent.replace(new RegExp(`\\$${placeholder}(\\d+)`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        // 块级公式恢复
+        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)\\$\\$`, 'g'), (match, index) => {
+            return latexPlaceholders[parseInt(index, 10)];
+        });
+        
+        return formattedContent;
+    }
+
+    /**
+     * 备用格式化方法，当 marked.js 未加载时使用
+     * @param {string} content - 内容
+     * @returns {string} - 格式化后的内容
+     */
+    fallbackFormat(content) {
         // 处理代码块 (```language or ```)
-        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+        let formattedContent = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
             const lang = language ? ` class="language-${language}"` : '';
             return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
         });
@@ -204,25 +463,30 @@ export class UIManager {
         // 处理行内代码 (`code`)
         formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
         
-        // 改进的换行处理：
-        // 1. 先将3个或更多连续换行替换为2个换行（限制最大空行）
-        formattedContent = formattedContent.replace(/\n{3,}/g, '\n\n');
-        // 2. 将2个连续换行替换为段落分隔
+        // 处理粗体 (**text** or __text__)
+        formattedContent = formattedContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formattedContent = formattedContent.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        
+        // 处理斜体 (*text* or _text_)
+        formattedContent = formattedContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        formattedContent = formattedContent.replace(/_(.*?)_/g, '<em>$1</em>');
+        
+        // 处理删除线 (~~text~~)
+        formattedContent = formattedContent.replace(/~~(.*?)~~/g, '<del>$1</del>');
+        
+        // 处理链接 [text](url)
+        formattedContent = formattedContent.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // 处理段落
         formattedContent = formattedContent.replace(/\n\n/g, '</p><p>');
-        // 3. 将单个换行替换为<br>
+        formattedContent = `<p>${formattedContent}</p>`;
+        
+        // 处理换行
         formattedContent = formattedContent.replace(/\n/g, '<br>');
-        // 4. 包装在段落标签中
-        formattedContent = '<p>' + formattedContent + '</p>';
-        // 5. 清理空段落
-        formattedContent = formattedContent.replace(/<p><\/p>/g, '').replace(/<p><br><\/p>/g, '');
-
-        // 3. 恢复LaTeX公式
-        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
-            return latexPlaceholders[parseInt(index, 10)];
-        });
-        console.log(formattedContent)
+        
         return formattedContent;
     }
+
     /**
      * 转义HTML特殊字符
      * @param {string} text - 需要转义的文本
@@ -254,7 +518,16 @@ export class UIManager {
     
     setLoadingState(isLoading) {
         this.sendMessageBtn.disabled = isLoading;
-        this.sendMessageBtn.innerHTML = isLoading ? `<div class="loader"></div>` : `<span class="material-symbols-outlined">arrow_upward</span>`;
+        // 使用CSS类来控制背景图片，不再使用Material Icons
+        if (isLoading) {
+            this.sendMessageBtn.classList.add('loading');
+            this.sendMessageBtn.classList.remove('ready');
+        } else {
+            this.sendMessageBtn.classList.remove('loading');
+            this.sendMessageBtn.classList.add('ready');
+        }
+        // 清空按钮内容，依靠CSS背景图片
+        this.sendMessageBtn.innerHTML = '';
     }
     
     /**
@@ -268,12 +541,12 @@ export class UIManager {
         dialog.innerHTML = `
             <div class="dialog-content">
                 <div class="dialog-header">
-                    <h3>🧠 记忆管理</h3>
+                    <h3>记忆管理</h3>
                     <button class="close-btn">&times;</button>
                 </div>
                 <div class="dialog-body">
                     <div class="memory-stats">
-                        <h4>📊 对话统计</h4>
+                        <h4>对话统计</h4>
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <span class="stat-label">总消息数:</span>
@@ -302,20 +575,18 @@ export class UIManager {
                         </div>
                     </div>
                     <div class="memory-actions">
-                        <h4>🔧 记忆操作</h4>
+                        <h4>记忆操作</h4>
                         <div class="action-buttons">
                             <button class="action-btn clear-history-btn">
-                                <span class="material-symbols-outlined">delete_sweep</span>
                                 清理历史 (保留最近5条)
                             </button>
                             <button class="action-btn clear-all-btn">
-                                <span class="material-symbols-outlined">clear_all</span>
                                 清空全部
                             </button>
                         </div>
                     </div>
                     <div class="memory-info">
-                        <h4>💡 记忆说明</h4>
+                        <h4>记忆说明</h4>
                         <p>• 当对话超过20条消息时，系统会自动压缩历史记忆</p>
                         <p>• 压缩会保留最近10条消息，并生成历史摘要</p>
                         <p>• 这样可以保持AI的记忆能力，同时控制token消耗</p>
@@ -332,11 +603,23 @@ export class UIManager {
         });
         
         dialog.querySelector('.clear-history-btn').addEventListener('click', () => {
-            onClearHistory(5);
+            onClearHistory(10);
             document.body.removeChild(dialog);
         });
         
         dialog.querySelector('.clear-all-btn').addEventListener('click', () => {
+            // 先在对话内清除所有 stat-label / stat-value 文本
+            try {
+                dialog.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                dialog.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+                // 作为兜底，如果页面上还有其他 stat-label / stat-value，一并清空
+                document.querySelectorAll('.stat-label').forEach(el => el.textContent = '');
+                document.querySelectorAll('.stat-value').forEach(el => el.textContent = '');
+            } catch (e) {
+                console.warn('清空 stat-label/stat-value 时出错:', e);
+            }
+
+            // 调用外部传入的清理回调（0 表示清空全部）
             onClearHistory(0);
             document.body.removeChild(dialog);
         });

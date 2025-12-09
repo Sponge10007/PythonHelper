@@ -1,6 +1,7 @@
 // js/mistake_manager/MistakeHandler.js
 
 import * as api from '../common/api.js';
+import { BACKEND_URL } from '../common/config.js';
 
 export class MistakeHandler {
     constructor(uiManager) {
@@ -12,6 +13,7 @@ export class MistakeHandler {
         this.itemsPerPage = 10;
         this.editingMistakeId = null;
         this.currentFilters = { search: '', tags: new Set() };
+        this.currentSort = 'date'; // 默认排序
         
         // 标签筛选条件
         this.tagFilters = {
@@ -187,6 +189,11 @@ export class MistakeHandler {
             return true;
         });
 
+        // --- 排序逻辑 ---
+        this.filteredMistakes.sort((a, b) => {
+            return this.compareMistakes(a, b, this.currentSort);
+        });
+
         // --- 渲染逻辑 ---
         const totalPages = Math.ceil(this.filteredMistakes.length / this.itemsPerPage);
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
@@ -195,8 +202,7 @@ export class MistakeHandler {
         this.ui.renderMistakeList(
             pageMistakes,
             (id) => this.editMistake(id),
-            (id) => this.deleteMistake(id),
-            (id, isChecked) => this.toggleSelection(id, isChecked)
+            (id) => this.deleteMistake(id)
         );
         this.ui.updatePagination(this.currentPage, totalPages);
         
@@ -215,28 +221,118 @@ export class MistakeHandler {
     }
     
     sort(sortBy) {
-        this.filteredMistakes.sort((a, b) => {
-            switch (sortBy) {
-                case 'date': return new Date(b.date) - new Date(a.date);
-                case 'category': return (a.category || '').localeCompare(b.category || '');
-                case 'difficulty':
-                    const order = { '简单': 1, '中等': 2, '困难': 3 };
-                    return (order[a.difficulty] || 0) - (order[b.difficulty] || 0);
-                default: return 0;
-            }
-        });
+        this.currentSort = sortBy;
         this.currentPage = 1;
         this.filterAndRender();
+    }
+
+    /**
+     * 比较两个错题
+     */
+    compareMistakes(a, b, sortBy) {
+        switch (sortBy) {
+            case 'date':
+                // 按日期降序（最新的在前）
+                return new Date(b.date) - new Date(a.date);
+            case 'class': // 按课程标签排序
+                const courseA = this.getMistakeTagByCategory(a, 'course') || '';
+                const courseB = this.getMistakeTagByCategory(b, 'course') || '';
+                return courseA.localeCompare(courseB, 'zh-CN');
+            case 'knowledge': // 按知识点标签排序
+                return this.compareByKnowledge(a, b);
+            case 'easy': // 由易到难
+                return this.getDifficultyValue(a) - this.getDifficultyValue(b);
+            case 'difficulty': // 由难到易
+                return this.getDifficultyValue(b) - this.getDifficultyValue(a);
+            default:
+                return 0;
+        }
+    }
+
+    /**
+     * 自定义知识点排序
+     */
+    compareByKnowledge(a, b) {
+        const order = [
+            '变量', '字符串', '列表', '字典', 
+            '循环', '条件语句', '文件操作', '类', '继承'
+        ];
+        
+        const knowA = this.getMistakeTagByCategory(a, 'knowledge') || '';
+        const knowB = this.getMistakeTagByCategory(b, 'knowledge') || '';
+        
+        const indexA = order.indexOf(knowA);
+        const indexB = order.indexOf(knowB);
+        
+        // 如果都在列表中，按列表顺序
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        
+        // 如果只有一个在列表中，在列表中的排前面
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // 如果都不在列表中，按拼音排序
+        return knowA.localeCompare(knowB, 'zh-CN');
+    }
+
+    /**
+     * 自定义课程排序
+     */
+    compareByCourse(a, b) {
+        const order = ['函数', '复合数据类型', '异常处理', '数据类型及表达式', '文件概述', '流程控制', '面向对象'];
+
+        const courseA = this.getMistakeTagByCategory(a, 'course') || '';
+        const courseB = this.getMistakeTagByCategory(b, 'course') || '';
+
+        const indexA = order.indexOf(courseA);
+        const indexB = order.indexOf(courseB);
+
+        // 如果都在列表中，按列表顺序
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        
+        // 如果只有一个在列表中，在列表中的排前面
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // 如果都不在列表中，按拼音排序
+        return courseA.localeCompare(courseB, 'zh-CN');
+    }
+
+    /**
+     * 获取错题指定类别的标签
+     */
+    getMistakeTagByCategory(mistake, category) {
+        if (!mistake.tags || !Array.isArray(mistake.tags)) return null;
+        if (!window.tagCategories || !window.tagCategories[category]) return null;
+        
+        return mistake.tags.find(tag => window.tagCategories[category].has(tag));
+    }
+
+    /**
+     * 获取难度值
+     */
+    getDifficultyValue(mistake) {
+        const tag = this.getMistakeTagByCategory(mistake, 'difficulty');
+        const order = { '简单': 1, '中等': 2, '困难': 3 };
+        return order[tag] || 0;
     }
 
     async deleteMistake(mistakeId) {
         if (!confirm('确定要删除这个错题吗？')) return;
         try {
-            // await api.deleteMistake(mistakeId); // 在生产环境中，您需要一个后端的删除API
+            // 调用后端API删除错题
+            await api.deleteMistake(mistakeId);
+            
+            // 从本地数据中移除
             this.allMistakes = this.allMistakes.filter(m => m.id !== mistakeId);
             this.selectedMistakes.delete(mistakeId);
             this.filterAndRender();
         } catch (error) {
+            console.error('删除错题失败:', error);
             alert('删除失败: ' + error.message);
         }
     }
@@ -265,6 +361,238 @@ export class MistakeHandler {
         if (pageNumber > 0 && pageNumber <= totalPages) {
             this.currentPage = pageNumber;
             this.filterAndRender();
+        }
+    }
+
+    /**
+     * 切换单个错题的选中状态
+     */
+    toggleMistakeSelection(mistakeId, isSelected) {
+        console.log(`切换错题 ${mistakeId} 选中状态:`, isSelected);
+        
+        if (isSelected) {
+            this.selectedMistakes.add(mistakeId);
+        } else {
+            this.selectedMistakes.delete(mistakeId);
+        }
+        
+        // 更新卡片视觉效果
+        const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistakeId}"]`);
+        if (checkbox) {
+            const card = checkbox.closest('.mistake-item');
+            if (card) {
+                if (isSelected) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            }
+        }
+        
+        this.updateSelectionUI();
+        console.log(`错题 ${mistakeId} ${isSelected ? '已选中' : '取消选中'}，当前选中数量: ${this.selectedMistakes.size}`);
+    }
+
+    /**
+     * 根据ID数组批量删除错题
+     */
+    async batchDeleteByIds(selectedIds) {
+        try {
+            const deletePromises = selectedIds.map(id => api.deleteMistake(id));
+            await Promise.all(deletePromises);
+            
+            console.log(`成功删除 ${selectedIds.length} 个错题`);
+            
+            // 从本地数据中移除已删除的错题
+            this.allMistakes = this.allMistakes.filter(mistake => 
+                !selectedIds.includes(String(mistake.id))
+            );
+            
+            // 重新渲染
+            this.filterAndRender();
+            
+        } catch (error) {
+            console.error('批量删除失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 初始化编辑管理器相关的回调
+     */
+    initEditCallbacks(editManager) {
+        editManager.registerCallbacks('mistake', {
+            selectAll: () => this.selectAllMistakes(),
+            deselectAll: () => this.deselectAllMistakes(),
+            batchDelete: () => this.batchDeleteSelected(),
+            render: () => this.filterAndRender()
+        });
+    }
+
+    /**
+     * 检查是否处于编辑模式
+     */
+    isInEditMode(editManager) {
+        const state = editManager.getState();
+        return state.isEditMode && state.currentType === 'mistake';
+    }
+
+    /**
+     * 全选当前页错题
+     */
+    selectAllMistakes() {
+        const currentPageMistakes = this.getCurrentPageMistakes();
+        console.log('当前页错题:', currentPageMistakes);
+        
+        currentPageMistakes.forEach(mistake => {
+            this.selectedMistakes.add(mistake.id);
+            
+            // 更新视觉效果
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistake.id}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    card.classList.add('selected');
+                }
+            }
+        });
+        
+        this.updateSelectionUI();
+        console.log(`已选择 ${this.selectedMistakes.size} 个错题`);
+    }
+
+    /**
+     * 取消全选错题
+     */
+    deselectAllMistakes() {
+        console.log('取消全选，当前选中:', this.selectedMistakes);
+        
+        // 先更新视觉效果
+        this.selectedMistakes.forEach(mistakeId => {
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistakeId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    card.classList.remove('selected');
+                }
+            }
+        });
+        
+        this.selectedMistakes.clear();
+        this.updateSelectionUI();
+        console.log('已取消选择所有错题');
+    }
+
+    /**
+     * 批量删除选中的错题
+     */
+    async batchDeleteSelected() {
+        if (this.selectedMistakes.size === 0) {
+            alert('请先选择要删除的错题');
+            return;
+        }
+
+        const confirmMessage = `确定要删除选中的 ${this.selectedMistakes.size} 个错题吗？此操作不可恢复！`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const deletePromises = Array.from(this.selectedMistakes).map(id => 
+                api.deleteMistake(id)
+            );
+            
+            await Promise.all(deletePromises);
+            
+            console.log(`成功删除 ${this.selectedMistakes.size} 个错题`);
+            
+            // 从本地数据中移除已删除的错题
+            this.allMistakes = this.allMistakes.filter(mistake => 
+                !this.selectedMistakes.has(mistake.id)
+            );
+            
+            // 清空选择并重新渲染
+            this.selectedMistakes.clear();
+            this.filterAndRender();
+            
+        } catch (error) {
+            console.error('批量删除失败:', error);
+        }
+    }
+
+    /**
+     * 获取当前页的错题
+     */
+    getCurrentPageMistakes() {
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        return this.filteredMistakes.slice(startIndex, endIndex);
+    }
+
+    /**
+     * 更新选择状态的UI
+     */
+    updateSelectionUI() {
+        // 更新复选框状态
+        const currentPageMistakes = this.getCurrentPageMistakes();
+        currentPageMistakes.forEach(mistake => {
+            const checkbox = document.querySelector(`.mistake-checkbox[data-mistake-id="${mistake.id}"]`);
+            if (checkbox) {
+                checkbox.checked = this.selectedMistakes.has(mistake.id);
+                
+                // 更新卡片视觉效果
+                const card = checkbox.closest('.mistake-item');
+                if (card) {
+                    if (this.selectedMistakes.has(mistake.id)) {
+                        card.classList.add('selected');
+                    } else {
+                        card.classList.remove('selected');
+                    }
+                }
+            }
+        });
+
+        // 通知编辑管理器更新按钮状态
+        if (window.editManager) {
+            window.editManager.updateSelectedItems(Array.from(this.selectedMistakes));
+        }
+    }
+
+    async analyzeMistake(mistakeId) {
+        try {
+            // 调用后端接口
+            const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                    // 如果有登录 token，记得带上
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || '分析请求失败');
+            }
+
+            const result = await response.json();
+            console.log(result)
+
+            // 更新本地数据
+            const index = this.allMistakes.findIndex(m => m.id === mistakeId);
+            if (index !== -1) {
+                this.allMistakes[index].title = result.title;
+                this.allMistakes[index].ai_summary = result.ai_summary;
+                
+                // 重新渲染列表以显示结果
+                this.filterAndRender();
+                alert('✨ 分析完成！题目和解析已更新。');
+            }
+
+        } catch (error) {
+            console.error('AI分析失败:', error);
+            throw error; // 抛出给调用者处理UI状态
         }
     }
 }
