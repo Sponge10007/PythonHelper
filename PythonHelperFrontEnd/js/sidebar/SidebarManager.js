@@ -5,6 +5,7 @@ import { BACKEND_URL } from '../common/config.js';
 import { ChatManager } from './ChatManager.js';
 // 导入 SettingsManager 来处理设置逻辑
 import { SettingsManager } from './SettingsManager.js';
+import * as storage from '../common/storage.js';
 
 class SidebarManager {
     constructor() {
@@ -332,35 +333,37 @@ class SidebarManager {
         document.getElementById('backToMainFromProfile').addEventListener('click', backToMain);
     }
 
-    // 检查登录状态, 如果没登录, 自动跳转到登录页面
+    // 检查登录状态：以后端 /auth/check-auth 为准，避免本地状态与服务器会话不一致
     async checkLoginStatus() {
         console.log('=== 开始检查登录状态 ===');
         try {
-            const result = await chrome.storage.local.get(['isLoggedIn', 'userEmail', 'userToken']);
-            console.log('从存储获取的数据:', result);
-            
-            const isLoggedIn = result.isLoggedIn === true;
-            const userEmail = result.userEmail || null;
-            
-            console.log('解析的登录状态:', { isLoggedIn, userEmail });
-            
-            this.updateUIBasedOnLoginStatus(isLoggedIn, userEmail);
-            
-            // 新增：如果用户未登录，自动跳转到登录页面
-            if (!isLoggedIn) {
-                console.log('用户未登录，自动跳转到登录页面');
-                setTimeout(() => {
-                    console.log(this.ui.loginInterface)
-                    this.ui.showView(this.ui.loginInterface);
-                }, 500); // 延迟500ms以确保UI初始化完成
+            const response = await fetch(`${BACKEND_URL}/auth/check-auth`, {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.authenticated && result.user && result.user.email) {
+                    await chrome.storage.local.set({
+                        isLoggedIn: true,
+                        userEmail: result.user.email,
+                        userToken: 'session'
+                    });
+                    this.updateUIBasedOnLoginStatus(true, result.user.email);
+                    console.log('后端确认已登录');
+                    return;
+                }
             }
+
+            // 后端未登录或会话失效：清除本地状态
+            await chrome.storage.local.remove(['isLoggedIn', 'userEmail', 'userToken']);
+            this.updateUIBasedOnLoginStatus(false, null);
+            setTimeout(() => this.ui.showView(this.ui.loginInterface), 300);
         } catch (error) {
             console.error('检查登录状态失败:', error);
+            // 网络异常时不允许继续使用需登录功能
             this.updateUIBasedOnLoginStatus(false, null);
-            // 出错时也跳转到登录页面
-            setTimeout(() => {
-                this.ui.showView(this.ui.loginInterface);
-            }, 500);
+            setTimeout(() => this.ui.showView(this.ui.loginInterface), 300);
         }
         console.log('=== 登录状态检查完成 ===');
     }
@@ -562,25 +565,28 @@ class SidebarManager {
     async handleLogout() {
         console.log('=== 开始登出操作 ===');
         try {
-            // 清除所有登录相关的存储数据
+            // 先通知后端清除服务器会话
+            try {
+                await fetch(`${BACKEND_URL}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.warn('调用后端登出接口失败:', error);
+            }
+
+            // 再清除本地登录状态
             await chrome.storage.local.remove(['isLoggedIn', 'userEmail', 'userToken']);
-            console.log('已清除所有登录相关数据');
-            
-            // 立即更新UI状态为未登录
+
             this.updateUIBasedOnLoginStatus(false, null);
-            
-            // 显示登出成功消息
             this.showAuthMessage('已成功登出', 'success');
-            
-            // 等待一下然后跳转到登录界面
+
             setTimeout(() => {
                 this.ui.showView(this.ui.loginInterface);
                 console.log('已跳转到登录界面');
             }, 1000);
-            
         } catch (error) {
             console.error('登出失败:', error);
-            // 即使登出失败，也要强制更新UI状态
             this.updateUIBasedOnLoginStatus(false, null);
             this.ui.showView(this.ui.loginInterface);
         }
@@ -779,9 +785,7 @@ class SidebarManager {
                 this.updateUIBasedOnLoginStatus(true, email);
                 
                 // 登录成功后跳转到主聊天界面
-                setTimeout(() => {
-                    this.ui.showView(this.ui.chatInterface);
-                }, 1500);
+                setTimeout(() => this.showMainView(), 1500);
             } else {
                 this.showAuthMessage(result.message || '登录失败', 'error');
             }

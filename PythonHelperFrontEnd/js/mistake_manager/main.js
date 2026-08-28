@@ -5,6 +5,7 @@ import { MistakeHandler } from './MistakeHandler.js';
 import { PPTHandler } from './PPTHandler.js';
 import { EditManager } from './EditManager.js';
 import { BACKEND_URL } from '../common/config.js';
+import * as api from '../common/api.js';
 
 // 将函数添加到全局作用域，供其他模块使用
 window.BACKEND_URL = BACKEND_URL;
@@ -35,7 +36,11 @@ class PageManager {
 
     async init() {
         console.log('=== PageManager 初始化开始 ===');
-        
+
+        if (!(await this.ensureLogin())) {
+            return;
+        }
+
         try {
             await this.mistakeHandler.init();
             console.log('错题处理器初始化完成');
@@ -215,6 +220,32 @@ class PageManager {
 
     }
 
+    async ensureLogin() {
+        try {
+            const response = await api.authFetch(`${BACKEND_URL}/auth/check-auth`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.authenticated) {
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('登录状态检查失败:', error);
+        }
+
+        document.body.innerHTML = `
+            <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;background:#f5f5f5;">
+                <div style="background:#fff;padding:32px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);text-align:center;">
+                    <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+                    <h2 style="margin:0 0 8px;color:#333;">请先登录</h2>
+                    <p style="color:#666;margin:0 0 20px;">请先在浏览器插件侧边栏完成登录，再打开错题管理器。</p>
+                    <button onclick="window.close()" style="padding:8px 20px;border:none;border-radius:6px;background:#7A3797;color:#fff;cursor:pointer;">关闭页面</button>
+                </div>
+            </div>
+        `;
+        return false;
+    }
+
     switchMode(mode) {
         this.currentMode = mode;
         
@@ -384,7 +415,7 @@ class PageManager {
      */
     async loadAllTags() {
         try {
-            const response = await fetch('http://localhost:5000/api/tags/categories');
+            const response = await api.authFetch(`${BACKEND_URL}/api/tags/categories`)
             const result = await response.json();
             
             if (result.success) {
@@ -419,6 +450,9 @@ class PageManager {
      * 添加默认标签
      */
     addDefaultTags() {
+        if (!this.tagCategories) {
+            this.tagCategories = { course: new Set(), knowledge: new Set(), difficulty: new Set() };
+        }
         // 默认课程标签
         const defaultCourseTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
         defaultCourseTags.forEach(tag => this.tagCategories.course.add(tag));
@@ -506,7 +540,7 @@ class PageManager {
 
         try {
             // 调用API添加标签
-            const response = await fetch('http://localhost:5000/api/tags', {
+            const response = await api.authFetch(`${BACKEND_URL}/api/tags`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -571,7 +605,7 @@ class PageManager {
 
         try {
             // 获取所有标签信息以获取ID
-            const response = await fetch('http://localhost:5000/api/tags');
+            const response = await api.authFetch(`${BACKEND_URL}/api/tags`)
             const result = await response.json();
             
             if (result.success) {
@@ -585,7 +619,7 @@ class PageManager {
                 const deletePromises = tagNames.map(tagName => {
                     const tagId = tagNameToId[tagName];
                     if (tagId) {
-                        return fetch(`http://localhost:5000/api/tags/${tagId}`, {
+                        return api.authFetch(`${BACKEND_URL}/api/tags/${tagId}`, {
                             method: 'DELETE'
                         });
                     }

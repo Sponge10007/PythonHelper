@@ -6,7 +6,16 @@ from typing import Dict, List, Generator
 
 logger = logging.getLogger(__name__)
 
-# d3f4ebk44jevfv89d6e0 浙大智能体密钥
+
+def _raise_for_ai_response(response):
+    """检查 AI API 响应：拒绝重定向并统一抛出 HTTP 错误。"""
+    if 300 <= response.status_code < 400:
+        raise requests.exceptions.RequestException(
+            f"AI endpoint 返回重定向状态码 {response.status_code}，已拒绝跟随"
+        )
+    response.raise_for_status()
+
+
 def convert_markdown_to_html(markdown_text: str) -> str:
     """将markdown文本转换为HTML"""
     try:
@@ -60,9 +69,12 @@ def call_ai_api_with_memory(messages: List[Dict], api_key: str, api_endpoint: st
         }
 
         logger.info(f"调用AI API (持久记忆): {api_endpoint} with model: {model}, messages count: {len(full_messages)}, timeout: 600s")
-        response = requests.post(api_endpoint, headers=headers, json=data, timeout=600)
+        response = requests.post(
+            api_endpoint, headers=headers, json=data,
+            timeout=600, allow_redirects=False
+        )
 
-        response.raise_for_status()
+        _raise_for_ai_response(response)
         result = response.json()
         logger.info("AI API调用成功 (持久记忆)")
         
@@ -105,9 +117,12 @@ def call_ai_api(message: str, api_key: str, api_endpoint: str, system: str) -> s
 
         logger.info(f"调用AI API: {api_endpoint} with model: {model}, timeout: 600s")
         # --- 关键修改：将timeout延长至600秒 ---
-        response = requests.post(api_endpoint, headers=headers, json=data, timeout=600)
+        response = requests.post(
+            api_endpoint, headers=headers, json=data,
+            timeout=600, allow_redirects=False
+        )
 
-        response.raise_for_status()  # 如果状态码不是 2xx，则抛出异常
+        _raise_for_ai_response(response)  # 如果状态码不是 2xx，则抛出异常
 
         result = response.json()
         logger.info("AI API调用成功")
@@ -160,8 +175,11 @@ def call_ai_api_stream(messages: List[Dict], api_key: str, api_endpoint: str, sy
         logger.info(f"调用AI API (流式): {api_endpoint} with model: {model}, messages count: {len(full_messages)}, timeout: 600s")
         
         # 发送流式请求
-        response = requests.post(api_endpoint, headers=headers, json=data, timeout=600, stream=True)
-        response.raise_for_status()
+        response = requests.post(
+            api_endpoint, headers=headers, json=data,
+            timeout=600, stream=True, allow_redirects=False
+        )
+        _raise_for_ai_response(response)
         
         logger.info("AI API流式调用成功")
         # 处理流式响应

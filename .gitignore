@@ -21,13 +21,11 @@ venv.bak/
 *.sqlite3
 *.db
 mistakes.db
-database.json
 
 --- 操作系统生成文件 ---
 
 .DS_Store
 Thumbs.db
-PythonHelperBackend/Dockerfile
 
 ---IDE 配置 (可选) ---
 

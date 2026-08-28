@@ -12,7 +12,7 @@ import json
 
 def get_db_connection():
     """获取数据库连接"""
-    db_path = "mistakes.db"
+    db_path = os.environ.get("DATABASE_PATH", "mistakes.db")
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn

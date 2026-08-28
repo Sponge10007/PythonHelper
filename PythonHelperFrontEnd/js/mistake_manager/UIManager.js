@@ -1,5 +1,6 @@
 // js/mistake_manager/UIManager.js
 import { BACKEND_URL } from '../common/config.js';
+import * as api from '../common/api.js';
 
 export class UIManager {
     constructor() {
@@ -121,7 +122,7 @@ export class UIManager {
         // 使用处理后的标签数组生成HTML
         const tagsHtml = tagsToShow.length > 0 ? `
             <div class="mistake-tags">
-                ${tagsToShow.map(tag => `<span class="mistake-tag ${tag.class}">${tag.text}</span>`).join('')}
+                ${tagsToShow.map(tag => `<span class="mistake-tag ${tag.class}">${this.escapeHtml(tag.text)}</span>`).join('')}
             </div>
         ` : '';
 
@@ -138,7 +139,7 @@ export class UIManager {
                         <span>🤖 AI 题目与解析</span>
                     </h4>
                     <div class="ai-summary-content markdown-body" style="font-size:14px; color:#333;">
-                        ${mistake.ai_summary}  </div>
+                        ${this.formatMessageContent(mistake.ai_summary)}</div>
                 </div>
             `;
         } else {
@@ -216,48 +217,85 @@ export class UIManager {
         if (!content) return '';
 
         const latexPlaceholders = [];
-        const placeholder = "LATEX_PLACEHOLDER_";
-
-        // 1. 保护LaTeX公式块，用占位符替换
-        let tempContent = content.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
+        const protectLatex = (match) => {
+            const index = latexPlaceholders.length;
             latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
-        });
-        tempContent = tempContent.replace(/\$([^$]*?)\$/g, (match) => {
-            latexPlaceholders.push(match);
-            return `${placeholder}${latexPlaceholders.length - 1}`;
-        });
+            return `LATEXPLACEHOLDER${index}`;
+        };
 
-        // 2. 现在可以安全地处理Markdown格式了
-        // 处理代码块 (```language or ```)
-        let formattedContent = tempContent.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-            const lang = language ? ` class="language-${language}"` : '';
-            return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
-        });
-        
-        // 处理行内代码 (`code`)
-        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
-        
-        // 全新的换行处理策略：最小化空行
-        // 1. 将所有连续换行（2个或更多）替换为单个换行
-        formattedContent = formattedContent.replace(/\n{2,}/g, '\n');
-        // 2. 将单个换行替换为<br>，但只在非空行之间
-        formattedContent = formattedContent.replace(/\n/g, '<br>');
-        // 3. 包装整个内容在一个段落中，避免段落间距问题
-        formattedContent = `<p>${formattedContent}</p>`;
-        // 4. 清理多余的空格和换行
-        formattedContent = formattedContent
-            .replace(/\s*<br>\s*<br>\s*/g, '<br>') // 清理连续的<br>
-            .replace(/<br>\s*<br>\s*<br>/g, '<br>') // 限制最多2个连续<br>
-            .replace(/^\s*<br>\s*/g, '') // 清理开头的<br>
-            .replace(/\s*<br>\s*$/g, ''); // 清理结尾的<br>
+        // 先保护 LaTeX 公式，避免被 Markdown 渲染破坏
+        let tempContent = content
+            .replace(/\$\$([\s\S]*?)\$\$/g, protectLatex)
+            .replace(/\\\[([\s\S]*?)\\\]/g, protectLatex)
+            .replace(/\\\((.*?)\\\)/g, protectLatex)
+            .replace(/\$([^$\n]+?)\$/g, protectLatex);
 
-        // 3. 恢复LaTeX公式，让MathJax处理渲染
-        formattedContent = formattedContent.replace(new RegExp(`${placeholder}(\\d+)`, 'g'), (match, index) => {
-            return latexPlaceholders[parseInt(index, 10)];
-        });
-        
-        return formattedContent;
+        let formattedContent = '';
+        if (window.marked && typeof window.marked.parse === 'function') {
+            try {
+                window.marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                formattedContent = window.marked.parse(tempContent);
+            } catch (e) {
+                console.warn('marked 渲染失败，使用降级解析:', e);
+                formattedContent = this.fallbackMarkdown(tempContent);
+            }
+        } else {
+            formattedContent = this.fallbackMarkdown(tempContent);
+        }
+
+        // 恢复 LaTeX 公式，交给 MathJax 或浏览器继续处理
+        formattedContent = formattedContent.replace(
+            /LATEXPLACEHOLDER(\d+)/g,
+            (match, index) => latexPlaceholders[parseInt(index, 10)] || ''
+        );
+
+        return this.sanitizeHtml(formattedContent);
+    }
+
+    /**
+     * marked 未加载时的降级 Markdown 解析器。
+     */
+    fallbackMarkdown(content) {
+        let formattedContent = content
+            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+                const lang = language ? ` class="language-${language}"` : '';
+                return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+            })
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\n{2,}/g, '\n')
+            .replace(/\n/g, '<br>');
+
+        return `<p>${formattedContent}</p>`;
+    }
+
+    /**
+     * 清理渲染后的HTML，移除脚本和高危属性。
+     */
+    sanitizeHtml(htmlContent) {
+        try {
+            const doc = new DOMParser().parseFromString(htmlContent || '', 'text/html');
+            doc.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(el => el.remove());
+            doc.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    if (attr.name.toLowerCase().startsWith('on')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+                if (el.tagName === 'A' && el.getAttribute('href')) {
+                    const href = el.getAttribute('href').trim().toLowerCase();
+                    if (href.startsWith('javascript:')) {
+                        el.removeAttribute('href');
+                    }
+                }
+            });
+            return doc.body.innerHTML;
+        } catch (e) {
+            console.warn('HTML清理失败，返回转义文本:', e);
+            return this.escapeHtml(htmlContent);
+        }
     }
 
     /**
@@ -370,7 +408,7 @@ export class UIManager {
 
     async loadTagsForEditModal() {
         try {
-            const response = await fetch('http://localhost:5000/api/tags/categories');
+            const response = await api.authFetch(`${BACKEND_URL}/api/tags/categories`)
             const result = await response.json();
             
             if (result.success) {
@@ -502,7 +540,7 @@ export class UIManager {
             </div>
             
             <div class="ppt-card-content">
-                <div class="ppt-title" title="${ppt.original_name}">${this.truncateText(ppt.original_name, 40)}</div>
+                <div class="ppt-title" title="${this.escapeHtml(ppt.original_name || '')}">${this.escapeHtml(this.truncateText(ppt.original_name || '', 40))}</div>
                 
                 <div class="ppt-tags">
                     <span class="ppt-tag ppt-type">${ppt.file_type.toUpperCase()}</span>

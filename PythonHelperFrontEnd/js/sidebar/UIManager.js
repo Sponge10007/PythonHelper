@@ -65,8 +65,8 @@ export class UIManager {
             const item = document.createElement('div');
             item.className = 'mistake-item-display';
             item.innerHTML = `
-                <strong class="mistake-title-display">${mistake.title}</strong>
-                <p class="mistake-content-display">${mistake.messages[0]?.content || '...'}</p>
+                <strong class="mistake-title-display">${this.escapeHtml(mistake.title || '')}</strong>
+                <p class="mistake-content-display">${this.escapeHtml(mistake.messages?.[0]?.content || '...')}</p>
             `;
             this.mistakeListContainer.appendChild(item);
         });
@@ -104,7 +104,7 @@ export class UIManager {
         element.className = 'chat-item';
         element.dataset.chatId = chat.id;
         element.innerHTML = `
-            <div class="chat-item-title">${chat.title}</div>
+            <div class="chat-item-title">${this.escapeHtml(chat.title || '')}</div>
             <div class="chat-item-actions">
                 <button class="delete-chat-btn" title="删除对话">🗑️</button>
             </div>
@@ -445,7 +445,34 @@ export class UIManager {
             return latexPlaceholders[parseInt(index, 10)];
         });
         
-        return formattedContent;
+        return this.sanitizeHtml(formattedContent);
+    }
+
+    /**
+     * 清理 AI Markdown 渲染后的 HTML，移除脚本和高危标签/属性。
+     */
+    sanitizeHtml(htmlContent) {
+        try {
+            const doc = new DOMParser().parseFromString(htmlContent || '', 'text/html');
+            doc.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(el => el.remove());
+            doc.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    if (attr.name.toLowerCase().startsWith('on')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+                if (el.tagName === 'A' && el.getAttribute('href')) {
+                    const href = el.getAttribute('href').trim().toLowerCase();
+                    if (href.startsWith('javascript:')) {
+                        el.removeAttribute('href');
+                    }
+                }
+            });
+            return doc.body.innerHTML;
+        } catch (e) {
+            console.warn('HTML清理失败，返回转义文本:', e);
+            return this.escapeHtml(htmlContent);
+        }
     }
 
     /**

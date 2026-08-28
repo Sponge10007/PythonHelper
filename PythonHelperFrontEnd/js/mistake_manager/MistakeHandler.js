@@ -562,12 +562,11 @@ export class MistakeHandler {
 
     async analyzeMistake(mistakeId) {
         try {
-            // 调用后端接口
-            const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}/analyze`, {
+            // 调用后端接口（携带 session cookie）
+            const response = await api.authFetch(`${BACKEND_URL}/mistakes/${mistakeId}/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                    // 如果有登录 token，记得带上
                 }
             });
 
@@ -584,10 +583,13 @@ export class MistakeHandler {
             if (index !== -1) {
                 this.allMistakes[index].title = result.title;
                 this.allMistakes[index].ai_summary = result.ai_summary;
-                
-                // 重新渲染列表以显示结果
+                if (Array.isArray(result.tags)) {
+                    this.allMistakes[index].tags = result.tags;
+                }
+
+                // 重新渲染列表以显示结果和AI自动添加的标签
                 this.filterAndRender();
-                alert('✨ 分析完成！题目和解析已更新。');
+                alert('✨ 分析完成！题目、Markdown解析和自动标签已更新。');
             }
 
         } catch (error) {

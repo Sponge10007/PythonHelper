@@ -1,10 +1,23 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from ..services.tag_service import TagService
+from app.database import get_db
+from app.utils import login_required
 
 tag_routes = Blueprint('tag_routes', __name__)
 tag_service = TagService()
 
+
+def _check_mistake_owner(mistake_id):
+    """校验当前用户拥有该错题。"""
+    user_id = session.get('user_id')
+    row = get_db().execute(
+        'SELECT id FROM mistakes WHERE id = ? AND user_id = ?',
+        (mistake_id, user_id)
+    ).fetchone()
+    return row is not None
+
 @tag_routes.route('/api/tags', methods=['GET'])
+@login_required
 def get_all_tags():
     """获取所有标签"""
     try:
@@ -20,6 +33,7 @@ def get_all_tags():
         }), 500
 
 @tag_routes.route('/api/tags/categories', methods=['GET'])
+@login_required
 def get_tags_by_categories():
     """获取按类别分组的标签"""
     try:
@@ -35,6 +49,7 @@ def get_tags_by_categories():
         }), 500
 
 @tag_routes.route('/api/tags/category/<category>', methods=['GET'])
+@login_required
 def get_tags_by_category(category):
     """根据类别获取标签"""
     try:
@@ -56,10 +71,11 @@ def get_tags_by_category(category):
         }), 500
 
 @tag_routes.route('/api/tags', methods=['POST'])
+@login_required
 def add_tag():
     """添加新标签"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         if not data or 'name' not in data or 'category' not in data:
             return jsonify({
                 'success': False,
@@ -93,10 +109,11 @@ def add_tag():
         }), 500
 
 @tag_routes.route('/api/tags/<int:tag_id>', methods=['PUT'])
+@login_required
 def update_tag(tag_id):
     """更新标签"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         if not data or 'name' not in data or 'category' not in data:
             return jsonify({
                 'success': False,
@@ -130,6 +147,7 @@ def update_tag(tag_id):
         }), 500
 
 @tag_routes.route('/api/tags/<int:tag_id>', methods=['DELETE'])
+@login_required
 def delete_tag(tag_id):
     """删除标签"""
     try:
@@ -145,6 +163,7 @@ def delete_tag(tag_id):
         }), 500
 
 @tag_routes.route('/api/tags/search', methods=['GET'])
+@login_required
 def search_tags():
     """搜索标签"""
     try:
@@ -175,6 +194,7 @@ def search_tags():
         }), 500
 
 @tag_routes.route('/api/tags/statistics', methods=['GET'])
+@login_required
 def get_tag_statistics():
     """获取标签统计信息"""
     try:
@@ -190,9 +210,16 @@ def get_tag_statistics():
         }), 500
 
 @tag_routes.route('/api/mistakes/<int:mistake_id>/tags', methods=['GET'])
+@login_required
 def get_mistake_tags(mistake_id):
     """获取错题的标签"""
     try:
+        if not _check_mistake_owner(mistake_id):
+            return jsonify({
+                'success': False,
+                'error': '错题不存在或无权访问'
+            }), 404
+
         tags = tag_service.get_mistake_tags(mistake_id)
         return jsonify({
             'success': True,
@@ -205,10 +232,17 @@ def get_mistake_tags(mistake_id):
         }), 500
 
 @tag_routes.route('/api/mistakes/<int:mistake_id>/tags', methods=['PUT'])
+@login_required
 def set_mistake_tags(mistake_id):
     """设置错题的标签"""
     try:
-        data = request.get_json()
+        if not _check_mistake_owner(mistake_id):
+            return jsonify({
+                'success': False,
+                'error': '错题不存在或无权访问'
+            }), 404
+
+        data = request.get_json(silent=True) or {}
         if not data or 'tags' not in data:
             return jsonify({
                 'success': False,

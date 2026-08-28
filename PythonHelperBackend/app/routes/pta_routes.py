@@ -1,8 +1,11 @@
-from flask import Blueprint, jsonify, request, Response
-from app.services.ai_service import call_ai_api
+import html
 import json
 import logging
-import re
+
+from flask import Blueprint, current_app, jsonify, request, Response
+
+from app.services.ai_service import call_ai_api
+from app.utils import login_required, validate_ai_endpoint
 
 pta_bp = Blueprint('pta', __name__)
 logger = logging.getLogger(__name__)
@@ -79,15 +82,32 @@ def _combine_data(raw_data):
 
 
 @pta_bp.route('/analyze', methods=['POST'])
+@login_required
 def analyze_pta_questions():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         raw_data = data.get('rawData')
-        api_key = data.get('apiKey')
-        api_endpoint = data.get('apiEndpoint')
 
-        if not all([raw_data, api_key, api_endpoint]):
-            return jsonify({'error': '缺少必要参数 (rawData, apiKey, apiEndpoint)'}), 400
+        if not raw_data:
+            return jsonify({'error': '缺少必要参数 (rawData)'}), 400
+
+        # Key/endpoint 优先使用服务端配置；服务端有 Key 时禁止把 Key 发往用户指定地址
+        server_key = current_app.config.get('AI_API_KEY')
+        api_key = server_key or data.get('apiKey', '')
+        api_endpoint = current_app.config.get('AI_API_ENDPOINT') if server_key else (
+            data.get('apiEndpoint') or current_app.config.get('AI_API_ENDPOINT')
+        )
+
+        if not api_key:
+            return jsonify({'error': '缺少AI API密钥'}), 400
+
+        try:
+            api_endpoint = validate_ai_endpoint(
+                api_endpoint,
+                current_app.config.get('AI_ALLOWED_HOSTS', [])
+            )
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
 
         # 1. 合并前端发来的原始数据
         questions = _combine_data(raw_data)
@@ -96,9 +116,7 @@ def analyze_pta_questions():
 
         logger.info(f"成功合并 {len(questions)} 道题目，准备请求AI生成HTML报告...")
 
-        print(questions)
-        # 2. 直接将题目列表转换为JSON字符串，一次性发送给AI
-        # AI API需要字符串格式的输入，JSON是表示复杂数据结构最清晰的方式。
+        # 2. 将题目列表转换为JSON字符串后交给AI
         ai_input_string = json.dumps(
             [{
                 "label": q.get('label'),
@@ -113,18 +131,35 @@ def analyze_pta_questions():
 
         # 3. 调用AI生成HTML报告
         try:
-            html_report = call_ai_api(questions, api_key, api_endpoint, SYSTEM_PROMPT_PTA_HTML_GENERATOR)
+            html_report = call_ai_api(
+                ai_input_string, api_key, api_endpoint,
+                SYSTEM_PROMPT_PTA_HTML_GENERATOR
+            )
 
             if not html_report.strip().lower().startswith('<!doctype html>'):
                 raise Exception("AI未返回有效的HTML文档。")
 
             logger.info("成功从AI接收到HTML分析报告。")
-            return Response(html_report, mimetype='text/html')
+            return Response(
+                html_report,
+                mimetype='text/html',
+                headers={
+                    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data: https:; font-src data: https:;"
+                }
+            )
 
         except Exception as ai_error:
             logger.error(f"AI分析或HTML生成过程中发生错误: {ai_error}")
-            error_html = f"<h1>AI 分析失败</h1><p>错误详情: {ai_error}</p><pre>{ai_response_text}</pre>"
-            return Response(error_html, mimetype='text/html', status=500)
+            error_html = (
+                "<h1>AI 分析失败</h1>"
+                f"<p>错误详情: {html.escape(str(ai_error))}</p>"
+            )
+            return Response(
+                error_html,
+                mimetype='text/html',
+                status=500,
+                headers={'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline';"}
+            )
 
     except Exception as e:
         logger.error(f"PTA分析接口错误: {e}", exc_info=True)

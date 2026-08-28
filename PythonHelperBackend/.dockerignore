@@ -1,0 +1,10 @@
+.env
+.env.*
+*.db
+*.sqlite3
+ppt_files/
+__pycache__/
+*.pyc
+.git/
+.idea/
+.vscode/

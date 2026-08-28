@@ -2,7 +2,9 @@
 
 // === 配置区域 ===
 const DEV_URL = 'http://localhost:5000';
-const PROD_URL = 'http://10.72.126.216:5000';
+// 默认本地后端；部署到服务器时可在扩展页面通过 localStorage 覆盖：
+// localStorage.setItem('pythonHelperBackendUrl', 'https://your-server');
+const PROD_URL = (typeof globalThis !== 'undefined' && globalThis.GLOBAL_BACKEND_URL) || 'http://localhost:5000';
 
 /**
  * 获取当前环境的后端 URL

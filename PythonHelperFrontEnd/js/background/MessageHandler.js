@@ -53,7 +53,7 @@ export class MessageHandler {
 
             console.log("数据捕获完成，正在发送到后端进行AI分析...");
             
-            const response = await fetch(`${BACKEND_URL()}/pta/analyze`, {
+            const response = await fetch(`${BACKEND_URL}/pta/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

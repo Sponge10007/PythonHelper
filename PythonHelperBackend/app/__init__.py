@@ -3,21 +3,29 @@ from flask_cors import CORS
 import os
 import logging
 from config import Config
+from .database import close_db
 from .services.question_service import QuestionService
 
 def create_app(config_class=Config):
     """创建并配置 Flask 应用实例"""
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.teardown_appcontext(close_db)
 
-    # 初始化 CORS - 支持Chrome扩展和跨域访问
-    CORS(app, origins=[
-        "http://localhost:*",
-        "http://127.0.0.1:*",
-        "chrome-extension://*",
-        "moz-extension://*",
-        "*"  # 生产环境允许所有域名访问
-    ], supports_credentials=True)
+    # 初始化 CORS - 只允许配置过的来源，禁止 "*" + credentials
+    cors_origins = [
+        origin.strip()
+        for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+        if origin.strip()
+    ]
+    if not cors_origins:
+        cors_origins = [
+            r"http://localhost:\d+",
+            r"http://127\.0\.0\.1:\d+",
+            r"chrome-extension://[a-z]+",
+            r"moz-extension://[a-f0-9\-]+",
+        ]
+    CORS(app, origins=cors_origins, supports_credentials=True)
 
     # 确保 PPT 上传目录存在
     ppt_folder = app.config['PPT_UPLOAD_FOLDER']

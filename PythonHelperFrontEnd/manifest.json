@@ -12,14 +12,11 @@
     "scripting",
     "sidePanel",
     "tabs",
-    "downloads",
-    "cookies",
     "debugger"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*",
-    "http://47.98.249.0/*",
     "http://47.98.249.0/*",
     "https://pintia.cn/*",
     "https://*.cloudstudio.club/*"
@@ -30,15 +27,20 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["js/content.js"],
-      "css": ["css/sidebar.css"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/content.js"
+      ],
+      "css": [
+        "css/sidebar.css"
+      ]
     }
   ],
   "side_panel": {
     "default_path": "html/sidebar.html"
   },
-
   "icons": {
     "16": "icons/logo.png",
     "32": "icons/logo.png",
@@ -46,13 +48,16 @@
     "128": "icons/logo.png"
   },
   "action": {
-    "default_title": "Python课程AI教学助手",
-    "default_popup": ""
+    "default_title": "Python课程AI教学助手"
   },
   "web_accessible_resources": [
     {
-      "resources": ["data/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "data/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

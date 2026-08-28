@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from flask import g
 from datetime import datetime
 from typing import List, Dict, Optional
 import logging
@@ -13,14 +14,25 @@ _db_instance = None
 DEFAULT_DB_PATH = os.environ.get('DATABASE_PATH', 'mistakes.db')
 
 def get_db():
-    """获取数据库连接（兼容原有代码）"""
+    """获取当前请求上下文内的数据库连接（复用同一连接）。"""
     global _db_instance
     if _db_instance is None:
         _db_instance = Database()
-    conn = _db_instance.get_connection()
-    # 设置行工厂，使查询结果可以用列名访问
-    conn.row_factory = sqlite3.Row
-    return conn
+
+    if 'db_conn' not in g:
+        conn = _db_instance.get_connection()
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA foreign_keys = ON')
+        g.db_conn = conn
+    return g.db_conn
+
+
+def close_db(_error=None):
+    """请求结束时关闭数据库连接。"""
+    conn = g.pop('db_conn', None)
+    if conn is not None:
+        conn.close()
+
 
 def init_mistakes_db():
     """初始化数据库（兼容原有代码）"""
@@ -28,6 +40,23 @@ def init_mistakes_db():
     if _db_instance is None:
         _db_instance = Database()
     return _db_instance
+
+def _ensure_missing_columns(conn, table, column_defs):
+    """为旧版本数据库补充缺失字段。"""
+    rows = conn.execute(f'PRAGMA table_info({table})').fetchall()
+    existing = {row[1] for row in rows}
+    for column_name, column_def in column_defs.items():
+        if column_name not in existing:
+            sql = f'ALTER TABLE {table} ADD COLUMN {column_name} {column_def}'
+            try:
+                conn.execute(sql)
+            except sqlite3.OperationalError:
+                logger.error(
+                    "补齐字段失败 table=%s sql=%s existing=%s rows=%s",
+                    table, sql, existing, rows
+                )
+                raise
+
 
 class Database:
     def __init__(self, db_path: str = "None"):
@@ -147,6 +176,23 @@ class Database:
             )
         ''')
 
+        # 兼容旧数据库：补充后续版本新增的字段
+        _ensure_missing_columns(conn, 'mistakes', {
+            'user_id': 'INTEGER DEFAULT 0',
+            'ai_summary': 'TEXT',
+            'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+            'updated_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        })
+        _ensure_missing_columns(conn, 'ppt_files', {
+            'user_id': 'INTEGER',
+            'is_default': 'BOOLEAN DEFAULT 0',
+            'slides_count': 'INTEGER DEFAULT 0',
+            'description': 'TEXT',
+        })
+        _ensure_missing_columns(conn, 'users', {
+            'last_login': 'DATETIME',
+        })
+
         conn.commit()
         conn.close()
         
@@ -196,7 +242,9 @@ class Database:
 
     def get_connection(self):
         """获取数据库连接"""
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('PRAGMA foreign_keys = ON')
+        return conn
 
     def execute_query(self, query: str, params: tuple = ()):
         """执行查询并返回结果"""
@@ -309,14 +357,14 @@ class Database:
         
         return mistakes
 
-    def add_mistake(self, title: str, messages: List[Dict], tag_ids: List[int] = None) -> int:
+    def add_mistake(self, title: str, messages: List[Dict], tag_ids: List[int] = None, user_id: int = 0) -> int:
         """添加错题"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute(
-            "INSERT INTO mistakes (title, messages) VALUES (?, ?)",
-            (title, json.dumps(messages))
+            "INSERT INTO mistakes (title, messages, user_id) VALUES (?, ?, ?)",
+            (title, json.dumps(messages), user_id)
         )
         mistake_id = cursor.lastrowid
         

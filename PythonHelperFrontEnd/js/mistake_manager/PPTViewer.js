@@ -2,6 +2,7 @@
 // 高级PPT查看器，支持左滑右滑、缩放等操作
 
 import { BACKEND_URL } from '../common/config.js';
+import * as api from '../common/api.js';
 
 export class PPTViewer {
     constructor() {
@@ -154,7 +155,7 @@ export class PPTViewer {
         const serverUrl = BACKEND_URL;
         
         // 尝试获取PDF的页面信息
-        const response = await fetch(`${serverUrl}/ppt/files/${file.id}/info`);
+        const response = await api.authFetch(`${serverUrl}/ppt/files/${file.id}/info`);
         if (!response.ok) {
             throw new Error('无法获取文件信息');
         }
@@ -181,7 +182,7 @@ export class PPTViewer {
         
         // 尝试获取PPT的幻灯片信息
         try {
-            const response = await fetch(`${serverUrl}/ppt/files/${file.id}/slides`);
+            const response = await api.authFetch(`${serverUrl}/ppt/files/${file.id}/slides`);
             if (response.ok) {
                 const slidesInfo = await response.json();
                 // 转换相对URL为完整URL

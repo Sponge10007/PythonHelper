@@ -147,6 +147,15 @@ export class ChatManager {
                 }
             });
 
+            // 如果上游连接结束但没收到 done 事件，也要把已生成内容保存下来
+            if (accumulatedContent && !chat.messages.some(msg => msg.id === messageId)) {
+                chat.messages.push({
+                    id: messageId,
+                    role: 'assistant',
+                    content: accumulatedContent
+                });
+                storage.saveChats(this.chats).catch(err => console.error('保存聊天记录失败:', err));
+            }
         } catch (error) {
             console.error('AI流式请求失败:', error);
             let errorMessage = '抱歉，请求失败。';

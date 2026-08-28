@@ -1,11 +1,12 @@
 from flask import Blueprint, jsonify, request, current_app, send_from_directory, Response
-from app.services.ai_service import call_ai_api, call_ai_api_with_memory, call_ai_api_stream
+from app.services.ai_service import call_ai_api_with_memory, call_ai_api_stream
 from app.database import get_db
+from app.utils import login_required, validate_ai_endpoint
 import logging
 import os
 import json
 
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT = r"""
                 #浙大python助手
                 你是一个教导学生们学习Python的人工智能
                 ##目标 
@@ -33,7 +34,7 @@ SYSTEM_PROMPT = """
                 在与用户交互的过程中涉及代码的时候，请你不要给出直接给出代码，而是给出伪代码；
                 当用户问你选择题的题目时，请你不要将答案告诉用户，这样会让用户失去思考空间，所以在你的回答中不能出现诸如"正确答案是..."等提及题目答案的字眼。
                 当用户询问你某道题目时，请你分析后不要告诉用户题目答案是什么（非常重要，不要给出答案）。
-                """
+                r"""
 
 FILTER_SYSTEM_PROMPT = """
 你是一个严格的Python教学助教审核员。你的任务是审查一段由AI生成的教学回复，并对其进行“去答案化”处理。
@@ -78,31 +79,40 @@ def health_check():
 
 
 @main_bp.route('/ai/chat', methods=['POST'])
+@login_required
 def ai_chat():
     """AI聊天接口 - 支持持久记忆"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         messages = data.get('messages', [])  # 接收完整对话历史
-        api_key = data.get('apiKey', '')
-        
+        api_key = current_app.config.get('AI_API_KEY') or data.get('apiKey', '')
+
         if not messages or len(messages) == 0:
             return jsonify({'error': '消息不能为空'}), 400
-            
-        # ---------测试用的API密钥!!!---------
-        api_key = 'sk-5967010b633c410d8bd333ea9f01b55c'
-        # ---------测试用的API密钥!!!---------
+
         if not api_key:
-            logger.warning(f"API为{api_key}未提供API密钥，使用模拟回复")
+            logger.warning("未提供AI API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
             return jsonify({'response': mock_response, 'status': 'success', 'note': '使用模拟回复，请配置API密钥'})
 
         system = data.get('system', SYSTEM_PROMPT)
-        api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
-        
-        # 使用新的持久记忆API调用
-        response = call_ai_api_with_memory(messages, api_key, api_endpoint, system)
-        # print(response)
+        # 服务端配置了 Key 时，只允许使用服务端指定的 endpoint，避免把服务端 Key 发往第三方
+        if current_app.config.get('AI_API_KEY'):
+            api_endpoint = current_app.config['AI_API_ENDPOINT']
+        else:
+            api_endpoint = data.get('apiEndpoint') or current_app.config.get('AI_API_ENDPOINT')
+        try:
+            api_endpoint = validate_ai_endpoint(api_endpoint, current_app.config['AI_ALLOWED_HOSTS'])
+        except ValueError as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 400
+
+        # 先生成草稿，再经过滤器去除直接答案，保证与流式接口口径一致
+        draft = call_ai_api_with_memory(messages, api_key, api_endpoint, system)
+        filter_messages = [{'role': 'user', 'content': f"请审查以下回复:\n\n{draft}"}]
+        response = call_ai_api_with_memory(
+            filter_messages, api_key, api_endpoint, FILTER_SYSTEM_PROMPT
+        )
         return jsonify({'response': response, 'status': 'success'})
     except Exception as e:
         logger.error(f"AI聊天接口错误: {e}")
@@ -110,28 +120,35 @@ def ai_chat():
 
 
 @main_bp.route('/ai/chat/stream', methods=['POST'])
+@login_required
 def ai_chat_stream():
     """AI聊天接口 - 支持流式传输（Server-Sent Events）"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         messages = data.get('messages', [])  # 接收完整对话历史
-        api_key = data.get('apiKey', '')
-        
-        api_key = 'sk-5967010b633c410d8bd333ea9f01b55c'
+        api_key = current_app.config.get('AI_API_KEY') or data.get('apiKey', '')
 
         if not messages or len(messages) == 0:
             return jsonify({'error': '消息不能为空'}), 400
-            
+
         if not api_key:
-            logger.warning(f"API为{api_key}未提供API密钥，使用模拟回复")
+            logger.warning("未提供AI API密钥，使用模拟回复")
             last_message = messages[-1].get('content', '') if messages else ''
             mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
-        
-
+            return Response(f"data: {json.dumps({'content': mock_response, 'done': True})}\n\n",
+                            mimetype='text/event-stream')
 
         system = data.get('system', SYSTEM_PROMPT)
-        api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
-        
+        # 服务端配置了 Key 时，只允许使用服务端指定的 endpoint
+        if current_app.config.get('AI_API_KEY'):
+            api_endpoint = current_app.config['AI_API_ENDPOINT']
+        else:
+            api_endpoint = data.get('apiEndpoint') or current_app.config.get('AI_API_ENDPOINT')
+        try:
+            api_endpoint = validate_ai_endpoint(api_endpoint, current_app.config['AI_ALLOWED_HOSTS'])
+        except ValueError as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 400
+
         draft_content = ""
         try:
             # 我们复用 call_ai_api_stream，但在后端循环消费它，不发送给前端
@@ -172,7 +189,7 @@ def search_questions_route():
     # ... (此路由内容与原代码相同)
     try:
         question_service = current_app.question_service
-        query = request.get_json().get('query', '')
+        query = (request.get_json(silent=True) or {}).get('query', '')
         if not query: return jsonify({'error': '搜索查询不能为空'}), 400
         results = question_service.search_questions(query)
         return jsonify({'results': results, 'count': len(results), 'status': 'success'})
