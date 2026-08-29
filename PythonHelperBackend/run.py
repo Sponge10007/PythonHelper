@@ -1,4 +1,10 @@
 import logging
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from app import create_app
 from app.database import init_mistakes_db
 
@@ -13,8 +19,13 @@ if __name__ == '__main__':
     # 在应用启动前，确保数据库和表已创建
     with app.app_context():
         init_mistakes_db()
+        logger.info("数据库初始化完成")
 
     logger.info("启动Python教学助手后端服务...")
+    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理、标签管理功能、用户认证")
 
-    logger.info("服务包含：题库搜索、AI聊天、错题管理、PPT文件管理功能、用户认证")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', '0').lower() in ('1', 'true', 'yes')
+    # 禁用自动重载以避免watchdog版本兼容问题
+    app.run(host=host, port=port, debug=debug, use_reloader=False)

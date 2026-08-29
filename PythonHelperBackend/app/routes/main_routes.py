@@ -1,17 +1,59 @@
-from flask import Blueprint, jsonify, request, current_app, send_from_directory
-# 移除: from app.services.question_service import question_service
-from app.services.ai_service import call_ai_api
+from flask import Blueprint, jsonify, request, current_app, send_from_directory, Response
+from app.services.ai_service import call_ai_api_with_memory, call_ai_api_stream
 from app.database import get_db
+from app.utils import login_required, validate_ai_endpoint
 import logging
 import os
+import json
 
+SYSTEM_PROMPT = r"""
+                #浙大python助手
+                你是一个教导学生们学习Python的人工智能
+                ##目标 
+                你的目标是在不告知学生题目答案的前提下，帮助学生们梳理思路，掌握知识，来引导他们更好地学习python
+                ##技能和流程说明
+                1. 你需要有python相关的语法、特色知识，对python无比熟悉
+                2. 你需要能够用精简、巧妙的方式完成代码撰写
+                3. 第一步，你需要分析用户发来的信息是题目还是询问。
+                4. 如果是题目，请你分析其中包含的知识点、难点。然后你需要识别用户发出的是编程题、函数题还是客观题，如果是编程题，需要给出思维导图和整体架构；如果是函数题，需要给出几个样例输入输出，实现函数变量可视化；如果是客观题，请你详细地讲一下考察知识。
+                5. 如果是询问，请你正常的与用户进行谈话。
+                ## 输出格式 
+                如果对角色的输出格式有特定要求，可以在这里强调并举例说明想要的输出格式
+                1. 请你按照以下格式输出：
+                    知识点：，
+                    难点：，
+                    整体架构：，
+                    伪代码：，
+                    样例输入输出：，
+                    考察知识解释：
+                2. 如果你的回答中包含了数学公式，请你将其转换为LaTeX数学公式，严格遵循Markdown的LateX格式(请务必遵循，不然我将杀掉我手上的小猫)：
+                    对于变量, 指代符号等较短的行内公式，用"\(\)"包裹，比如"\(f(x)\)", "\([a,b]\)"；
+                    对于块级公式等较长的公式，用"\[\]"包裹，比如"\[x^2 + y^2 = z^2\]"。
+                    你可以自由选择每个公式的显示方式，比如行内公式、块级公式等，但是要保证排版易读美观。
+                ##限制 
+                在与用户交互的过程中涉及代码的时候，请你不要给出直接给出代码，而是给出伪代码；
+                当用户问你选择题的题目时，请你不要将答案告诉用户，这样会让用户失去思考空间，所以在你的回答中不能出现诸如"正确答案是..."等提及题目答案的字眼。
+                当用户询问你某道题目时，请你分析后不要告诉用户题目答案是什么（非常重要，不要给出答案）。
+                r"""
+
+FILTER_SYSTEM_PROMPT = """
+你是一个严格的Python教学助教审核员。你的任务是审查一段由AI生成的教学回复，并对其进行“去答案化”处理。
+
+请遵循以下审核与修改规则：
+1. **删除直接答案**：如果回复中包含了选择题、填空题的直接答案（如“选A”、“答案是B”），请直接删除该句子，或将其修改为引导性提问。
+2. **代码伪代码化**：如果回复中包含了直接解决问题的完整Python代码，请将其转换为“伪代码”或“代码框架”（保留注释和逻辑结构，但隐藏关键实现细节）。
+3. **保留教学内容**：保留原回复中的知识点讲解、思路分析和错误的辨析。
+4. **语气保持**：保持原回复的鼓励性和教学语气。
+5. **原样输出**：如果原回复已经符合要求（没有直接答案），请原样输出，不要做任何多余的修改或总结。
+
+请直接输出修改后的内容，不需要输出“审核完成”等额外废话。
+"""
 main_bp = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
 
 
 @main_bp.route('/health', methods=['GET'])
 def health_check():
-    # ... (此路由内容与原代码相同)
     question_service = current_app.question_service
     question_types = {q.get('question_type', '未知'): 0 for q in question_service.questions_db}
     for q in question_service.questions_db:
@@ -37,24 +79,108 @@ def health_check():
 
 
 @main_bp.route('/ai/chat', methods=['POST'])
+@login_required
 def ai_chat():
-    # ... (此路由内容与原代码相同)
+    """AI聊天接口 - 支持持久记忆"""
     try:
-        data = request.get_json()
-        message = data.get('message', '')
-        api_key = data.get('apiKey', '')
-        if not message: return jsonify({'error': '消息不能为空'}), 400
+        data = request.get_json(silent=True) or {}
+        messages = data.get('messages', [])  # 接收完整对话历史
+        api_key = current_app.config.get('AI_API_KEY') or data.get('apiKey', '')
+
+        if not messages or len(messages) == 0:
+            return jsonify({'error': '消息不能为空'}), 400
+
         if not api_key:
-            logger.warning("未提供API密钥，使用模拟回复")
-            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
+            logger.warning("未提供AI API密钥，使用模拟回复")
+            last_message = messages[-1].get('content', '') if messages else ''
+            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
             return jsonify({'response': mock_response, 'status': 'success', 'note': '使用模拟回复，请配置API密钥'})
 
-        system = data.get('system', '你是一个专业的Python教学助手，请用简洁明了的中文回答用户的问题。')
-        api_endpoint = data.get('apiEndpoint', 'https://api.deepseek.com/v1/chat/completions')
-        response = call_ai_api(message, api_key, api_endpoint, system)
+        system = data.get('system', SYSTEM_PROMPT)
+        # 服务端配置了 Key 时，只允许使用服务端指定的 endpoint，避免把服务端 Key 发往第三方
+        if current_app.config.get('AI_API_KEY'):
+            api_endpoint = current_app.config['AI_API_ENDPOINT']
+        else:
+            api_endpoint = data.get('apiEndpoint') or current_app.config.get('AI_API_ENDPOINT')
+        try:
+            api_endpoint = validate_ai_endpoint(api_endpoint, current_app.config['AI_ALLOWED_HOSTS'])
+        except ValueError as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 400
+
+        # 先生成草稿，再经过滤器去除直接答案，保证与流式接口口径一致
+        draft = call_ai_api_with_memory(messages, api_key, api_endpoint, system)
+        filter_messages = [{'role': 'user', 'content': f"请审查以下回复:\n\n{draft}"}]
+        response = call_ai_api_with_memory(
+            filter_messages, api_key, api_endpoint, FILTER_SYSTEM_PROMPT
+        )
         return jsonify({'response': response, 'status': 'success'})
     except Exception as e:
         logger.error(f"AI聊天接口错误: {e}")
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@main_bp.route('/ai/chat/stream', methods=['POST'])
+@login_required
+def ai_chat_stream():
+    """AI聊天接口 - 支持流式传输（Server-Sent Events）"""
+    try:
+        data = request.get_json(silent=True) or {}
+        messages = data.get('messages', [])  # 接收完整对话历史
+        api_key = current_app.config.get('AI_API_KEY') or data.get('apiKey', '')
+
+        if not messages or len(messages) == 0:
+            return jsonify({'error': '消息不能为空'}), 400
+
+        if not api_key:
+            logger.warning("未提供AI API密钥，使用模拟回复")
+            last_message = messages[-1].get('content', '') if messages else ''
+            mock_response = f"这是一个模拟的AI回复。\n\n用户问题: {last_message}\n\n由于未配置有效的API密钥，我无法提供真实的AI回复。"
+            return Response(f"data: {json.dumps({'content': mock_response, 'done': True})}\n\n",
+                            mimetype='text/event-stream')
+
+        system = data.get('system', SYSTEM_PROMPT)
+        # 服务端配置了 Key 时，只允许使用服务端指定的 endpoint
+        if current_app.config.get('AI_API_KEY'):
+            api_endpoint = current_app.config['AI_API_ENDPOINT']
+        else:
+            api_endpoint = data.get('apiEndpoint') or current_app.config.get('AI_API_ENDPOINT')
+        try:
+            api_endpoint = validate_ai_endpoint(api_endpoint, current_app.config['AI_ALLOWED_HOSTS'])
+        except ValueError as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 400
+
+        draft_content = ""
+        try:
+            # 我们复用 call_ai_api_stream，但在后端循环消费它，不发送给前端
+            for chunk in call_ai_api_stream(messages, api_key, api_endpoint, system):
+                if chunk.get('content'):
+                    draft_content += chunk['content']
+                if chunk.get('error'):
+                    # 如果第一步就错了，直接报错给前端
+                    return Response(f"data: {json.dumps(chunk)}\n\n", mimetype='text/event-stream')
+        except Exception as e:
+            logger.error(f"第一阶段draft生成失败 from main_routes.py:{e}")
+            return jsonify({'error': str(e)}), 500
+        logger.info(f"第一阶段draft生成完成, 草稿长度: {len(draft_content)}")
+
+        # 进行审查
+        filter_message = [
+            {'role': 'user', 'content': f"请审查以下回复:\n\n{draft_content}"}
+        ]
+        
+        def generate_filter_stream():
+            try:
+                for chunk in call_ai_api_stream(filter_message, api_key, api_endpoint, FILTER_SYSTEM_PROMPT):
+                    yield f"data: {json.dumps(chunk)}\n\n"
+            except Exception as e:
+                logger.error(f"流式AI调用错误: {e}")
+                error_chunk = {'content': f'错误: {str(e)}', 'done': True, 'error': True}
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+        
+        return Response(generate_filter_stream(), mimetype='text/event-stream',
+                      headers={'Cache-Control': 'no-cache', 'Connection': 'keep-alive'})
+    except Exception as e:
+        logger.error(f"AI流式聊天接口错误: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
@@ -63,7 +189,7 @@ def search_questions_route():
     # ... (此路由内容与原代码相同)
     try:
         question_service = current_app.question_service
-        query = request.get_json().get('query', '')
+        query = (request.get_json(silent=True) or {}).get('query', '')
         if not query: return jsonify({'error': '搜索查询不能为空'}), 400
         results = question_service.search_questions(query)
         return jsonify({'results': results, 'count': len(results), 'status': 'success'})
@@ -74,8 +200,8 @@ def search_questions_route():
 
 @main_bp.route('/questions', methods=['GET'])
 def get_all_questions():
-    # ... (此路由内容与原代码相同)
     try:
+        print('获取题目接口被调用')
         question_service = current_app.question_service
         formatted_questions = [question_service.format_question_for_display(q) for q in question_service.questions_db]
         return jsonify({'questions': formatted_questions, 'count': len(formatted_questions), 'status': 'success'})
@@ -86,7 +212,6 @@ def get_all_questions():
 
 @main_bp.route('/questions/stats', methods=['GET'])
 def get_questions_stats():
-    # ... (此路由内容与原代码相同)
     try:
         question_service = current_app.question_service
         stats = {'question_types': {}, 'categories': {}, 'difficulties': {}}

@@ -1,4 +1,6 @@
 // js/mistake_manager/UIManager.js
+import { BACKEND_URL } from '../common/config.js';
+import * as api from '../common/api.js';
 
 export class UIManager {
     constructor() {
@@ -14,38 +16,23 @@ export class UIManager {
         this.editCategory = document.getElementById('editCategory');
         this.editDifficulty = document.getElementById('editDifficulty');
         this.editLesson = document.getElementById('editLesson');
+        
+        // 标签筛选相关元素
+        this.courseFilter = document.getElementById('courseFilter');
+        this.knowledgeFilter = document.getElementById('knowledgeFilter');
+        this.difficultyFilter = document.getElementById('difficultyFilter');
+        this.clearFiltersBtn = document.getElementById('clearFilters');
+        this.applyFiltersBtn = document.getElementById('applyFilters');
+        
+        // 当前选中的筛选标签
+        this.selectedFilters = {
+            course: new Set(),
+            knowledge: new Set(),
+            difficulty: new Set()
+        };
     }
 
-    /**
-     * 获取服务器URL - 支持开发和生产环境
-     */
-    getServerUrl() {
-        // Chrome扩展环境检测
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-            // 扩展环境：使用动态检测的后端地址
-            return getBackendUrl();
-        }
-        
-        // 检查是否设置了全局服务器地址
-        if (typeof window !== 'undefined' && window.SERVER_URL) {
-            return window.SERVER_URL;
-        }
-        
-        // 检查是否是生产环境
-        const isProduction = window.location.protocol === 'https:' || 
-                           (window.location.hostname !== 'localhost' && 
-                            window.location.hostname !== '127.0.0.1');
-        
-        if (isProduction) {
-            // 生产环境：使用当前域名
-            return `${window.location.protocol}//${window.location.hostname}`;
-        } else {
-            // 开发环境：使用localhost
-            return getBackendUrl();
-        }
-    }
-
-    renderMistakeList(mistakes, onEdit, onDelete, onToggleSelect) {
+    renderMistakeList(mistakes, onEdit, onDelete) {
         this.mistakeList.innerHTML = '';
         if (mistakes.length === 0) {
             this.mistakeList.innerHTML = `<div class="no-mistakes">暂无错题记录</div>`;
@@ -55,55 +42,140 @@ export class UIManager {
             const mistakeElement = this.createMistakeElement(mistake);
             mistakeElement.querySelector('.edit-mistake-btn').addEventListener('click', () => onEdit(mistake.id));
             mistakeElement.querySelector('.delete-mistake-btn').addEventListener('click', () => onDelete(mistake.id));
-            mistakeElement.querySelector('.mistake-checkbox').addEventListener('change', (e) => onToggleSelect(mistake.id, e.target.checked));
+            
+            // 添加折叠功能的事件绑定
+            const toggleButton = mistakeElement.querySelector('.analysis-toggle');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', (e) => {
+                    this.toggleAnalysis(e.target);
+                });
+            }
+            
             this.mistakeList.appendChild(mistakeElement);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('mistake'), 0);
+        }
     }
 
     createMistakeElement(mistake) {
         const div = document.createElement('div');
         div.className = 'mistake-item';
+        div.id = `mistake-${mistake.id}`; // 添加ID以便选择
         
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => this.isLessonTag(tag)) : '';
+        // 处理标签显示 - 只使用新的标签数组格式
+        const tagsToShow = [];
         
-        const messagesHtml = (mistake.messages || []).map(msg => `
-            <div class="mistake-message message-${msg.role}">
-                <span class="message-role">${msg.role === 'user' ? 'You' : 'AI'}</span>
-                <div class="message-content">${this.escapeHtml(msg.content)}</div>
-            </div>
-        `).join('');
+        if (mistake.tags && Array.isArray(mistake.tags)) {
+            mistake.tags.forEach(tag => {
+                if (typeof tag === 'string' && tag.trim()) {
+                    // 根据标签名称判断类别
+                    const tagName = tag.trim();
+                    if (this.isCourseTag(tagName)) {
+                        tagsToShow.push({ text: `课程: ${tagName}`, class: 'tag-lesson' });
+                    } else if (this.isKnowledgeTag(tagName)) {
+                        tagsToShow.push({ text: `知识点: ${tagName}`, class: 'tag-category' });
+                    } else if (this.isDifficultyTag(tagName)) {
+                        tagsToShow.push({ text: `难度: ${tagName}`, class: 'tag-difficulty' });
+                    } else {
+                        // 默认作为知识点标签显示
+                        tagsToShow.push({ text: `知识点: ${tagName}`, class: 'tag-category' });
+                    }
+                }
+            });
+        }
+        
+        console.log("保存的错题数据",mistake.messages)
+        const messagesHtml = (mistake.messages || []).map((msg, index) => {
+            // 第一条消息（用户的初始提问）不显示
+            if (index === 0 && msg.role === 'user') {
+                return '';
+            }
+            
+            // 第一条AI回答（index=1）不显示角色标签
+            if (index === 1 && msg.role === 'assistant') {
+                return `
+                    <div class="mistake-message message-${msg.role}">
+                        <div class="message-content">${this.formatMessageContent(msg.content)}</div>
+                    </div>
+                `;
+            }
+            
+            // 之后的消息显示角色标签
+            let roleText = '';
+            if (msg.role === 'user') {
+                roleText = '追问';
+            } else if (msg.role === 'assistant') {
+                roleText = '回答';
+            }
+            
+            return `
+                <div class="mistake-message message-${msg.role}">
+                    <span class="message-role">${roleText}</span>
+                    <div class="message-content">${this.escapeHtml(msg.content)}</div>
+                </div>
+            `;
+        }).filter(html => html !== '').join(''); // 过滤掉空字符串
 
-        const tagsHtml = mistake.tags && mistake.tags.length > 0 ? `
+        // 使用处理后的标签数组生成HTML
+        const tagsHtml = tagsToShow.length > 0 ? `
             <div class="mistake-tags">
-                ${mistake.tags.map(tag => `<span class="mistake-tag">${tag}</span>`).join('')}
+                ${tagsToShow.map(tag => `<span class="mistake-tag ${tag.class}">${this.escapeHtml(tag.text)}</span>`).join('')}
             </div>
         ` : '';
 
         // 生成唯一的ID用于折叠功能
         const collapseId = `analysis-${mistake.id}`;
 
+        // === 新增：AI 解析区域逻辑 ===
+        let aiAnalysisHtml = '';
+        if (mistake.ai_summary) {
+            // 如果已有解析，直接显示
+            aiAnalysisHtml = `
+                <div class="ai-analysis-container" style="background:#f0f7ff; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #cce5ff;">
+                    <h4 style="color:#004085; margin:0 0 10px 0; display:flex; align-items:center; gap:5px;">
+                        <span>🤖 AI 题目与解析</span>
+                    </h4>
+                    <div class="ai-summary-content markdown-body" style="font-size:14px; color:#333;">
+                        ${this.formatMessageContent(mistake.ai_summary)}</div>
+                </div>
+            `;
+        } else {
+            // 如果没有解析，显示生成按钮
+            aiAnalysisHtml = `
+                <div class="ai-analysis-placeholder" style="margin:10px 0;">
+                    <button class="btn-ai-analyze btn-secondary" data-mistake-id="${mistake.id}" style="width:100%; border-style:dashed; background:#fff; color:#7a3898; border-color:#7a3898;">
+                        ✨ 点击生成 AI 题目与解析 (基于对话分析)
+                    </button>
+                </div>
+            `;
+        }
+
+        // === 更新 HTML 结构 ===
         div.innerHTML = `
             <div class="mistake-header">
                 <div>
                     <div class="mistake-title">${this.escapeHtml(mistake.title)}</div>
                     <div class="mistake-meta">
-                        <span>分类: ${mistake.category || '未分类'}</span>
-                        <span>难度: ${mistake.difficulty || '未设置'}</span>
                         <span>日期: ${new Date(mistake.date).toLocaleDateString()}</span>
-                        ${lessonTag ? `<span>课程: ${lessonTag}</span>` : ''}
                     </div>
                 </div>
                 <input type="checkbox" class="mistake-checkbox" data-mistake-id="${mistake.id}">
             </div>
             ${tagsHtml}
-            <div class="analysis-collapse">
-                <button class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
-                    <span class="analysis-toggle-text">展开解析</span>
+            
+            ${aiAnalysisHtml}
+
+            <div class="analysis-box" id="${collapseId}">
+                <div class="analysis-toggle" data-target="${collapseId}" data-expanded="false">
+                    <span class="analysis-toggle-text">查看原始对话记录</span>
                     <span class="analysis-toggle-icon">▼</span>
-                </button>
-            </div>
-            <div class="analysis-content" id="${collapseId}" style="display: none;">
-                <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
+                <div class="analysis-content" style="display: none;">
+                    <div class="mistake-conversation">${messagesHtml}</div>
+                </div>
             </div>
             <div class="mistake-actions">
                 <button class="edit-mistake-btn btn-secondary" data-mistake-id="${mistake.id}">编辑</button>
@@ -111,56 +183,160 @@ export class UIManager {
             </div>
         `;
         
-        // 添加折叠切换事件
-        const toggleBtn = div.querySelector('.analysis-toggle');
-        const content = div.querySelector('.analysis-content');
-        const toggleText = div.querySelector('.analysis-toggle-text');
-        const toggleIcon = div.querySelector('.analysis-toggle-icon');
-        
-        toggleBtn.addEventListener('click', () => {
-            const isExpanded = toggleBtn.dataset.expanded === 'true';
-            if (isExpanded) {
-                // 收起
-                content.style.maxHeight = content.scrollHeight + 'px';
-                content.offsetHeight; // 强制重排
-                content.style.maxHeight = '0';
-                content.style.opacity = '0';
-                setTimeout(() => {
-                    content.style.display = 'none';
-                    content.style.maxHeight = '';
-                    content.style.opacity = '';
-                }, 300);
+        // === 绑定新增按钮的事件 ===
+        const analyzeBtn = div.querySelector('.btn-ai-analyze');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', async (e) => {
+                const btn = e.target;
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = '🤖 正在分析对话中...';
                 
-                toggleText.textContent = '展开解析';
-                toggleIcon.textContent = '▼';
-                toggleBtn.dataset.expanded = 'false';
-            } else {
-                // 展开
-                content.style.display = 'block';
-                const height = content.scrollHeight;
-                content.style.maxHeight = '0';
-                content.style.opacity = '0';
-                content.offsetHeight; // 强制重排
-                content.style.maxHeight = height + 'px';
-                content.style.opacity = '1';
-                setTimeout(() => {
-                    content.style.maxHeight = '';
-                    content.style.opacity = '';
-                }, 300);
-                
-                toggleText.textContent = '收起解析';
-                toggleIcon.textContent = '▲';
-                toggleBtn.dataset.expanded = 'true';
-            }
-        });
+                try {
+                    // 调用全局暴露的 Handler 方法
+                    if (window.mistakeHandler) {
+                        await window.mistakeHandler.analyzeMistake(mistake.id);
+                    }
+                } catch (err) {
+                    alert('分析失败: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            });
+        }
         
         return div;
     }
 
-    isLessonTag(tag) {
-        const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
-        return lessonTags.includes(tag);
+    /**
+     * [MODIFIED] 格式化消息内容，处理markdown和LaTeX
+     * @param {string} content - 原始消息内容
+     * @returns {string} - 格式化后的HTML内容
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
+
+        const latexPlaceholders = [];
+        const protectLatex = (match) => {
+            const index = latexPlaceholders.length;
+            latexPlaceholders.push(match);
+            return `LATEXPLACEHOLDER${index}`;
+        };
+
+        // 先保护 LaTeX 公式，避免被 Markdown 渲染破坏
+        let tempContent = content
+            .replace(/\$\$([\s\S]*?)\$\$/g, protectLatex)
+            .replace(/\\\[([\s\S]*?)\\\]/g, protectLatex)
+            .replace(/\\\((.*?)\\\)/g, protectLatex)
+            .replace(/\$([^$\n]+?)\$/g, protectLatex);
+
+        let formattedContent = '';
+        if (window.marked && typeof window.marked.parse === 'function') {
+            try {
+                window.marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                formattedContent = window.marked.parse(tempContent);
+            } catch (e) {
+                console.warn('marked 渲染失败，使用降级解析:', e);
+                formattedContent = this.fallbackMarkdown(tempContent);
+            }
+        } else {
+            formattedContent = this.fallbackMarkdown(tempContent);
+        }
+
+        // 恢复 LaTeX 公式，交给 MathJax 或浏览器继续处理
+        formattedContent = formattedContent.replace(
+            /LATEXPLACEHOLDER(\d+)/g,
+            (match, index) => latexPlaceholders[parseInt(index, 10)] || ''
+        );
+
+        return this.sanitizeHtml(formattedContent);
     }
+
+    /**
+     * marked 未加载时的降级 Markdown 解析器。
+     */
+    fallbackMarkdown(content) {
+        let formattedContent = content
+            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+                const lang = language ? ` class="language-${language}"` : '';
+                return `<pre><code${lang}>${this.escapeHtml(code.trim())}</code></pre>`;
+            })
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\n{2,}/g, '\n')
+            .replace(/\n/g, '<br>');
+
+        return `<p>${formattedContent}</p>`;
+    }
+
+    /**
+     * 清理渲染后的HTML，移除脚本和高危属性。
+     */
+    sanitizeHtml(htmlContent) {
+        try {
+            const doc = new DOMParser().parseFromString(htmlContent || '', 'text/html');
+            doc.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(el => el.remove());
+            doc.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    if (attr.name.toLowerCase().startsWith('on')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+                if (el.tagName === 'A' && el.getAttribute('href')) {
+                    const href = el.getAttribute('href').trim().toLowerCase();
+                    if (href.startsWith('javascript:')) {
+                        el.removeAttribute('href');
+                    }
+                }
+            });
+            return doc.body.innerHTML;
+        } catch (e) {
+            console.warn('HTML清理失败，返回转义文本:', e);
+            return this.escapeHtml(htmlContent);
+        }
+    }
+
+    /**
+     * 切换解析内容的展开/收起状态
+     * @param {HTMLElement} toggleElement - 点击的切换元素
+     */
+    toggleAnalysis(toggleElement) {
+        const targetId = toggleElement.getAttribute('data-target');
+        const analysisBox = document.getElementById(targetId);
+        const isExpanded = toggleElement.getAttribute('data-expanded') === 'true';
+        
+        if (!analysisBox) {
+            console.error('找不到目标内容元素:', targetId);
+            return;
+        }
+        
+        const content = analysisBox.querySelector('.analysis-content');
+        if (!content) {
+            console.error('找不到解析内容元素');
+            return;
+        }
+        
+        if (isExpanded) {
+            // 收起内容
+            content.style.display = 'none';
+            toggleElement.setAttribute('data-expanded', 'false');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '展开解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▼';
+        } else {
+            // 展开内容
+            content.style.display = 'block';
+            toggleElement.setAttribute('data-expanded', 'true');
+            toggleElement.querySelector('.analysis-toggle-text').textContent = '收起解析';
+            toggleElement.querySelector('.analysis-toggle-icon').textContent = '▲';
+        }
+    }
+
+    // isLessonTag(tag) {
+    //     const lessonTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
+    //     return lessonTags.includes(tag);
+    // }
     
     escapeHtml(text) {
         const div = document.createElement('div');
@@ -171,20 +347,105 @@ export class UIManager {
     fillEditModal(mistake) {
         this.editTitle.value = mistake.title || '';
         this.editMessages.value = JSON.stringify(mistake.messages || [], null, 2);
-        this.editCategory.value = mistake.category || '其他';
-        this.editDifficulty.value = mistake.difficulty || '中等';
-        const lessonTag = mistake.tags ? mistake.tags.find(tag => this.isLessonTag(tag)) : '';
-        this.editLesson.value = lessonTag || '';
+        
+        // 清空所有下拉框
+        this.editLesson.value = '';
+        this.editCategory.value = '';
+        this.editDifficulty.value = '';
+        
+        // 根据错题的标签设置下拉框的选中状态
+        if (mistake.tags && Array.isArray(mistake.tags)) {
+            mistake.tags.forEach(tag => {
+                // 检查课程标签
+                for (let option of this.editLesson.options) {
+                    if (option.value === tag) {
+                        this.editLesson.value = tag;
+                        break;
+                    }
+                }
+                // 检查知识点标签
+                for (let option of this.editCategory.options) {
+                    if (option.value === tag) {
+                        this.editCategory.value = tag;
+                        break;
+                    }
+                }
+                // 检查难度标签
+                for (let option of this.editDifficulty.options) {
+                    if (option.value === tag) {
+                        this.editDifficulty.value = tag;
+                        break;
+                    }
+                }
+            });
+        }
     }
 
     getEditModalData() {
-        const lesson = this.editLesson.value;
+        // 收集所有下拉框的选中值
+        const selectedTags = [];
+        
+        // 收集课程标签
+        if (this.editLesson.value) {
+            selectedTags.push(this.editLesson.value);
+        }
+        
+        // 收集知识点标签
+        if (this.editCategory.value) {
+            selectedTags.push(this.editCategory.value);
+        }
+        
+        // 收集难度标签
+        if (this.editDifficulty.value) {
+            selectedTags.push(this.editDifficulty.value);
+        }
+
         return {
             title: this.editTitle.value.trim(),
-            category: this.editCategory.value,
-            difficulty: this.editDifficulty.value,
-            tags: lesson ? [lesson] : [],
+            tags: selectedTags,
         };
+    }
+
+    async loadTagsForEditModal() {
+        try {
+            const response = await api.authFetch(`${BACKEND_URL}/api/tags/categories`)
+            const result = await response.json();
+            
+            if (result.success) {
+                const { course, knowledge, difficulty } = result.data;
+                
+                // 清空现有选项（保留第一个空选项）
+                this.editLesson.innerHTML = '<option value="">选择课程标签...</option>';
+                this.editCategory.innerHTML = '<option value="">选择知识点标签...</option>';
+                this.editDifficulty.innerHTML = '<option value="">选择难度标签...</option>';
+                
+                // 添加课程标签
+                course.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editLesson.appendChild(option);
+                });
+                
+                // 添加知识点标签
+                knowledge.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editCategory.appendChild(option);
+                });
+                
+                // 添加难度标签
+                difficulty.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.name;
+                    option.textContent = tag.name;
+                    this.editDifficulty.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('加载标签失败:', error);
+        }
     }
 
     updatePagination(currentPage, totalPages) {
@@ -215,16 +476,9 @@ export class UIManager {
     // PPT 预览相关 UI 方法
     // ================================
 
-    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onToggleSelect) {
+    renderPPTGrid(pptFiles, onPreview, onDownload, onDelete, onSelect) {
         this.pptGrid.innerHTML = '';
         if (pptFiles.length === 0) {
-            this.pptGrid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📁</div>
-                    <div class="empty-text">暂无PPT文件</div>
-                    <div class="empty-hint">点击上传按钮添加课程PPT</div>
-                </div>
-            `;
             return;
         }
 
@@ -235,15 +489,38 @@ export class UIManager {
             const previewBtn = pptCard.querySelector('.btn-preview');
             const downloadBtn = pptCard.querySelector('.btn-download');
             const deleteBtn = pptCard.querySelector('.btn-delete');
-            const selectCheckbox = pptCard.querySelector('.ppt-checkbox');
+            const checkbox = pptCard.querySelector('.ppt-checkbox');
 
             if (previewBtn) previewBtn.addEventListener('click', () => onPreview(ppt.id));
             if (downloadBtn) downloadBtn.addEventListener('click', () => onDownload(ppt.id));
             if (deleteBtn) deleteBtn.addEventListener('click', () => onDelete(ppt.id));
-            if (selectCheckbox) selectCheckbox.addEventListener('change', (e) => onToggleSelect(ppt.id));
+            
+            // 绑定 checkbox 事件
+            if (checkbox && onSelect) {
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    onSelect(ppt.id, e.target.checked);
+                });
+                
+                // 点击卡片头部区域也可以触发选择
+                const header = pptCard.querySelector('.ppt-card-header');
+                if (header) {
+                    header.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            onSelect(ppt.id, checkbox.checked);
+                        }
+                    });
+                }
+            }
 
             this.pptGrid.appendChild(pptCard);
         });
+        
+        // 由EditManager处理勾选框事件
+        if (window.editManager && window.editManager.bindCheckboxEvents) {
+            setTimeout(() => window.editManager.bindCheckboxEvents('ppt'), 0);
+        }
     }
     
     createPPTCardElement(ppt) {
@@ -263,7 +540,7 @@ export class UIManager {
             </div>
             
             <div class="ppt-card-content">
-                <div class="ppt-title" title="${ppt.original_name}">${this.truncateText(ppt.original_name, 40)}</div>
+                <div class="ppt-title" title="${this.escapeHtml(ppt.original_name || '')}">${this.escapeHtml(this.truncateText(ppt.original_name || '', 40))}</div>
                 
                 <div class="ppt-tags">
                     <span class="ppt-tag ppt-type">${ppt.file_type.toUpperCase()}</span>
@@ -278,13 +555,13 @@ export class UIManager {
             
             <div class="ppt-actions">
                 <button class="ppt-card-btn btn-preview" title="查看">
-                    <img src="../icons/preview.png" alt="查看" class="btn-icon"> 查看
+                    <img src="../../icons/preview.png" alt="查看" class="btn-icon"> 查看
                 </button>
                 <button class="ppt-card-btn btn-download" title="下载">
-                    <img src="../icons/download.png" alt="下载" class="btn-icon"> 下载
+                    <img src="../../icons/download.png" alt="下载" class="btn-icon"> 下载
                 </button>
                 <button class="ppt-card-btn btn-delete" title="删除">
-                    <img src="../icons/delete.png" alt="删除" class="btn-icon"> 删除
+                    <img src="../../icons/delete.png" alt="删除" class="btn-icon"> 删除
                 </button>
             </div>
         `;
@@ -340,7 +617,7 @@ export class UIManager {
             
             const fileType = file.file_type.toLowerCase();
             // 使用动态服务器地址，支持生产环境部署
-            const serverUrl = await Promise.resolve(this.getServerUrl());
+            const serverUrl = BACKEND_URL;
             const previewUrl = `${serverUrl}/ppt/files/${file.id}/preview?type=direct`;
             
             // 根据文件类型创建不同的预览内容
@@ -534,23 +811,6 @@ export class UIManager {
         if (error) error.classList.remove('hidden');
         if (errorText) errorText.textContent = errorMessage;
     }
-
-    /**
-     * 显示预览错误
-     */
-    showPreviewError(errorMessage) {
-        const modal = document.getElementById('ppt-preview-modal');
-        if (!modal) return;
-        
-        const loading = modal.querySelector('.preview-loading');
-        const error = modal.querySelector('.preview-error');
-        const errorText = modal.querySelector('.error-text');
-        
-        if (loading) loading.classList.add('hidden');
-        if (error) error.classList.remove('hidden');
-        if (errorText) errorText.textContent = errorMessage;
-    }
-
     /**
      * 更新缩略图
      */
@@ -564,43 +824,11 @@ export class UIManager {
         }
     }
 
-    /**
-     * 显示上传进度
-     */
-    showUploadProgress() {
-        // 创建或显示上传进度条
-        let progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) {
-            progressModal = this.createUploadProgressModal();
-            document.body.appendChild(progressModal);
-        }
-        
-        progressModal.classList.add('active');
-    }
+    // 上传进度功能已移除
 
-    /**
-     * 更新上传进度
-     */
-    updateUploadProgress(progress, status) {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (!progressModal) return;
+    // 上传进度更新功能已移除
 
-        const progressBar = progressModal.querySelector('.upload-progress-bar');
-        const statusText = progressModal.querySelector('.upload-status-text');
-
-        if (progressBar) progressBar.style.width = `${progress}%`;
-        if (statusText) statusText.textContent = status;
-    }
-
-    /**
-     * 隐藏上传进度
-     */
-    hideUploadProgress() {
-        const progressModal = document.getElementById('upload-progress-modal');
-        if (progressModal) {
-            progressModal.classList.remove('active');
-        }
-    }
+    // 上传进度隐藏功能已移除
 
     /**
      * 工具方法
@@ -628,17 +856,118 @@ export class UIManager {
     }
 
     showError(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
+    }
+
+    showSuccess(message) {
+        console.log('成功:', message);
+        this.showTempMessage(message, 'success');
+    }
+
+    showWarning(message) {
+        console.warn('警告:', message);
+        this.showTempMessage(message, 'warning');
     }
 
     showSuccessMessage(message) {
         // 显示成功消息
         console.log(`成功: ${message}`);
+        // 添加临时的成功提示
+        this.showTempMessage(message, 'success');
     }
 
     showErrorMessage(message) {
-        alert(`错误: ${message}`);
+        console.error('错误:', message);
+        this.showTempMessage(message, 'error');
     }
+
+    /**
+     * 显示临时消息
+     */
+    showTempMessage(message, type = 'info') {
+        // 移除已存在的临时消息
+        const existingMessages = document.querySelectorAll('.temp-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temp-message temp-message-${type}`;
+        messageDiv.textContent = message;
+        
+        // 根据类型设置不同的颜色
+        const colors = {
+            success: { bg: '#28a745', border: '#1e7e34' },
+            error: { bg: '#dc3545', border: '#bd2130' },
+            warning: { bg: '#ffc107', border: '#d39e00', text: '#212529' },
+            info: { bg: '#007bff', border: '#0056b3' }
+        };
+        
+        const color = colors[type] || colors.info;
+        
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${color.bg};
+            color: ${color.text || 'white'};
+            border: 2px solid ${color.border};
+            border-radius: 6px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        
+        // 添加动画样式
+        if (!document.getElementById('temp-message-styles')) {
+            const style = document.createElement('style');
+            style.id = 'temp-message-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(messageDiv);
+        
+        // 3秒后移除消息
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+
+    // 上传状态更新功能已移除
+
+    // 上传总结功能已移除
 
     /**
      * 更新PPT统计信息
@@ -708,24 +1037,7 @@ export class UIManager {
         });
     }
 
-    /**
-     * 显示上传摘要
-     */
-    showUploadSummary(successCount, failCount) {
-        const totalCount = successCount + failCount;
-        let message = `上传完成！\n`;
-        message += `成功: ${successCount}/${totalCount}\n`;
-        if (failCount > 0) {
-            message += `失败: ${failCount}/${totalCount}`;
-        }
-        
-        if (failCount > 0) {
-            alert(message);
-        } else {
-            // 可以显示更友好的成功提示
-            console.log(message);
-        }
-    }
+    // 上传摘要功能已移除
 
     /**
      * 更新上传状态
@@ -735,28 +1047,7 @@ export class UIManager {
         console.log(`上传状态: ${status}`);
     }
 
-    /**
-     * 创建上传进度模态框
-     */
-    createUploadProgressModal() {
-        const modal = document.createElement('div');
-        modal.id = 'upload-progress-modal';
-        modal.className = 'upload-progress-modal';
-
-        modal.innerHTML = `
-            <div class="upload-progress-header">
-                <h3>上传文件</h3>
-            </div>
-            <div class="upload-progress-body">
-                <div class="upload-progress-bar-container">
-                    <div class="upload-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="upload-status-text">准备上传...</div>
-            </div>
-        `;
-
-        return modal;
-    }
+    // 上传进度模态框功能已移除
 
     /**
      * 在新窗口预览（由PPTHandler调用）
@@ -767,10 +1058,9 @@ export class UIManager {
             await window.pptHandler.previewInNewWindow(pptId);
         }
     }
-
-    /**
-     * 尝试使用Office Online预览
-     */
+    /** 
+      * 尝试使用Office Online预览
+    */
     tryOfficeViewer(previewUrl) {
         const container = document.getElementById('office-viewer-container');
         const frame = document.getElementById('office-viewer-frame');
@@ -798,6 +1088,190 @@ export class UIManager {
             }
         }
     }
+
+    /**
+
+    /**
+     * 判断标签是否为课程标签
+     */
+    isCourseTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.course) {
+            return window.tagCategories.course.has(tagName);
+        }
+        
+        // 备用：使用硬编码的课程标签
+        const courseTags = ['数据类型及表达式', '复合数据类型', '面向对象', '函数', '流程控制', '文件概述', '异常处理'];
+        return courseTags.includes(tagName);
+    }
+
+    /**
+     * 判断标签是否为知识点标签
+     */
+    isKnowledgeTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.knowledge) {
+            return window.tagCategories.knowledge.has(tagName);
+        }
+        
+        // 备用：使用硬编码的知识点标签
+        const knowledgeTags = ['变量', '循环', '条件语句', '列表', '字典', '字符串', '文件操作', '类', '继承'];
+        return knowledgeTags.includes(tagName);
+    }
+
+    /**
+     * 判断标签是否为难度标签
+     */
+    isDifficultyTag(tagName) {
+        // 尝试从全局标签分类中获取
+        if (window.tagCategories && window.tagCategories.difficulty) {
+            return window.tagCategories.difficulty.has(tagName);
+        }
+        
+        // 备用：使用硬编码的难度标签
+        const difficultyTags = ['简单', '中等', '困难'];
+        return difficultyTags.includes(tagName);
+    }
+
+    /**
+     * 初始化标签筛选器
+     */
+    initTagFilters() {
+        this.loadFilterTags();
+        this.bindFilterEvents();
+    }
+
+    /**
+     * 加载筛选标签
+     */
+    loadFilterTags() {
+        // 加载课程标签
+        this.loadFilterCategory('course', this.courseFilter, 'course-tag');
+        // 加载知识点标签
+        this.loadFilterCategory('knowledge', this.knowledgeFilter, 'knowledge-tag');
+        // 加载难度标签
+        this.loadFilterCategory('difficulty', this.difficultyFilter, 'difficulty-tag');
+    }
+
+    /**
+     * 加载特定类别的筛选标签
+     */
+    loadFilterCategory(category, container, cssClass) {
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // 从全局标签分类中获取标签
+        if (window.tagCategories && window.tagCategories[category]) {
+            window.tagCategories[category].forEach(tagName => {
+                const tagElement = document.createElement('div');
+                tagElement.className = `filter-tag-item ${cssClass}`;
+                tagElement.textContent = tagName;
+                tagElement.dataset.tagName = tagName;
+                tagElement.dataset.category = category;
+                
+                container.appendChild(tagElement);
+            });
+        }
+    }
+
+    /**
+     * 绑定筛选事件
+     */
+    bindFilterEvents() {
+        // 绑定标签点击事件
+        [this.courseFilter, this.knowledgeFilter, this.difficultyFilter].forEach(container => {
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('filter-tag-item')) {
+                        this.toggleFilterTag(e.target);
+                    }
+                });
+            }
+        });
+
+        // 绑定清除筛选按钮
+        if (this.clearFiltersBtn) {
+            this.clearFiltersBtn.addEventListener('click', () => {
+                this.clearAllFilters();
+            });
+        }
+
+        // 绑定应用筛选按钮
+        if (this.applyFiltersBtn) {
+            this.applyFiltersBtn.addEventListener('click', () => {
+                this.applyFilters();
+            });
+        }
+    }
+
+    /**
+     * 切换筛选标签选中状态
+     */
+    toggleFilterTag(tagElement) {
+        const tagName = tagElement.dataset.tagName;
+        const category = tagElement.dataset.category;
+        
+        if (tagElement.classList.contains('selected')) {
+            // 取消选中
+            tagElement.classList.remove('selected');
+            this.selectedFilters[category].delete(tagName);
+        } else {
+            // 选中
+            tagElement.classList.add('selected');
+            this.selectedFilters[category].add(tagName);
+        }
+    }
+
+    /**
+     * 清除所有筛选
+     */
+    clearAllFilters() {
+        // 清除选中状态
+        this.selectedFilters.course.clear();
+        this.selectedFilters.knowledge.clear();
+        this.selectedFilters.difficulty.clear();
+        
+        // 清除UI选中状态
+        document.querySelectorAll('.filter-tag-item.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 触发筛选更新
+        this.applyFilters();
+    }
+
+    /**
+     * 应用筛选
+     */
+    applyFilters() {
+        // 触发自定义事件，通知MistakeHandler更新筛选
+        const filterEvent = new CustomEvent('tagFilterChanged', {
+            detail: {
+                filters: {
+                    course: Array.from(this.selectedFilters.course),
+                    knowledge: Array.from(this.selectedFilters.knowledge),
+                    difficulty: Array.from(this.selectedFilters.difficulty)
+                }
+            }
+        });
+        document.dispatchEvent(filterEvent);
+    }
+
+    /**
+     * 获取当前筛选条件
+     */
+    getCurrentFilters() {
+        return {
+            course: Array.from(this.selectedFilters.course),
+            knowledge: Array.from(this.selectedFilters.knowledge),
+            difficulty: Array.from(this.selectedFilters.difficulty)
+        };
+    }
+
+    /**
+     * 尝试使用Office Online预览
+     */
 
     /**
      * 安全渲染PPT标签（只显示自定义标签，避免与基本信息重复）
@@ -840,5 +1314,19 @@ export class UIManager {
                 ${tagArray.map(tag => `<span class="ppt-tag">${this.escapeHtml(String(tag))}</span>`).join('')}
             </div>
         `;
+    }
+
+    /**
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
+     */
+    enterMistakeEditMode() {
+        console.log('UIManager: enterMistakeEditMode 已被 EditManager 替代');
+    }
+
+    /**
+     * 这些方法已被 EditManager 替代，保留空方法以避免兼容性问题
+     */
+    exitMistakeEditMode() {
+        console.log('UIManager: exitMistakeEditMode 已被 EditManager 替代');
     }
 }

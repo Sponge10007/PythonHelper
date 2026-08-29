@@ -3,9 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://cdn.jsdelivr.net;">
     <title>AI助手侧边栏</title>
+    <script src="../js/common/backend-runtime.js"></script>
     <link rel="stylesheet" href="../css/sidebar.css">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <!-- MathJax CDN -->
+    <script src="../js/mathjax-config.js"></script>
+    <script id="MathJax-script" async src="../js/libs/mathjax.js"></script>
+    <!-- marked.js CDN -->
+    <script id="marked-script" src="../js/libs/marked.min.js"></script>
 </head>
 <body>
 
@@ -13,25 +20,28 @@
         <div class="sidebar-column">
             <div class="sidebar-icons">
                 <div class="icon-group top">
-                    <button id="toggleChatListBtn" title="切换对话列表">
-                        <span class="material-symbols-outlined">menu</span>
+                    <button id="toggleChatListBtn" class="icon-group-top-btn" data-tip="切换对话列表">
+                        <img src="../侧边栏icon补充/40.png" class="mistakeset-btn">
                     </button>
-                    <button id="newChatBtn" title="新对话">
-                        <span class="material-symbols-outlined">add</span>
+                    <button id="newChatBtn" class="icon-group-top-btn" data-tip="新对话">
+                        <img src="../侧边栏icon/28.png" class="mistakeset-btn">
+                    </button>
+                    <button id="jumpwebpageBtn" class="icon-group-top-btn" data-tip="跳转网页">
+                        <img src="../侧边栏icon/29.png" class="mistakeset-btn">
                     </button>
                 </div>
                 <div class="icon-group bottom">
-                    <button id="loginBtn" title="用户登录" style="background: rgba(255, 0, 0, 0.2) !important;">
-                        <span class="material-symbols-outlined">account_circle</span>
+                    <button id="loginBtn" class="icon-group-top-btn" data-tip="用户页面">
+                        <img src="../侧边栏icon/30.png" class="mistakeset-btn">
                     </button>
-                    <button id="ptaBtn" title="PTA题目分析">
-                        <span class="material-symbols-outlined">analytics</span>
+                    <button id="mistakesBtn" class="icon-group-top-btn" data-tip="错题集">
+                        <img src="../侧边栏icon/31.png" class="mistakeset-btn">
                     </button>
-                    <button id="mistakesBtn" title="错题集">
-                        <img src="../icons/MistakeSet.png" alt="Python课程AI教学助手" class="mistakeset-btn">
+                    <button id="ptaBtn" class="icon-group-top-btn" data-tip="套题报告">
+                        <img src="../侧边栏icon/32.png" class="mistakeset-btn">
                     </button>
-                    <button id="settingsBtn" title="设置">
-                        <span class="material-symbols-outlined">settings</span>
+                    <button id="settingsBtn" class="icon-group-top-btn" data-tip="设置">
+                        <img src="../icons/settings.png" class="mistakeset-btn">
                     </button>
                 </div>
             </div>
@@ -47,21 +57,11 @@
         <main id="mainContent" class="main-content">
             <div id="welcomeScreen" class="view">
                 <div class="welcome-content">
-                    <span class="welcome-icon material-symbols-outlined">auto_awesome</span>
+                    <img src="../侧边栏icon/26.png" style="width: 50px; height: 50px;" class="welcome-icon material-symbols-outlined">
                     <h2>一站式Python课程AI助教</h2>
                     
-                    <!-- 登录提示区域 -->
-                    <div id="loginPrompt" style="background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;">
-                        <div style="color: #856404; font-weight: 600; margin-bottom: 10px;">
-                            ⚠️ 需要先登录才能使用所有功能
-                        </div>
-                        <button id="loginFromSidebar" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                            👤 立即登录
-                        </button>
-                    </div>
-                    
-                    <p>登录后即可开始对话，解决你的编程难题。</p>
-                    <button id="startFirstChat" class="start-chat-btn" disabled style="opacity: 0.5;">需要先登录</button>
+                    <p>开始对话，解决你的编程难题。</p>
+                    <button id="startFirstChat" class="start-chat-btn">开始新对话</button>
                 </div>
             </div>
 
@@ -69,26 +69,28 @@
                 <header class="sidebar-header">
                     <h1 id="currentChatTitle">新对话</h1>
                     <div class="header-actions-right">
-                        <button id="enterMistakeModeBtn" class="header-action-btn" title="保存错题记录">
-                            <span class="material-symbols-outlined">bookmark_add</span>
+                        <button id="memoryManageBtn" class="header-action-btn" data-tip="记忆管理">
+                            <img src="../侧边栏icon补充/35.png" class="mistakeset-btn">
                         </button>
-                        <button id="clearChatBtn" class="header-action-btn" title="清空对话">
+                        <button id="enterMistakeModeBtn" class="header-action-btn" data-tip="保存错题记录">
+                            <img src="../侧边栏icon补充/36.png" class="mistakeset-btn">
+                        </button>
+                        <!-- <button id="clearChatBtn" class="header-action-btn" title="清空对话">
                             <span class="material-symbols-outlined">delete_sweep</span>
-                        </button>
+                        </button> -->
                     </div>
                 </header>
                 <div id="chatMessages" class="chat-container"></div>
                 <footer class="sidebar-footer">
                     <div class="footer-actions">
                         <button id="saveSelectionBtn" class="save-selection-btn hidden">
-                            <span class="material-symbols-outlined">save</span>
+                            <span class="material-symbols-outlined"></span>
                             保存选中消息为错题
                         </button>
                     </div>
                     <form class="input-form">
                         <textarea id="chatInput" placeholder="输入你的问题...(选中文字会粘贴到这)" rows="1"></textarea>
                         <button id="sendMessage" type="submit" class="send-btn">
-                            <span class="material-symbols-outlined">arrow_upward</span>
                         </button>
                     </form>
                 </footer>
@@ -96,21 +98,27 @@
             
             <div id="mistakeCollection" class="view hidden">
                 <header class="sidebar-header">
-                    <button id="backToMain" class="header-action-btn" title="返回">
-                        <span class="material-symbols-outlined">arrow_back</span>
+                    <button id="backToMain" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                     </button>
                     <h1>错题集</h1>
-                    <button id="openMistakeManagerBtn" class="header-action-btn header-action-right" title="管理错题集">
+                    <!-- <button id="openMistakeManagerBtn" class="header-action-btn header-action-right" title="管理错题集">
                         <span class="material-symbols-outlined">open_in_new</span>
-                    </button>
+                    </button> -->
                 </header>
-                <div id="mistakeListContainer" class="mistake-list-container"></div>
+                <div style="padding: 20px 20px 0px 20px;">
+                    <div class="mistake-item-display" style="background-color: #7a3797">
+                        <span style="color: white;">如需查看 AI 对错题的分析结果、统计数据，或使用 AI 组卷功能，请前往网页版错题管理页面操作</span>
+                    </div>
+                </div>
+                <div id="mistakeListContainer" class="mistake-list-container">
+                </div>
             </div>
 
             <div id="settingsInterface" class="view hidden">
                  <header class="sidebar-header">
-                    <button id="backToMainFromSettings" class="header-action-btn" title="返回">
-                        <span class="material-symbols-outlined">arrow_back</span>
+                    <button id="backToMainFromSettings" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                     </button>
                     <h1>设置</h1>
                 </header>
@@ -118,6 +126,7 @@
                     <div class="form-group">
                         <label for="aiApiKey">API Key</label>
                         <input type="password" id="aiApiKey" placeholder="请输入你的API Key">
+                        
                     </div>
                     <div class="form-group">
                         <label for="questionMode">问题模式</label>
@@ -133,8 +142,8 @@
 
             <div id="ptaAnalysisInterface" class="view hidden">
                 <header class="sidebar-header">
-                   <button id="backToMainFromPta" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                   <button id="backToMainFromPta" class="header-action-btn" data-tip="返回">
+                       <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>PTA题目分析</h1>
                </header>
@@ -149,13 +158,12 @@
 
            <div id="loginInterface" class="view hidden">
                 <header class="sidebar-header">
-                   <button id="backToMainFromLogin" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                   <button id="backToMainFromLogin" class="header-action-btn" data-tip="返回">
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>用户登录</h1>
                </header>
-               <div class="login-container">
-                   <div class="login-form">
+               <div class="settings-container">
                        <!-- 登录/注册切换 -->
                        <div class="auth-tabs">
                            <button id="loginTab" class="auth-tab active">登录</button>
@@ -174,7 +182,10 @@
                            </div>
                            <button id="loginSubmitBtn" class="auth-submit-btn">登录</button>
                            <div class="auth-links">
-                               <a href="#" id="forgotPasswordLink">忘记密码？</a>
+                               <a href="#" id="forgotPasswordLink" style="color: #7a3797;">忘记密码？</a>
+                           </div>
+                           <div style="text-align: center" >
+                                <img src="../侧边栏icon补充/jsongj_com_透明化图片.png" style="width: 100px; height: 100px; margin-top: 20px">
                            </div>
                        </div>
 
@@ -190,7 +201,8 @@
                                     <input type="text" id="verificationCode" placeholder="请输入邮件收到的验证码">
                                     <button id="sendVerificationBtn" type="button">发送验证码</button>
                                 </div>
-                                <small style="color: #555;">验证码已通过邮件发送，有效期10分钟</small>
+                                <small id="isSendmessage" style="color: #555;"></small>
+                                <!-- <small style="color: #555;">验证码已通过邮件发送，有效期10分钟</small> -->
                             </div>
                             <div class="form-group">
                                 <label for="registerPassword">设置密码</label>
@@ -215,7 +227,8 @@
                                     <input type="text" id="resetVerificationCode" placeholder="请输入邮件收到的验证码">
                                     <button id="sendResetCodeBtn" type="button">发送验证码</button>
                                 </div>
-                                <small style="color: #555;">验证码已通过邮件发送，有效期10分钟</small>
+                                <small id="isSendmessage" style="color: #555;"></small>
+                                <!-- <small style="color: #555;">验证码已通过邮件发送，有效期10分钟</small> -->
                             </div>
                             <div class="form-group">
                                 <label for="newPassword">新密码</label>
@@ -233,7 +246,6 @@
 
                        <!-- 状态提示 -->
                        <div id="authMessage" class="auth-message hidden"></div>
-                   </div>
                </div>
            </div>
 
@@ -241,7 +253,7 @@
            <div id="userProfileInterface" class="view hidden">
                 <header class="sidebar-header">
                    <button id="backToMainFromProfile" class="header-action-btn" title="返回">
-                       <span class="material-symbols-outlined">arrow_back</span>
+                        <img src="../侧边栏icon补充/42.png" class="material-symbols-outlined" style="width: 20px; height: 20px;">
                    </button>
                    <h1>用户信息</h1>
                </header>
@@ -249,7 +261,7 @@
                    <div class="user-profile-content">
                        <!-- 用户头像 -->
                        <div class="user-avatar">
-                           <span class="material-symbols-outlined">account_circle</span>
+                            <img src="../侧边栏icon/30.png" alt="用户头像">
                        </div>
                        
                        <!-- 登录状态 -->
@@ -259,13 +271,13 @@
                        
                        <!-- 用户邮箱 -->
                        <div class="user-email">
-                           <span id="displayUserEmail">user@zju.edu.cn</span>
+                           <span id="displayUserEmail">请登录</span>
                        </div>
                        
                        <!-- 操作按钮 -->
                        <div class="profile-actions">
                            <button id="logoutBtn" class="logout-btn">
-                               <span class="material-symbols-outlined">logout</span>
+                               <span class="material-symbols-outlined"></span>
                                退出登录
                            </button>
                        </div>
@@ -276,7 +288,7 @@
         </main>
     </div>
 
-    <script src="../js/common/api.js"></script>
+    <script type="module" src="../js/common/api.js"></script>
     <script type="module" src="../js/sidebar/SidebarManager.js"></script>
 </body>
 </html>

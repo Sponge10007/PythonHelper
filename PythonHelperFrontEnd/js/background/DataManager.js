@@ -1,13 +1,6 @@
 // js/background/DataManager.js
 import * as storage from '../common/storage.js';
-
-// 获取后端URL函数
-function getBackendUrl() {
-    // 在background脚本中默认使用localhost
-    return 'http://localhost:5000';
-}
-
-const BACKEND_URL = getBackendUrl();
+import { BACKEND_URL } from '../common/config.js';
 
 export class DataManager {
     constructor() {
@@ -28,6 +21,7 @@ export class DataManager {
     async loadQuestions() {
         try {
             const response = await fetch(`${BACKEND_URL}/questions`);
+            console.log('后端题目接口返回:', response);
             if (!response.ok) throw new Error('Backend request failed');
             const data = await response.json();
             this.questions = data.questions || [];
@@ -42,12 +36,12 @@ export class DataManager {
     }
     
     updateSettings(newSettings) {
-        // 参照原始 background.js 的逻辑
-        if (newSettings.apiKey) {
-            this.settings.aiApiKey = newSettings.apiKey;
+        // 正确映射设置字段，避免 apiKey / aiApiKey 字段名不一致导致设置丢失
+        if (newSettings.aiApiKey !== undefined) {
+            this.settings.aiApiKey = newSettings.aiApiKey;
         }
-        // API endpoint 使用硬编码的 DeepSeek API
-        this.settings.aiApiEndpoint = 'https://api.deepseek.com/v1/chat/completions';
+        // API endpoint 由后端统一校验和兜底；前端仅作为可选配置传递
+        this.settings.aiApiEndpoint = newSettings.aiApiEndpoint || 'https://api.deepseek.com/v1/chat/completions';
         // 更新完整的设置对象
         this.settings = { ...this.settings, ...newSettings };
         console.log('后台设置已更新:', this.settings);

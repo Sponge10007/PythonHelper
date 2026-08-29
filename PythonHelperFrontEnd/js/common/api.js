@@ -1,76 +1,103 @@
 // js/common/api.js
+import { BACKEND_URL } from './config.js';
 
 /**
- * 获取后端服务器URL
+ * 统一的后端请求封装：所有跨域请求都携带 session cookie。
  */
-function getBackendUrl() {
-    // 检测是否为本地开发环境
-    const isLocalDev = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname === '';
-    
-    if (isLocalDev) {
-        // 本地开发环境
-        return 'http://localhost:5000';
-    } else {
-        // 生产环境服务器地址 (通过Nginx代理8888端口)
-        return 'http://47.98.249.0:8888';
-    }
+export async function authFetch(url, options = {}) {
+    return fetch(url, { ...options, credentials: 'include' });
 }
+/**
+ * 与AI后端进行对话 - 支持流式传输
+ * @param {Array} messages - 完整对话消息数组
+ * @param {string} apiKey - 用户的 API Key
+ * @param {string} apiEndpoint - API 端点
+ * @param {Function} onChunk - 接收流式数据的回调函数
+ * @returns {Promise<void>}
+ */
+export async function fetchAiResponseStream(messages, apiKey, apiEndpoint, onChunk) {
 
-const BACKEND_URL = getBackendUrl();
-const API_BASE_URL = BACKEND_URL; // 兼容认证模块
-
-// 调试信息
-console.log('PythonHelper API Base URL:', BACKEND_URL);
-
-// 网络请求包装函数，处理代理和网络问题
-async function fetchWithFallback(url, options = {}) {
-    const defaultOptions = {
+    const response = await authFetch(`${BACKEND_URL}/ai/chat/stream`, {
+        method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            ...options.headers
+            'Content-Type': 'application/json'
         },
-        mode: 'cors',
-        ...options
+        body: JSON.stringify({
+            messages: messages,  // 发送完整对话历史
+            apiKey: apiKey,
+            apiEndpoint: apiEndpoint
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    console.log('response', response);
+    // 处理Server-Sent Events：按数据流缓冲，避免一个JSON事件被拆到多个网络包
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const processSseLines = (lines) => {
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    const data = JSON.parse(line.slice(6));
+                    onChunk(data);
+
+                    // 如果传输完成，退出循环
+                    if (data.done) {
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('解析流式数据失败:', e, line);
+                }
+            }
+        }
+        return false;
     };
-    
+
     try {
-        const response = await fetch(url, defaultOptions);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            // 最后一段可能是半个事件，留在 buffer 中等待后续数据
+            buffer = lines.pop() || '';
+            if (processSseLines(lines)) {
+                return;
+            }
         }
-        
-        return response;
-    } catch (error) {
-        console.error('网络请求失败:', error.message);
-        console.error('请求URL:', url);
-        
-        // 如果是Chrome扩展环境，尝试使用chrome.runtime.sendMessage
-        if (typeof chrome !== 'undefined' && chrome.runtime) {
-            console.log('尝试使用Chrome扩展消息传递...');
-            // 这里可以实现Chrome扩展的消息传递机制作为备用方案
-        }
-        
-        throw error;
+
+        // 连接结束时处理剩余内容
+        const tail = decoder.decode();
+        if (tail) buffer += tail;
+        const remainingLines = buffer.split(/\r?\n/).filter(Boolean);
+        processSseLines(remainingLines);
+    } finally {
+        reader.releaseLock();
     }
 }
 
 /**
- * 与AI后端进行对话
- * @param {Array} messages - 对话消息数组
+ * 与AI后端进行对话 - 支持持久记忆
+ * @param {Array} messages - 完整对话消息数组
  * @param {string} apiKey - 用户的 API Key
  * @param {string} apiEndpoint - API 端点
  * @returns {Promise<Object>} - AI的响应数据
  */
 export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
-    const lastMessage = messages[messages.length - 1].content;
-    const response = await fetchWithFallback(`${BACKEND_URL}/ai/chat`, {
+    const response = await authFetch(`${BACKEND_URL}/ai/chat`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-            message: lastMessage,
+            messages: messages,  // 发送完整对话历史
             apiKey: apiKey,
             apiEndpoint: apiEndpoint
         })
@@ -89,7 +116,7 @@ export async function fetchAiResponse(messages, apiKey, apiEndpoint) {
  * @returns {Promise<Array>} - 错题列表
  */
 export async function fetchMistakes() {
-    const response = await fetch(`${BACKEND_URL}/mistakes`);
+    const response = await authFetch(`${BACKEND_URL}/mistakes`);
     if (!response.ok) {
         throw new Error('获取错题失败');
     }
@@ -101,21 +128,24 @@ export async function fetchMistakes() {
  * 保存新的错题到后端
  * @param {Object} mistake - 新的错题对象
  * @returns {Promise<void>}
+ * @use {sidebar/ChatManager.js} 
  */
 export async function saveMistake(mistake) {
-    // 这个函数用于添加一个全新的错题记录
-    const currentMistakes = await fetchMistakes();
-    currentMistakes.unshift(mistake);
+    // 只提交当前新增记录，不再“全量删除后重建”，避免并发/失败时丢失数据
+    const newMistake = { ...mistake };
+    delete newMistake.id;
 
-    const response = await fetch(`${BACKEND_URL}/mistakes`, {
+    const response = await authFetch(`${BACKEND_URL}/mistakes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mistakes: currentMistakes })
+        body: JSON.stringify({ mistakes: [newMistake] })
     });
 
     if (!response.ok) {
-        throw new Error('保存错题失败');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '保存错题失败');
     }
+    return response.json();
 }
 
 /**
@@ -125,7 +155,7 @@ export async function saveMistake(mistake) {
  * @returns {Promise<Object>}
  */
 export async function updateMistake(mistakeId, updatedMistake) {
-    const response = await fetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
+    const response = await authFetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedMistake)
@@ -139,15 +169,35 @@ export async function updateMistake(mistakeId, updatedMistake) {
     return response.json(); 
 }
 
+/**
+ * 删除一个错题
+ * @param {number} mistakeId - 错题的ID
+ * @returns {Promise<Object>}
+ */
+export async function deleteMistake(mistakeId) {
+    const response = await authFetch(`${BACKEND_URL}/mistakes/${mistakeId}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除错题失败');
+    }
+    
+    return response.json();
+}
+
 // PPT 文件管理相关 API 函数
 
 /**
- * 获取所有PPT文件列表
+ * 获取所有PPT文件列表（携带session）
  * @returns {Promise<Array>} - PPT文件列表
  */
 export async function fetchPPTFiles() {
     try {
-        const response = await fetch(`${BACKEND_URL}/ppt/files`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/files`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             throw new Error(`获取PPT文件列表失败: ${response.status}`);
         }
@@ -181,7 +231,7 @@ export async function uploadPPTFile(file, description = '', tags = [], onProgres
         }
 
         // 验证文件大小 (限制50MB)
-        const maxSize = 50 * 1024 * 1024; // 50MB
+        const maxSize = 100 * 1024 * 1024; // 100MB
         if (file.size > maxSize) {
             throw new Error('文件大小不能超过50MB');
         }
@@ -228,6 +278,7 @@ export async function uploadPPTFile(file, description = '', tags = [], onProgres
 
             xhr.timeout = 300000; // 5分钟超时
             xhr.open('POST', `${BACKEND_URL}/ppt/upload`);
+            xhr.withCredentials = true;  // 携带cookie/session
             xhr.send(formData);
         });
 
@@ -249,7 +300,9 @@ export async function downloadPPTFile(pptId, filename = null) {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/download`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/${pptId}/download`, {
+            credentials: 'include'  // 携带cookie/session
+        });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `下载失败: ${response.status}`);
@@ -298,7 +351,7 @@ export async function deletePPTFile(pptId) {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}`, {
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/${pptId}`, {
             method: 'DELETE'
         });
 
@@ -326,9 +379,10 @@ export async function batchDeletePPTFiles(pptIds) {
             throw new Error('PPT文件ID列表不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/batch-delete`, {
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/batch-delete`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',  // 携带cookie/session
             body: JSON.stringify({ ids: pptIds })
         });
 
@@ -351,7 +405,7 @@ export async function batchDeletePPTFiles(pptIds) {
  */
 export async function getPPTFileStats() {
     try {
-        const response = await fetch(`${BACKEND_URL}/ppt/stats`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/stats`);
         if (!response.ok) {
             throw new Error(`获取统计信息失败: ${response.status}`);
         }
@@ -380,7 +434,7 @@ export async function searchPPTFiles(query, filters = {}) {
             }
         });
 
-        const response = await fetch(`${BACKEND_URL}/ppt/search?${params}`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/search?${params}`);
         if (!response.ok) {
             throw new Error(`搜索失败: ${response.status}`);
         }
@@ -409,14 +463,22 @@ export async function getPPTPreviewUrl(pptId, previewType = 'pdf') {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/preview?type=${previewType}`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/${pptId}/preview?type=${previewType}`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `获取预览失败: ${response.status}`);
         }
 
-        const data = await response.json();
-        return data.preview_url;
+        const contentType = response.headers.get('Content-Type') || '';
+        if (contentType.includes('application/json')) {
+            const data = await response.json();
+            const previewUrl = data.preview_url || '';
+            return previewUrl.startsWith('http') ? previewUrl : `${BACKEND_URL}${previewUrl}`;
+        }
+
+        // PDF/文件流：返回可直接打开的 Blob URL
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
 
     } catch (error) {
         console.error('获取PPT预览URL错误:', error);
@@ -439,7 +501,7 @@ export async function getPPTThumbnail(pptId, options = {}) {
         const { width = 200, height = 150, quality = 80 } = options;
         const params = new URLSearchParams({ width, height, quality });
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/thumbnail?${params}`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/${pptId}/thumbnail?${params}`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `获取缩略图失败: ${response.status}`);
@@ -499,8 +561,8 @@ export async function previewPPTFile(pptId, options = {}) {
         // 根据文件类型确定预览策略
         switch (fileExt) {
             case 'pdf':
-                // PDF文件直接使用浏览器预览
-                previewUrl = `${BACKEND_URL}/ppt/files/${pptId}/preview?type=direct`;
+                // 通过携带会话的 fetch 获取 Blob URL，再交给浏览器预览
+                previewUrl = await getPPTPreviewUrl(pptId, 'direct');
                 break;
                 
             case 'ppt':
@@ -556,14 +618,20 @@ export async function getPPTSlides(pptId) {
             throw new Error('PPT文件ID不能为空');
         }
 
-        const response = await fetch(`${BACKEND_URL}/ppt/files/${pptId}/slides`);
+        const response = await authFetch(`${BACKEND_URL}/ppt/files/${pptId}/slides`);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `获取幻灯片失败: ${response.status}`);
         }
 
         const data = await response.json();
-        return data.slides || [];
+        const slides = data.slides || [];
+        // 后端返回的是相对路径，扩展页面中需要补全为绝对 URL
+        return slides.map(slide => ({
+            ...slide,
+            thumbnail_url: `${BACKEND_URL}${slide.thumbnail_url || ''}`,
+            image_url: `${BACKEND_URL}${slide.image_url || ''}`
+        }));
 
     } catch (error) {
         console.error('获取PPT幻灯片错误:', error);
@@ -607,14 +675,15 @@ export async function createEmbeddedPreview(pptId, container, options = {}) {
         container.style.height = height;
 
         if (fileExt === 'pdf') {
-            // PDF文件使用iframe预览
+            // PDF文件先通过携带会话的 fetch 获取 Blob URL，再交给 iframe
+            const pdfUrl = await getPPTPreviewUrl(pptId, 'direct');
             const iframe = document.createElement('iframe');
-            iframe.src = `${BACKEND_URL}/ppt/files/${pptId}/preview?type=direct`;
+            iframe.src = pdfUrl;
             iframe.style.width = '100%';
             iframe.style.height = '100%';
             iframe.style.border = 'none';
             container.appendChild(iframe);
-            
+
         } else if (['ppt', 'pptx'].includes(fileExt)) {
             // PPT文件创建幻灯片浏览器
             await createSlideViewer(pptId, container, { showToolbar, showSlideNavigation });

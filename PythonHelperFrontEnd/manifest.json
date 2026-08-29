@@ -1,22 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "Python课程AI教学助手",
-  "version": "1.1.0",
-  "description": "一个帮助学习Python的Chrome插件，支持题目检索、大模型解析和用户认证",
+  "name": "一站式Python课程AI教学助手",
+  "version": "1.0.0",
+  "description": "一个帮助学习Python的Chrome插件，支持题目检索和大模型解析",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "permissions": [
     "activeTab",
     "storage",
     "scripting",
     "sidePanel",
     "tabs",
-    "downloads",
-    "cookies",
     "debugger"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*",
-    "http://47.98.249.0/*",
     "http://47.98.249.0/*",
     "https://pintia.cn/*",
     "https://*.cloudstudio.club/*"
@@ -27,15 +27,20 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["js/content.js"],
-      "css": ["css/sidebar.css"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/content.js"
+      ],
+      "css": [
+        "css/sidebar.css"
+      ]
     }
   ],
   "side_panel": {
     "default_path": "html/sidebar.html"
   },
-
   "icons": {
     "16": "icons/logo.png",
     "32": "icons/logo.png",
@@ -43,13 +48,16 @@
     "128": "icons/logo.png"
   },
   "action": {
-    "default_title": "Python课程AI教学助手",
-    "default_popup": ""
+    "default_title": "Python课程AI教学助手"
   },
   "web_accessible_resources": [
     {
-      "resources": ["data/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "data/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

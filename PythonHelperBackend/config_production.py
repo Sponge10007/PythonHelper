@@ -1,13 +1,15 @@
 import os
+import secrets
+from datetime import timedelta
 
 class ProductionConfig:
     """生产环境配置"""
     DEBUG = False
     HOST = '0.0.0.0'
-    PORT = 8888
+    PORT = 5000
 
     # 数据库文件
-    MISTAKES_DB_FILE = 'mistakes.db'
+    MISTAKES_DB_FILE = os.environ.get('DATABASE_PATH', 'mistakes.db')
 
     # PPT文件存储目录 - 生产环境使用绝对路径
     PPT_UPLOAD_FOLDER = os.environ.get('PPT_UPLOAD_FOLDER',
@@ -36,12 +38,36 @@ class ProductionConfig:
     # 阿里云 DirectMail SMTP 配置
     SMTP_HOST = os.environ.get('SMTP_HOST', 'smtpdm.aliyun.com')
     SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
-    SMTP_USER = os.environ.get('SMTP_USER', 'py@pythonassistant.cn')
-    SMTP_PASS = os.environ.get('SMTP_PASS')  # 必须设置在 .env 中
+    SMTP_USER = os.environ.get('SMTP_USER', '')
+    SMTP_PASS = os.environ.get('SMTP_PASS', '')
     SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'Python Helper')
 
-    # Flask 会话密钥
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'python-helper-secret-key-2025')
+    # AI 配置：只从环境变量读取
+    AI_API_KEY = os.environ.get('AI_API_KEY', '')
+    AI_API_ENDPOINT = os.environ.get(
+        'AI_API_ENDPOINT',
+        'https://api.deepseek.com/v1/chat/completions'
+    )
+    AI_ALLOWED_HOSTS = [
+        host.strip().lower()
+        for host in os.environ.get(
+            'AI_ALLOWED_HOSTS',
+            'api.deepseek.com,api.openai.com'
+        ).split(',')
+        if host.strip()
+    ]
+
+    # Flask 会话密钥：未配置时自动生成随机密钥
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+    # Session 配置
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'true').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
+    SESSION_COOKIE_DOMAIN = None
+    SESSION_COOKIE_PATH = '/'
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
     # 日志配置
     LOG_LEVEL = 'INFO'
@@ -54,7 +80,7 @@ class DevelopmentConfig:
     HOST = 'localhost'
     PORT = 5000
 
-    MISTAKES_DB_FILE = 'mistakes.db'
+    MISTAKES_DB_FILE = os.environ.get('DATABASE_PATH', 'mistakes.db')
     PPT_UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_files')
     ALLOWED_EXTENSIONS = {'ppt', 'pptx', 'doc', 'docx', 'pdf'}
     QUESTIONS_DB_PATH_NEW = 'database.json'
@@ -64,6 +90,27 @@ class DevelopmentConfig:
 
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024
     LOG_LEVEL = 'DEBUG'
+
+    SMTP_HOST = os.environ.get('SMTP_HOST', 'smtpdm.aliyun.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
+    SMTP_USER = os.environ.get('SMTP_USER', '')
+    SMTP_PASS = os.environ.get('SMTP_PASS', '')
+    SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'Python Helper')
+
+    AI_API_KEY = os.environ.get('AI_API_KEY', '')
+    AI_API_ENDPOINT = os.environ.get('AI_API_ENDPOINT', 'https://api.deepseek.com/v1/chat/completions')
+    AI_ALLOWED_HOSTS = [
+        host.strip().lower()
+        for host in os.environ.get('AI_ALLOWED_HOSTS', 'api.deepseek.com,api.openai.com').split(',')
+        if host.strip()
+    ]
+
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
 
 config_map = {

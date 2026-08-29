@@ -20,9 +20,8 @@ def load_env_variables():
                     key, value = line.split('=', 1)
                     os.environ[key] = value
         print("✓ 已加载环境变量配置")
-        print(f"  - FEISHU_APP_ID: {os.environ.get('FEISHU_APP_ID')}")
-        secret = os.environ.get('FEISHU_APP_SECRET')[:10]
-        print(f"  - FEISHU_APP_SECRET: {secret}...")
+        print(f"  - SMTP 已配置: {bool(os.environ.get('SMTP_USER') and os.environ.get('SMTP_PASS'))}")
+        print(f"  - AI Key 已配置: {bool(os.environ.get('AI_API_KEY'))}")
     else:
         print("⚠ 未找到 .env 文件")
 

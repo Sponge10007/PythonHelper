@@ -1,6 +1,9 @@
 // js/mistake_manager/PPTViewer.js
 // 高级PPT查看器，支持左滑右滑、缩放等操作
 
+import { BACKEND_URL } from '../common/config.js';
+import * as api from '../common/api.js';
+
 export class PPTViewer {
     constructor() {
         this.currentFile = null;
@@ -122,7 +125,7 @@ export class PPTViewer {
             const fileType = (file.file_type || file.original_name?.split('.').pop() || 'unknown').toLowerCase();
             console.log('Detected file type:', fileType);
             
-            const serverUrl = this.getServerUrl();
+            const serverUrl = BACKEND_URL;
             console.log('Server URL:', serverUrl);
             
             if (fileType === 'pdf') {
@@ -149,10 +152,10 @@ export class PPTViewer {
      * 加载PDF幻灯片
      */
     async loadPDFSlides(file) {
-        const serverUrl = this.getServerUrl();
+        const serverUrl = BACKEND_URL;
         
         // 尝试获取PDF的页面信息
-        const response = await fetch(`${serverUrl}/ppt/files/${file.id}/info`);
+        const response = await api.authFetch(`${serverUrl}/ppt/files/${file.id}/info`);
         if (!response.ok) {
             throw new Error('无法获取文件信息');
         }
@@ -175,11 +178,11 @@ export class PPTViewer {
      * 加载PPT幻灯片
      */
     async loadPPTSlides(file) {
-        const serverUrl = this.getServerUrl();
+        const serverUrl = BACKEND_URL;
         
         // 尝试获取PPT的幻灯片信息
         try {
-            const response = await fetch(`${serverUrl}/ppt/files/${file.id}/slides`);
+            const response = await api.authFetch(`${serverUrl}/ppt/files/${file.id}/slides`);
             if (response.ok) {
                 const slidesInfo = await response.json();
                 // 转换相对URL为完整URL
@@ -615,7 +618,7 @@ export class PPTViewer {
         if (!this.currentFile) return;
         
         try {
-            const serverUrl = this.getServerUrl();
+            const serverUrl = BACKEND_URL;
             const downloadUrl = `${serverUrl}/ppt/files/${this.currentFile.id}/download`;
             
             const a = document.createElement('a');
@@ -668,17 +671,6 @@ export class PPTViewer {
             this.slides = [];
             this.zoomLevel = 1;
         }
-    }
-
-    /**
-     * 获取服务器地址
-     */
-    getServerUrl() {
-        // 检测是否在浏览器扩展环境中
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-            return getBackendUrl();
-        }
-        return getBackendUrl();
     }
 
     /**
